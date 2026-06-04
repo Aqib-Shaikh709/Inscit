@@ -5,7 +5,9 @@ enum class ThemeMode { NEON, NOBLE, CUSTOM }
 
 data class UserSettings(
     val language: Lang = Lang.EN,
-    val theme: ThemeMode = ThemeMode.NEON
+    val theme: ThemeMode = ThemeMode.NEON,
+    val parentEmail: String = "",
+    val lastReportDate: Long = 0
 )
 
 data class UserProfile(
@@ -19,7 +21,8 @@ data class UserStats(
     val xp: Int = 0,
     val level: Int = 1,
     val quizzesTaken: Int = 0,
-    val completedChallengeDates: Set<String> = emptySet() // Format: "yyyy-MM-dd"
+    val completedChallengeDates: Set<String> = emptySet(), // Format: "yyyy-MM-dd"
+    val totalUsageTime: Long = 0 // in milliseconds
 )
 
 data class DailyChallengeStatus(

@@ -166,7 +166,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 import java.util.Calendar
 enum class Screen {
- SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER }
+ SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PARENTAL_CONTROL }
 enum class Branch { PHYSICS, CHEMISTRY, BIOLOGY }
 
 
@@ -361,6 +361,9 @@ class MainActivity : ComponentActivity() {
 
         checkNotificationPermission()
         NotificationScheduler.scheduleInactivityNotification(this)
+        
+        // Schedule Daily Parent Report
+        com.example.inscit.parentalcontrol.ParentReportScheduler.scheduleDailyReport(this)
 
         setContent { AppEngine(ttsManager) }
     }
@@ -389,7 +392,7 @@ fun serializeUserDocument(doc: UserDocument): String {
     }
     val challengeDates = doc.stats.completedChallengeDates.joinToString(",")
     val challengeStatus = "${doc.dailyChallengeStatus.lastCompletionDate},${doc.dailyChallengeStatus.currentRound},${doc.dailyChallengeStatus.isCompletedToday}"
-    return "${doc.profile.name}|${doc.profile.photoUrl ?: ""}|${doc.stats.xp}|${doc.stats.level}|${doc.stats.quizzesTaken}|${doc.quizProgress.lastScore}|${doc.settings.language.name}|${doc.settings.theme.name}|$notesStr|$challengeDates|$challengeStatus"
+    return "${doc.profile.name}|${doc.profile.photoUrl ?: ""}|${doc.stats.xp}|${doc.stats.level}|${doc.stats.quizzesTaken}|${doc.quizProgress.lastScore}|${doc.settings.language.name}|${doc.settings.theme.name}|$notesStr|$challengeDates|$challengeStatus|${doc.settings.parentEmail}|${doc.settings.lastReportDate}|${doc.stats.totalUsageTime}"
 }
 
 // Custom Saver for UserDocument to ensure perfect persistence
@@ -424,12 +427,15 @@ val UserDocumentSaver = Saver<UserDocument, String>(
                     xp = parts[2].toInt(),
                     level = parts[3].toInt(),
                     quizzesTaken = parts[4].toInt(),
-                    completedChallengeDates = challengeDates
+                    completedChallengeDates = challengeDates,
+                    totalUsageTime = if (parts.size > 13) parts[13].toLong() else 0L
                 ),
                 quizProgress = QuizProgress(lastScore = parts[5].toFloat()),
                 settings = UserSettings(
                     language = if (parts.size > 6) Lang.valueOf(parts[6]) else Lang.EN,
-                    theme = if (parts.size > 7) ThemeMode.valueOf(parts[7]) else ThemeMode.NEON
+                    theme = if (parts.size > 7) ThemeMode.valueOf(parts[7]) else ThemeMode.NEON,
+                    parentEmail = if (parts.size > 11) parts[11] else "",
+                    lastReportDate = if (parts.size > 12) parts[12].toLong() else 0L
                 ),
                 userNotes = notes,
                 dailyChallengeStatus = challengeStatus
@@ -479,6 +485,18 @@ fun AppEngine(tts: TTSManager) {
         saveUserDocument(context, userDocument)
     }
 
+    // Track app usage time
+    LaunchedEffect(Unit) {
+        while(true) {
+            kotlinx.coroutines.delay(60000) // Update every minute
+            userDocument = userDocument.copy(
+                stats = userDocument.stats.copy(
+                    totalUsageTime = userDocument.stats.totalUsageTime + 60000
+                )
+            )
+        }
+    }
+
     val isDrawerOpen = drawerState.isOpen
     BackHandler(enabled = isDrawerOpen || (currentScreen != Screen.HOME && currentScreen != Screen.SPLASH)) {
         if (isDrawerOpen) {
@@ -490,6 +508,7 @@ fun AppEngine(tts: TTSManager) {
                 Screen.THEME_CONFIG -> currentScreen = Screen.HOME
                 Screen.NOTES_FOLDER -> currentScreen = Screen.THEME_CONFIG
                 Screen.RANKINGS -> currentScreen = Screen.HOME
+                Screen.PARENTAL_CONTROL -> currentScreen = Screen.HOME
                 Screen.LAB -> {
                     tts.stop()
                     currentScreen = Screen.HOME
@@ -813,6 +832,12 @@ fun AppEngine(tts: TTSManager) {
                         )
                         Screen.NEWS_UPDATES -> NewsUpdatesScreen(primaryAccent, textColor, language) { currentScreen = Screen.HOME }
                         Screen.HELP_CENTER -> HelpCenterScreen(primaryAccent, textColor, language) { currentScreen = Screen.HOME }
+                        Screen.PARENTAL_CONTROL -> com.example.inscit.parentalcontrol.ParentalControlScreen(
+                            userDocument = userDocument,
+                            onUpdateUser = { userDocument = it },
+                            accent = primaryAccent,
+                            onBack = { currentScreen = Screen.HOME }
+                        )
 
                         else -> {
 
@@ -875,6 +900,16 @@ fun DrawerContent(
             )
 
             DrawerItem(if (lang == Lang.EN) "LAB UPDATES" else "लैब अपडेट", Screen.NEWS_UPDATES, currentScreen, onNavigate, accent)
+            
+            DrawerItem(
+                label = if (lang == Lang.EN) "LINK PARENT ACCOUNT" else "माता-पिता का खाता जोड़ें",
+                screen = Screen.PARENTAL_CONTROL,
+                currentScreen = currentScreen,
+                onNavigate = onNavigate,
+                accent = accent,
+                trailingIcon = { com.example.inscit.ui.ParentalIcon(accent, Modifier.size(18.dp)) }
+            )
+
             DrawerItem(if (lang == Lang.EN) "FEEDBACK" else "फीडबैक", Screen.FEEDBACK, currentScreen, onNavigate, accent)
             DrawerItem(if (lang == Lang.EN) "HELP CENTER" else "सहायता केंद्र", Screen.HELP_CENTER, currentScreen, onNavigate, accent)
 

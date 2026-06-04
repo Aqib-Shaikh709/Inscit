@@ -620,3 +620,32 @@ fun PencilIcon(color: Color = Color.White, modifier: Modifier = Modifier.size(24
         drawPath(path, color)
     }
 }
+
+@Composable
+fun ParentalIcon(color: Color = Color.White, modifier: Modifier = Modifier.size(24.dp)) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        // Shield shape
+        val path = Path().apply {
+            moveTo(w * 0.2f, h * 0.15f)
+            lineTo(w * 0.8f, h * 0.15f)
+            lineTo(w * 0.8f, h * 0.6f)
+            quadraticTo(w * 0.8f, h * 0.85f, w * 0.5f, h * 0.95f)
+            quadraticTo(w * 0.2f, h * 0.85f, w * 0.2f, h * 0.6f)
+            close()
+        }
+        drawPath(path, color, style = Stroke(width = 2.dp.toPx()))
+        // Small heart inside
+        val heart = Path().apply {
+            val hw = w * 0.2f
+            val hh = h * 0.2f
+            val cx = w * 0.5f
+            val cy = h * 0.45f
+            moveTo(cx, cy + hh * 0.5f)
+            cubicTo(cx - hw, cy - hh * 0.3f, cx - hw, cy - hh, cx, cy - hh * 0.5f)
+            cubicTo(cx + hw, cy - hh, cx + hw, cy - hh * 0.3f, cx, cy + hh * 0.5f)
+        }
+        drawPath(heart, color)
+    }
+}
