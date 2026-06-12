@@ -6,7 +6,6 @@ enum class ThemeMode { NEON, NOBLE, CUSTOM }
 data class UserSettings(
     val language: Lang = Lang.EN,
     val theme: ThemeMode = ThemeMode.NEON,
-    val parentEmail: String = "",
     val lastReportDate: Long = 0
 )
 

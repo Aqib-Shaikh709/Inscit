@@ -1,4 +1,4 @@
-package com.example.inscit.parentalcontrol
+package com.example.inscit.report
 
 import com.example.inscit.models.UserDocument
 

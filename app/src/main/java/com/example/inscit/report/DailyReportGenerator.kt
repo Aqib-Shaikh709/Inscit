@@ -1,4 +1,4 @@
-package com.example.inscit.parentalcontrol
+package com.example.inscit.report
 
 import com.example.inscit.models.UserDocument
 
@@ -13,6 +13,27 @@ object DailyReportGenerator {
             xp > 100 || quizzes > 3 -> "A balanced learning day was recorded with moderate activity."
             else -> "Today's activity was limited. Additional encouragement may help improve consistency."
         }
+    }
+
+    fun generateTextReport(userDoc: UserDocument): String {
+        val metrics = UsageAnalyticsManager.collectMetrics(userDoc)
+        val sentiment = generateSentiment(userDoc)
+        val userName = userDoc.profile.name
+        
+        val metricsText = metrics.map { (k, v) -> "- $k: $v" }.joinToString("\n")
+
+        return """
+            📊 DAILY LEARNING REPORT CARD 📊
+            
+            Student: $userName
+            Status: $sentiment
+            
+            📈 Performance Metrics:
+            $metricsText
+            
+            Keep encouraging the learning journey!
+            Generated via Inscit Omega
+        """.trimIndent()
     }
 
     fun generateHtmlReport(userDoc: UserDocument): String {
