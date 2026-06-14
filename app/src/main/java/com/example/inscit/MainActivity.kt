@@ -154,6 +154,7 @@ import com.example.inscit.ui.TopicSelectionScreen
 import com.example.inscit.ui.TrophyIcon
 import com.example.inscit.ui.TtsController
 import com.example.inscit.ui.WebIcon
+import com.example.inscit.ui.ReviewScreen
 import com.example.inscit.ui.theme.spacing
 import com.example.inscit.xp.Rank
 import kotlinx.coroutines.launch
@@ -166,7 +167,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 import java.util.Calendar
 enum class Screen {
- SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT }
+ SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS }
 enum class Branch { PHYSICS, CHEMISTRY, BIOLOGY }
 
 
@@ -217,6 +218,7 @@ fun saveUserDocument(context: Context, userDoc: UserDocument) {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     val data = serializeUserDocument(userDoc)
     prefs.edit().putString(KEY_USER_DATA, data).apply()
+
 }
 
 fun saveProfileImageLocally(context: Context, uri: Uri): String? {
@@ -505,6 +507,7 @@ fun AppEngine(tts: TTSManager) {
                 Screen.NOTES_FOLDER -> currentScreen = Screen.THEME_CONFIG
                 Screen.RANKINGS -> currentScreen = Screen.HOME
                 Screen.PROGRESS_REPORT -> currentScreen = Screen.HOME
+                Screen.REVIEWS -> currentScreen = Screen.HOME
                 Screen.LAB -> {
                     tts.stop()
                     currentScreen = Screen.HOME
@@ -833,6 +836,13 @@ fun AppEngine(tts: TTSManager) {
                             accent = primaryAccent,
                             onBack = { currentScreen = Screen.HOME }
                         )
+                        Screen.REVIEWS -> ReviewScreen(
+                            accent = primaryAccent,
+                            txtCol = textColor,
+                            lang = language,
+                            userName = userDocument.profile.name,
+                            onBack = { currentScreen = Screen.HOME }
+                        )
 
                         else -> {
 
@@ -906,6 +916,7 @@ fun DrawerContent(
             )
 
             DrawerItem(if (lang == Lang.EN) "FEEDBACK" else "फीडबैक", Screen.FEEDBACK, currentScreen, onNavigate, accent)
+            DrawerItem(if (lang == Lang.EN) "APP REVIEWS" else "ऐप समीक्षाएं", Screen.REVIEWS, currentScreen, onNavigate, accent)
             DrawerItem(if (lang == Lang.EN) "HELP CENTER" else "सहायता केंद्र", Screen.HELP_CENTER, currentScreen, onNavigate, accent)
 
             Spacer(Modifier.weight(1f))
