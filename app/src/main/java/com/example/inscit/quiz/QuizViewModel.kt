@@ -33,6 +33,7 @@ class QuizViewModel(
     private var lastDifficulty: String? = null
 
     fun startQuiz(lang: Lang, count: Int = 10, difficulty: String? = null) {
+        if (_uiState.value !is QuizUiState.Loading) return
         currentLang = lang
         lastCount = count
         lastDifficulty = difficulty
@@ -90,6 +91,7 @@ class QuizViewModel(
     fun getFinalXp() = xpBuffer.pendingXp
 
     fun retry() {
+        _uiState.value = QuizUiState.Loading
         startQuiz(currentLang, lastCount, lastDifficulty)
     }
 }

@@ -13,7 +13,12 @@ class QuizEngine {
             else -> getEnglishQuestions()
         }
         val filtered = if (difficulty != null) {
-            all.filter { it.difficulty == difficulty }
+            val byDifficulty = all.filter { it.difficulty == difficulty }
+            if (byDifficulty.isEmpty()) {
+                all
+            } else {
+                byDifficulty
+            }
         } else all
 
         return filtered.shuffled().take(count)

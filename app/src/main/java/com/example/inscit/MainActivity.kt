@@ -83,6 +83,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -166,6 +167,8 @@ import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sin
 import java.util.Calendar
+
+
 enum class Screen {
  SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS }
 enum class Branch { PHYSICS, CHEMISTRY, BIOLOGY }
@@ -1141,17 +1144,31 @@ fun RoundCard(round: Int, qCount: Int, isUnlocked: Boolean, isCurrent: Boolean, 
 
 @Composable
 fun DailyChallengeCalendar(completedDates: Set<String>, accent: Color) {
+    var monthOffset by remember { mutableIntStateOf(0) }
+    
     val cal = Calendar.getInstance()
-    val currentMonth = cal.get(Calendar.MONTH)
-    val currentYear = cal.get(Calendar.YEAR)
+    cal.add(Calendar.MONTH, monthOffset)
+    val displayMonth = cal.get(Calendar.MONTH)
+    val displayYear = cal.get(Calendar.YEAR)
 
     cal.set(Calendar.DAY_OF_MONTH, 1)
     val firstDayOfWeek = cal.get(Calendar.DAY_OF_WEEK) - 1
     val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
 
     Column(Modifier.fillMaxWidth().background(CardBg, RoundedCornerShape(24.dp)).padding(16.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(SimpleDateFormat("MMMM yyyy", Locale.US).format(cal.time).uppercase(), fontWeight = FontWeight.Black, fontSize = 12.sp, color = GhostWhite)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { monthOffset-- }, modifier = Modifier.size(32.dp)) {
+                Text("<", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = accent)
+            }
+            
+            Text(String.format(Locale.US, "%s %d", 
+                cal.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.US)?.uppercase(), 
+                displayYear), 
+                fontWeight = FontWeight.Black, fontSize = 12.sp, color = GhostWhite)
+            
+            IconButton(onClick = { monthOffset++ }, modifier = Modifier.size(32.dp)) {
+                Text(">", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = accent)
+            }
         }
 
         Spacer(Modifier.height(16.dp))
@@ -1172,7 +1189,7 @@ fun DailyChallengeCalendar(completedDates: Set<String>, accent: Color) {
                     val isWithinMonth = (row > 0 || col >= firstDayOfWeek) && dayCounter <= daysInMonth
                     Box(Modifier.weight(1f).aspectRatio(1f), contentAlignment = Alignment.Center) {
                         if (isWithinMonth) {
-                            val dateStr = String.format(Locale.US, "%d-%02d-%02d", currentYear, currentMonth + 1, dayCounter)
+                            val dateStr = String.format(Locale.US, "%d-%02d-%02d", displayYear, displayMonth + 1, dayCounter)
                             val isCompleted = completedDates.contains(dateStr)
 
                             if (isCompleted) {

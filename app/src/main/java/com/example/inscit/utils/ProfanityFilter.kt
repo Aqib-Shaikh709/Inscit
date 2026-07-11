@@ -40,9 +40,9 @@ object ProfanityFilter {
      * Checks if the text contains any bad words.
      */
     fun containsBadWords(text: String): Boolean {
-        val words = text.lowercase(Locale.ROOT).split(Regex("\\s+"))
-        return words.any { word -> 
-            profanityMap.keys.any { badWord -> word.contains(badWord) }
+        val lowerText = text.lowercase(Locale.ROOT)
+        return profanityMap.keys.any { badWord ->
+            Regex("(?i)\\b$badWord\\b").containsMatchIn(lowerText)
         }
     }
 

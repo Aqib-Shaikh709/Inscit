@@ -11,13 +11,13 @@ object NotificationScheduler {
 
     fun scheduleInactivityNotification(context: Context) {
         val workRequest = OneTimeWorkRequestBuilder<InactivityWorker>()
-            .setInitialDelay(24, TimeUnit.HOURS) // Send after 24 hours of inactivity
+            .setInitialDelay(10, TimeUnit.HOURS) // Send after 10 hours of inactivity
             .addTag(WORK_NAME)
             .build()
 
         WorkManager.getInstance(context).enqueueUniqueWork(
             WORK_NAME,
-            ExistingWorkPolicy.REPLACE, // Replace if existing one is already scheduled
+            ExistingWorkPolicy.KEEP, // Keep existing work, don't replace/reset timer
             workRequest
         )
     }

@@ -5,6 +5,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,7 +45,9 @@ fun ScienceQuizScreen(
     val spacing = MaterialTheme.spacing
 
     LaunchedEffect(Unit) {
-        viewModel.startQuiz(lang, customQuestionCount, difficultyFilter)
+        if (viewModel.uiState.value is QuizUiState.Loading) {
+            viewModel.startQuiz(lang, customQuestionCount, difficultyFilter)
+        }
         viewModel.events.collectLatest { event ->
             when (event) {
                 is QuizEvent.TriggerVibration -> triggerVibration(context, event.type)
@@ -102,6 +106,8 @@ private fun QuizContent(
     val spacing = MaterialTheme.spacing
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenWidth = maxWidth
+        val screenHeight = maxHeight
+        val isPortrait = screenHeight > screenWidth
         val horizontalPadding = if (screenWidth > 600.dp) spacing.huge else spacing.large
 
         Column(
@@ -126,85 +132,201 @@ private fun QuizContent(
             
             Spacer(Modifier.height(spacing.huge))
 
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (lang == Lang.EN) "QUESTION ${state.currentIndex + 1} of ${state.totalQuestions}" else "प्रश्न ${state.currentIndex + 1} / ${state.totalQuestions}",
-                    color = accent,
-                    style = MaterialTheme.typography.labelLarge,
-                    letterSpacing = 2.sp
-                )
-                
-                Surface(
-                    color = accent.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, accent.copy(alpha = 0.2f))
+            if (isPortrait) {
+                // Portrait Layout: Stacked vertically
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "XP: ${viewModel.pendingXp}",
+                        text = if (lang == Lang.EN) "QUESTION ${state.currentIndex + 1} of ${state.totalQuestions}" else "प्रश्न ${state.currentIndex + 1} / ${state.totalQuestions}",
+                        color = accent,
+                        style = MaterialTheme.typography.labelLarge,
+                        letterSpacing = 2.sp
+                    )
+                    
+                    Surface(
+                        color = accent.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, accent.copy(alpha = 0.2f))
+                    ) {
+                        Text(
+                            text = "XP: ${viewModel.pendingXp}",
+                            color = GhostWhite,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(spacing.extraLarge))
+
+                Box(
+                    modifier = Modifier
+                        .weight(1.2f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = state.currentQuestion.text,
+                        style = if (screenWidth > 600.dp) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineMedium,
                         color = GhostWhite,
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        textAlign = TextAlign.Center,
+                        lineHeight = 42.sp,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
-            }
 
-            Spacer(Modifier.height(spacing.extraLarge))
+                Spacer(Modifier.height(spacing.extraLarge))
 
-            Box(modifier = Modifier.weight(1.2f), contentAlignment = Alignment.Center) {
-                Text(
-                    text = state.currentQuestion.text,
-                    style = if (screenWidth > 600.dp) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineMedium,
-                    color = GhostWhite,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 42.sp,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+                Column(
+                    modifier = Modifier.weight(2f),
+                    verticalArrangement = Arrangement.spacedBy(spacing.medium)
+                ) {
+                    state.currentQuestion.options.forEach { option ->
+                        val isSelected = state.selectedOptionId == option.id
+                        val isCorrect = option.isCorrect
+                        
+                        val backgroundColor = when {
+                            isSelected && isCorrect -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                            isSelected && !isCorrect -> Color(0xFFF44336).copy(alpha = 0.2f)
+                            else -> CardBg
+                        }
+                        
+                        val borderColor = when {
+                            isSelected && isCorrect -> Color(0xFF4CAF50)
+                            isSelected && !isCorrect -> Color(0xFFF44336)
+                            else -> GhostWhite.copy(alpha = 0.1f)
+                        }
 
-            Spacer(Modifier.height(spacing.extraLarge))
-
-            Column(
-                modifier = Modifier.weight(2f),
-                verticalArrangement = Arrangement.spacedBy(spacing.medium)
-            ) {
-                state.currentQuestion.options.forEach { option ->
-                    val isSelected = state.selectedOptionId == option.id
-                    val isCorrect = option.isCorrect
-                    
-                    val backgroundColor = when {
-                        isSelected && isCorrect -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-                        isSelected && !isCorrect -> Color(0xFFF44336).copy(alpha = 0.2f)
-                        else -> CardBg
+                        Surface(
+                            onClick = { viewModel.answerQuestion(option.id) },
+                            enabled = !state.isTransitioning,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(84.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            color = backgroundColor,
+                            border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor)
+                        ) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = spacing.large)) {
+                                Text(
+                                    text = option.text.uppercase(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = GhostWhite,
+                                    textAlign = TextAlign.Center,
+                                    letterSpacing = 1.sp
+                                )
+                            }
+                        }
                     }
-                    
-                    val borderColor = when {
-                        isSelected && isCorrect -> Color(0xFF4CAF50)
-                        isSelected && !isCorrect -> Color(0xFFF44336)
-                        else -> GhostWhite.copy(alpha = 0.1f)
-                    }
-
-                    Surface(
-                        onClick = { viewModel.answerQuestion(option.id) },
-                        enabled = !state.isTransitioning,
+                }
+            } else {
+                // Landscape Layout: Side-by-side
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.large)
+                ) {
+                    // Left Side: Question details and text
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(84.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        color = backgroundColor,
-                        border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor)
+                            .weight(1.2f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = spacing.large)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = option.text.uppercase(),
-                                style = MaterialTheme.typography.titleMedium,
+                                text = if (lang == Lang.EN) "QUESTION ${state.currentIndex + 1} of ${state.totalQuestions}" else "प्रश्न ${state.currentIndex + 1} / ${state.totalQuestions}",
+                                color = accent,
+                                style = MaterialTheme.typography.labelLarge,
+                                letterSpacing = 2.sp
+                            )
+                            
+                            Surface(
+                                color = accent.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, accent.copy(alpha = 0.2f))
+                            ) {
+                                Text(
+                                    text = "XP: ${viewModel.pendingXp}",
+                                    color = GhostWhite,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(spacing.large))
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState()),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = state.currentQuestion.text,
+                                style = MaterialTheme.typography.headlineMedium,
                                 color = GhostWhite,
                                 textAlign = TextAlign.Center,
-                                letterSpacing = 1.sp
+                                lineHeight = 36.sp,
+                                modifier = Modifier.fillMaxWidth()
                             )
+                        }
+                    }
+
+                    // Right Side: Options / Buttons
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        state.currentQuestion.options.forEach { option ->
+                            val isSelected = state.selectedOptionId == option.id
+                            val isCorrect = option.isCorrect
+                            
+                            val backgroundColor = when {
+                                isSelected && isCorrect -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                                isSelected && !isCorrect -> Color(0xFFF44336).copy(alpha = 0.2f)
+                                else -> CardBg
+                            }
+                            
+                            val borderColor = when {
+                                isSelected && isCorrect -> Color(0xFF4CAF50)
+                                isSelected && !isCorrect -> Color(0xFFF44336)
+                                else -> GhostWhite.copy(alpha = 0.1f)
+                            }
+
+                            Surface(
+                                onClick = { viewModel.answerQuestion(option.id) },
+                                enabled = !state.isTransitioning,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = spacing.small)
+                                    .height(72.dp),
+                                shape = RoundedCornerShape(20.dp),
+                                color = backgroundColor,
+                                border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor)
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = spacing.large)) {
+                                    Text(
+                                        text = option.text.uppercase(),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = GhostWhite,
+                                        textAlign = TextAlign.Center,
+                                        letterSpacing = 1.sp
+                                    )
+                                }
+                            }
                         }
                     }
                 }
