@@ -184,7 +184,7 @@ val DimSlate = Color(0xFF4A5568)
 val NobleLightBg = Color(0xFFFDFDFD)
 val NobleDarkBg = Color(0xFF121212)
 val NobleLightAccent = Color(0xFF2C3E50)
-val NobleDarkAccent = Color(0xFFE0E0E0)
+val NobleDarkAccent = Color(0xFFC0BCBC)
 val CardBg = Color(0xFF1A1C1E)
 
 fun triggerVibration(context: Context, type: String) {
