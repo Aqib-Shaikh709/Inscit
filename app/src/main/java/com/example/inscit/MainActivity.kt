@@ -158,6 +158,7 @@ import com.example.inscit.ui.WebIcon
 import com.example.inscit.ui.ReviewScreen
 import com.example.inscit.ui.theme.spacing
 import com.example.inscit.xp.Rank
+import com.example.inscit.xp.StreakManager
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -170,7 +171,7 @@ import java.util.Calendar
 
 
 enum class Screen {
- SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS }
+ SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS, STREAK_DETAILS }
 enum class Branch { PHYSICS, CHEMISTRY, BIOLOGY }
 
 
@@ -394,7 +395,7 @@ fun serializeUserDocument(doc: UserDocument): String {
     }
     val challengeDates = doc.stats.completedChallengeDates.joinToString(",")
     val challengeStatus = "${doc.dailyChallengeStatus.lastCompletionDate},${doc.dailyChallengeStatus.currentRound},${doc.dailyChallengeStatus.isCompletedToday}"
-    return "${doc.profile.name}|${doc.profile.photoUrl ?: ""}|${doc.stats.xp}|${doc.stats.level}|${doc.stats.quizzesTaken}|${doc.quizProgress.lastScore}|${doc.settings.language.name}|${doc.settings.theme.name}|$notesStr|$challengeDates|$challengeStatus|${doc.settings.lastReportDate}|${doc.stats.totalUsageTime}"
+    return "${doc.profile.name}|${doc.profile.photoUrl ?: ""}|${doc.stats.xp}|${doc.stats.level}|${doc.stats.quizzesTaken}|${doc.quizProgress.lastScore}|${doc.settings.language.name}|${doc.settings.theme.name}|$notesStr|$challengeDates|$challengeStatus|${doc.settings.lastReportDate}|${doc.stats.totalUsageTime}|${doc.stats.currentStreak}|${doc.stats.longestStreak}|${doc.stats.lastActivityDate}"
 }
 
 // Custom Saver for UserDocument to ensure perfect persistence
@@ -430,7 +431,10 @@ val UserDocumentSaver = Saver<UserDocument, String>(
                     level = parts[3].toInt(),
                     quizzesTaken = parts[4].toInt(),
                     completedChallengeDates = challengeDates,
-                    totalUsageTime = if (parts.size > 12) parts[12].toLong() else 0L
+                    totalUsageTime = if (parts.size > 12) parts[12].toLong() else 0L,
+                    currentStreak = if (parts.size > 13) parts[13].toInt() else 0,
+                    longestStreak = if (parts.size > 14) parts[14].toInt() else 0,
+                    lastActivityDate = if (parts.size > 15) parts[15] else ""
                 ),
                 quizProgress = QuizProgress(lastScore = parts[5].toFloat()),
                 settings = UserSettings(
@@ -766,17 +770,20 @@ fun AppEngine(tts: TTSManager) {
                                 onFinish = { xpEarned, score, strengths, weaknesses ->
                                     tts.stop()
                                     val newXp = userDocument.stats.xp + xpEarned
-                                    val newStats = userDocument.stats.copy(
-                                        xp = newXp,
-                                        level = (newXp / 100) + 1,
-                                        quizzesTaken = userDocument.stats.quizzesTaken + 1
+                                    val updatedStats = StreakManager.updateStreak(
+                                        userDocument.stats.copy(
+                                            xp = newXp,
+                                            level = (newXp / 100) + 1,
+                                            quizzesTaken = userDocument.stats.quizzesTaken + 1
+                                        ),
+                                        score.toFloat()
                                     )
                                     val newProgress = userDocument.quizProgress.copy(
                                         lastScore = score.toFloat(),
                                         strengths = strengths,
                                         weaknesses = weaknesses
                                     )
-                                    userDocument = userDocument.copy(stats = newStats, quizProgress = newProgress)
+                                    userDocument = userDocument.copy(stats = updatedStats, quizProgress = newProgress)
                                     NotificationScheduler.scheduleInactivityNotification(context)
                                     currentScreen = Screen.HOME
                                 }
@@ -846,6 +853,13 @@ fun AppEngine(tts: TTSManager) {
                             userName = userDocument.profile.name,
                             onBack = { currentScreen = Screen.HOME }
                         )
+                        Screen.STREAK_DETAILS -> StreakDetailsScreen(
+                            userDoc = userDocument,
+                            accent = primaryAccent,
+                            txtCol = textColor,
+                            lang = language,
+                            onBack = { currentScreen = Screen.HOME }
+                        )
 
                         else -> {
 
@@ -890,6 +904,14 @@ fun DrawerContent(
             DrawerItem(if (lang == Lang.EN) "MY RANKS" else "मेरी रैंक", Screen.RANKINGS, currentScreen, onNavigate, accent)
             DrawerItem(if (lang == Lang.EN) "ACCOUNT" else "खाता", Screen.PROFILE, currentScreen, onNavigate, accent)
             DrawerItem(if (lang == Lang.EN) "ACHIEVEMENTS" else "उपलब्धियां", Screen.ACHIEVEMENTS, currentScreen, onNavigate, accent)
+
+            DrawerItem(
+                label = if (lang == Lang.EN) "🔥 STREAK TRACKER" else "🔥 स्ट्रीक ट्रैकर",
+                screen = Screen.STREAK_DETAILS,
+                currentScreen = currentScreen,
+                onNavigate = onNavigate,
+                accent = accent
+            )
 
             val isChallengeDone = userDocument.dailyChallengeStatus.isCompletedToday &&
                                  userDocument.dailyChallengeStatus.lastCompletionDate == SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
@@ -1095,25 +1117,32 @@ fun DailyQuizScreen(
                 onFinish = { xp, score, _, _ ->
                     if (score >= 70) {
                         if (status.currentRound < 3) {
+                            val updatedStats = StreakManager.updateStreak(
+                                userDocument.stats.copy(xp = userDocument.stats.xp + xp),
+                                score.toFloat()
+                            )
                             onUpdateUser(userDocument.copy(
                                 dailyChallengeStatus = status.copy(currentRound = status.currentRound + 1),
-                                stats = userDocument.stats.copy(xp = userDocument.stats.xp + xp)
+                                stats = updatedStats
                             ))
                             triggerVibration(context, "SUCCESS")
-                            // key(status.currentRound) will handle the restart
                         } else {
                             val newDates = userDocument.stats.completedChallengeDates.toMutableSet()
                             newDates.add(today)
+                            val updatedStats = StreakManager.updateStreak(
+                                userDocument.stats.copy(xp = userDocument.stats.xp + xp, completedChallengeDates = newDates),
+                                score.toFloat()
+                            )
                             onUpdateUser(userDocument.copy(
                                 dailyChallengeStatus = status.copy(isCompletedToday = true, lastCompletionDate = today),
-                                stats = userDocument.stats.copy(xp = userDocument.stats.xp + xp, completedChallengeDates = newDates)
+                                stats = updatedStats
                             ))
                             triggerVibration(context, "SUCCESS")
                             isQuizActive = false
                         }
                     } else {
                         triggerVibration(context, "CLICK")
-                        isQuizActive = false // Fail = Back to Challenge screen
+                        isQuizActive = false
                     }
                 }
             )
@@ -2076,7 +2105,7 @@ fun FullSplashScreen(accent: Color, onExplore: () -> Unit) {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Image(
-                painter = painterResource(id = R.drawable.app_logo),
+                painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = "App Logo",
                 modifier = Modifier
                     .size(160.dp)
@@ -2889,5 +2918,242 @@ fun RankingsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun StreakDetailsScreen(
+    userDoc: UserDocument,
+    accent: Color,
+    txtCol: Color,
+    lang: Lang,
+    onBack: () -> Unit
+) {
+    val stats = userDoc.stats
+    val spacing = MaterialTheme.spacing
+    val streakEmoji = if (stats.currentStreak > 0) "🔥" else "❄️"
+    
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+            Text(
+                if (lang == Lang.EN) "STREAK TRACKER" else "स्ट्रीक ट्रैकर",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Black,
+                color = txtCol,
+                letterSpacing = 2.sp
+            )
+        }
+
+        Spacer(Modifier.height(40.dp))
+
+        // Main Streak Display
+        Surface(
+            modifier = Modifier.fillMaxWidth().height(200.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = accent.copy(alpha = 0.1f),
+            border = BorderStroke(2.dp, accent)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(streakEmoji, fontSize = 64.sp)
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "${stats.currentStreak}",
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = accent
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    if (lang == Lang.EN) "DAYS IN A ROW" else "लगातार दिन",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accent.copy(alpha = 0.7f),
+                    letterSpacing = 2.sp
+                )
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        // Stats Grid
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            StreakStatCard(
+                label = if (lang == Lang.EN) "CURRENT" else "वर्तमान",
+                value = "${stats.currentStreak}",
+                accent = accent,
+                modifier = Modifier.weight(1f)
+            )
+            StreakStatCard(
+                label = if (lang == Lang.EN) "PERSONAL BEST" else "सर्वश्रेष्ठ",
+                value = "${stats.longestStreak}",
+                accent = accent,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        // Info Cards
+        InfoCard(
+            icon = "✨",
+            title = if (lang == Lang.EN) "REQUIREMENT" else "आवश्यकता",
+            description = if (lang == Lang.EN) "Score 80% or above in any quiz to maintain your streak" else "स्ट्रीक बनाए रखने के लिए किसी भी क्विज़ में 80% या उससे अधिक स्कोर करें",
+            accent = accent
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        InfoCard(
+            icon = "📅",
+            title = if (lang == Lang.EN) "ONE PER DAY" else "प्रति दिन एक",
+            description = if (lang == Lang.EN) "Only one 80%+ score per day counts toward your streak" else "प्रति दिन केवल एक 80%+ स्कोर स्ट्रीक की ओर गिना जाता है",
+            accent = accent
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        InfoCard(
+            icon = "⚠️",
+            title = if (lang == Lang.EN) "MISS A DAY?" else "एक दिन मिस?",
+            description = if (lang == Lang.EN) "Missing a single day resets your streak back to 0" else "एक दिन मिस करने से आपकी स्ट्रीक 0 पर रीसेट हो जाती है",
+            accent = accent
+        )
+
+        Spacer(Modifier.height(32.dp))
+
+        // Achievement Section
+        if (stats.longestStreak > 0) {
+            Text(
+                if (lang == Lang.EN) "🏆 MILESTONES ACHIEVED" else "🏆 हासिल किए गए मील के पत्थर",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = accent,
+                letterSpacing = 2.sp,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(Modifier.height(16.dp))
+
+            if (stats.longestStreak >= 3) {
+                MilestoneRow("3️⃣", if (lang == Lang.EN) "3 Day Streak" else "3 दिन की स्ट्रीक", accent)
+                Spacer(Modifier.height(8.dp))
+            }
+            if (stats.longestStreak >= 7) {
+                MilestoneRow("7️⃣", if (lang == Lang.EN) "Week Warrior" else "सप्ताह योद्धा", accent)
+                Spacer(Modifier.height(8.dp))
+            }
+            if (stats.longestStreak >= 14) {
+                MilestoneRow("1️⃣4️⃣", if (lang == Lang.EN) "Two Week Champion" else "दो सप्ताह चैंपियन", accent)
+                Spacer(Modifier.height(8.dp))
+            }
+            if (stats.longestStreak >= 30) {
+                MilestoneRow("3️⃣0️⃣", if (lang == Lang.EN) "Month Master" else "महीना मास्टर", accent)
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun StreakStatCard(
+    label: String,
+    value: String,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.height(120.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = CardBg,
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                value,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = accent
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                label,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = GhostWhite.copy(alpha = 0.6f),
+                letterSpacing = 1.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun InfoCard(
+    icon: String,
+    title: String,
+    description: String,
+    accent: Color
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = CardBg,
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(icon, fontSize = 24.sp)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    title,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accent,
+                    letterSpacing = 1.sp
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    description,
+                    fontSize = 11.sp,
+                    color = GhostWhite.copy(alpha = 0.7f),
+                    lineHeight = 16.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MilestoneRow(emoji: String, label: String, accent: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(accent.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(emoji, fontSize = 20.sp)
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent)
+        Spacer(Modifier.weight(1f))
+        Text("✓", fontSize = 16.sp, color = BioLime, fontWeight = FontWeight.Bold)
     }
 }

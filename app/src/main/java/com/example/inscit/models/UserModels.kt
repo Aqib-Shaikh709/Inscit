@@ -21,7 +21,10 @@ data class UserStats(
     val level: Int = 1,
     val quizzesTaken: Int = 0,
     val completedChallengeDates: Set<String> = emptySet(), // Format: "yyyy-MM-dd"
-    val totalUsageTime: Long = 0 // in milliseconds
+    val totalUsageTime: Long = 0, // in milliseconds
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
+    val lastActivityDate: String = "" // Format: "yyyy-MM-dd"
 )
 
 data class DailyChallengeStatus(
