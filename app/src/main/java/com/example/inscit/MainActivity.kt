@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -104,6 +105,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -959,8 +961,10 @@ fun DrawerContent(
 
 @Composable
 fun FeedbackScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
     var feedbackText by remember { mutableStateOf("") }
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+    Column(modifier = Modifier.fillMaxSize().imePadding().padding(24.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { BackIcon(txtCol) }
             Text(if (lang == Lang.EN) "FEEDBACK" else "फीडबैक", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
@@ -977,7 +981,26 @@ fun FeedbackScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit)
         )
         Spacer(Modifier.height(24.dp))
         Button(
-            onClick = { /* Handle submit */ },
+            onClick = {
+                focusManager.clearFocus()
+                if (feedbackText.isBlank()) {
+                    Toast.makeText(context, if (lang == Lang.EN) "Please write your feedback first." else "कृपया पहले अपनी प्रतिक्रिया लिखें।", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+                try {
+                    val intent = Intent(Intent.ACTION_SENDTO).apply {
+                        data = Uri.parse("mailto:")
+                        putExtra(Intent.EXTRA_SUBJECT, "Inscit Feedback")
+                        putExtra(Intent.EXTRA_TEXT, feedbackText)
+                    }
+                    context.startActivity(Intent.createChooser(intent, if (lang == Lang.EN) "Send feedback" else "प्रतिक्रिया भेजें"))
+                    Toast.makeText(context, if (lang == Lang.EN) "Thank you for your feedback!" else "आपकी प्रतिक्रिया के लिए धन्यवाद!", Toast.LENGTH_SHORT).show()
+                    feedbackText = ""
+                    onBack()
+                } catch (e: Exception) {
+                    Toast.makeText(context, if (lang == Lang.EN) "No email app found." else "कोई ईमेल ऐप नहीं मिला।", Toast.LENGTH_SHORT).show()
+                }
+            },
             modifier = Modifier.fillMaxWidth().height(60.dp),
             colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace)
         ) {
@@ -1440,6 +1463,7 @@ fun ContactItem(
 
 @Composable
 fun DonateScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
+    val context = LocalContext.current
     Column(modifier = Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { BackIcon(txtCol) }
@@ -1455,7 +1479,9 @@ fun DonateScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
         )
         Spacer(Modifier.height(48.dp))
         Button(
-            onClick = { /* Handle donation */ },
+            onClick = {
+                Toast.makeText(context, if (lang == Lang.EN) "Coming soon!" else "जल्द आ रहा है!", Toast.LENGTH_SHORT).show()
+            },
             modifier = Modifier.fillMaxWidth().height(60.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace)
@@ -1878,7 +1904,7 @@ fun LocalProfileView(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize().imePadding().padding(24.dp).verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -2529,6 +2555,7 @@ fun UserObservationSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .imePadding()
             .then(if (fullSpace) Modifier.fillMaxHeight() else Modifier.wrapContentHeight())
             .background(CardBg, RoundedCornerShape(16.dp))
             .border(1.dp, GhostWhite.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
@@ -2722,7 +2749,7 @@ fun ExportListScreen(
                 Text(if (lang == Lang.EN) "No exports found." else "कोई एक्सपोर्ट नहीं मिला।", color = txtCol.copy(alpha = 0.5f))
             }
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(files) { file ->
                     Surface(
                         onClick = { onFileClick(file) },
@@ -3045,19 +3072,19 @@ fun StreakDetailsScreen(
             Spacer(Modifier.height(16.dp))
 
             if (stats.longestStreak >= 3) {
-                MilestoneRow("3️⃣", if (lang == Lang.EN) "3 Day Streak" else "3 दिन की स्ट्रीक", accent)
+                MilestoneRow(emoji = "3️⃣", label = if (lang == Lang.EN) "3 Day Streak" else "3 दिन की स्ट्रीक", accent)
                 Spacer(Modifier.height(8.dp))
             }
             if (stats.longestStreak >= 7) {
-                MilestoneRow("7️⃣", if (lang == Lang.EN) "Week Warrior" else "सप्ताह योद्धा", accent)
+                MilestoneRow(emoji = "7️⃣", label = if (lang == Lang.EN) "Week Warrior" else "सप्ताह योद्धा", accent)
                 Spacer(Modifier.height(8.dp))
             }
             if (stats.longestStreak >= 14) {
-                MilestoneRow("1️⃣4️⃣", if (lang == Lang.EN) "Two Week Champion" else "दो सप्ताह चैंपियन", accent)
+                MilestoneRow(emoji = "1️⃣4️⃣", label = if (lang == Lang.EN) "Two Week Champion" else "दो सप्ताह चैंपियन", accent)
                 Spacer(Modifier.height(8.dp))
             }
             if (stats.longestStreak >= 30) {
-                MilestoneRow("3️⃣0️⃣", if (lang == Lang.EN) "Month Master" else "महीना मास्टर", accent)
+                MilestoneRow(emoji = "3️⃣0️⃣", label = if (lang == Lang.EN) "Month Master" else "महीना मास्टर", accent)
                 Spacer(Modifier.height(8.dp))
             }
         }
@@ -3075,12 +3102,12 @@ fun StreakStatCard(
 ) {
     Surface(
         modifier = modifier.height(120.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(size = 16.dp),
         color = CardBg,
-        border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
+        border = BorderStroke(width = 1.dp, color = accent.copy(alpha = 0.3f))
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(all = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -3111,12 +3138,12 @@ fun InfoCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(size = 16.dp),
         color = CardBg,
-        border = BorderStroke(1.dp, accent.copy(alpha = 0.2f))
+        border = BorderStroke(width = 1.dp, color = accent.copy(alpha = 0.2f))
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(all = 16.dp),
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -3146,8 +3173,8 @@ fun MilestoneRow(emoji: String, label: String, accent: Color) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(accent.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
-            .padding(12.dp),
+            .background(color = accent.copy(alpha = 0.05f), shape = RoundedCornerShape(size = 12.dp))
+            .padding(all = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
