@@ -20,6 +20,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import com.example.inscit.*
 import com.example.inscit.models.Lang
@@ -166,6 +170,8 @@ fun ScienceResultScreen(
 fun ScienceRadarChart(data: List<DomainScore>, accent: Color, modifier: Modifier = Modifier) {
     val outlineColor = GhostWhite.copy(alpha = 0.1f)
 
+    val textMeasurer = rememberTextMeasurer()
+
     Canvas(modifier = modifier) {
         val center = Offset(size.width / 2, size.height / 2)
         val radius = size.minDimension / 2.2f
@@ -215,18 +221,19 @@ fun ScienceRadarChart(data: List<DomainScore>, accent: Color, modifier: Modifier
         drawPath(dataPath, accent, style = Stroke(width = 2.dp.toPx()))
 
         // Draw domain labels at each vertex
-        val labelPaint = android.graphics.Paint().apply {
-            color = GhostWhite.copy(alpha = 0.7f).toArgb()
-            textSize = 10.dp.toPx()
-            textAlign = android.graphics.Paint.Align.CENTER
-            isAntiAlias = true
-        }
         data.forEachIndexed { i, ds ->
             val angle = i * angleStep - Math.PI / 2
             val labelR = radius + 20.dp.toPx()
             val lx = center.x + labelR * cos(angle).toFloat()
             val ly = center.y + labelR * sin(angle).toFloat()
-            drawContext.canvas.nativeCanvas.drawText(ds.domain.displayNameEn, lx, ly + labelPaint.textSize / 3f, labelPaint)
+            val textLayoutResult = textMeasurer.measure(
+                text = AnnotatedString(ds.domain.displayNameEn),
+                style = TextStyle(color = GhostWhite.copy(alpha = 0.7f), fontSize = 10.sp)
+            )
+            drawText(
+                textLayoutResult = textLayoutResult,
+                topLeft = Offset(lx - textLayoutResult.size.width / 2f, ly - textLayoutResult.size.height / 2f)
+            )
         }
     }
 }

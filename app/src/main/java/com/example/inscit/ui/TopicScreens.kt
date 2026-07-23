@@ -226,6 +226,21 @@ fun TopicDetailScreen(
                                 lineHeight = 26.sp
                             )
                         }
+                    }
+                }
+            }
+            Spacer(Modifier.height(spacing.extraLarge))
+            Button(
+                onClick = onLabClick,
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = accent.copy(alpha = 0.12f), contentColor = accent),
+                border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
+            ) {
+                Text(if (lang == Lang.EN) "ENTER RESEARCH LAB" else "अनुसंधान लैब में प्रवेश करें", style = MaterialTheme.typography.titleMedium)
+            }
+            Spacer(Modifier.height(spacing.huge))
+        }
     }
 }
 
@@ -242,24 +257,6 @@ fun LangToggleButton(currentLang: Lang, accent: Color, modifier: Modifier = Modi
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accent)
-        }
-    }
-}
-
-                Spacer(Modifier.height(spacing.extraLarge))
-                
-                Button(
-                    onClick = onLabClick,
-                    modifier = Modifier.fillMaxWidth().height(60.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = accent.copy(alpha = 0.12f), contentColor = accent),
-                    border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
-                ) {
-                    Text(if (lang == Lang.EN) "ENTER RESEARCH LAB" else "अनुसंधान लैब में प्रवेश करें", style = MaterialTheme.typography.titleMedium)
-                }
-                
-                Spacer(Modifier.height(spacing.huge))
-            }
         }
     }
 }
