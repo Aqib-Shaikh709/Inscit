@@ -88,7 +88,7 @@ class QuizViewModel(
         }
     }
 
-    fun getFinalXp() = xpBuffer.pendingXp
+    fun getFinalXp() = maxOf(a = 0, b = xpBuffer.pendingXp)
 
     fun retry() {
         _uiState.value = QuizUiState.Loading

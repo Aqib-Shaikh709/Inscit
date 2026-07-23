@@ -17,6 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -94,6 +95,14 @@ fun ScienceResultScreen(
                     traits = if (lang == Lang.EN) analytics.strengthsEn else analytics.strengthsHi,
                     accent = accent,
                     isPositive = true
+                )
+                Spacer(Modifier.height(spacing.large))
+                ResultTraitsSection(
+                    title = if (lang == Lang.EN) "AVERAGE" else "औसत",
+                    traits = if (lang == Lang.EN) analytics.averageEn else analytics.averageHi,
+                    accent = accent.copy(alpha = 0.6f),
+                    isPositive = true,
+                    emptyText = if (lang == Lang.EN) "Consistent performance" else "संतुलित प्रदर्शन"
                 )
                 Spacer(Modifier.height(spacing.large))
                 ResultTraitsSection(
@@ -204,12 +213,27 @@ fun ScienceRadarChart(data: List<DomainScore>, accent: Color, modifier: Modifier
 
         drawPath(dataPath, accent.copy(alpha = 0.2f))
         drawPath(dataPath, accent, style = Stroke(width = 2.dp.toPx()))
+
+        // Draw domain labels at each vertex
+        val labelPaint = android.graphics.Paint().apply {
+            color = GhostWhite.copy(alpha = 0.7f).toArgb()
+            textSize = 10.dp.toPx()
+            textAlign = android.graphics.Paint.Align.CENTER
+            isAntiAlias = true
+        }
+        data.forEachIndexed { i, ds ->
+            val angle = i * angleStep - Math.PI / 2
+            val labelR = radius + 20.dp.toPx()
+            val lx = center.x + labelR * cos(angle).toFloat()
+            val ly = center.y + labelR * sin(angle).toFloat()
+            drawContext.canvas.nativeCanvas.drawText(ds.domain.displayNameEn, lx, ly + labelPaint.textSize / 3f, labelPaint)
+        }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ResultTraitsSection(title: String, traits: List<String>, accent: Color, isPositive: Boolean) {
+fun ResultTraitsSection(title: String, traits: List<String>, accent: Color, isPositive: Boolean, emptyText: String = if (isPositive) "Analyzing..." else "No major weaknesses") {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(title, color = accent, fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 2.sp)
         Spacer(Modifier.height(8.dp))
@@ -220,7 +244,7 @@ fun ResultTraitsSection(title: String, traits: List<String>, accent: Color, isPo
         ) {
             if (traits.isEmpty()) {
                 Text(
-                    text = if (isPositive) "Analyzing..." else "No major weaknesses",
+                    text = emptyText,
                     color = GhostWhite.copy(alpha = 0.5f),
                     fontSize = 14.sp
                 )

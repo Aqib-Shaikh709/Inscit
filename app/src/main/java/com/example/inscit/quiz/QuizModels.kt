@@ -46,5 +46,7 @@ data class ScienceAnalytics(
     val strengthsHi: List<String>,
     val weaknessesEn: List<String>,
     val weaknessesHi: List<String>,
+    val averageEn: List<String>,
+    val averageHi: List<String>,
     val explanations: List<Pair<String, String>>
 )

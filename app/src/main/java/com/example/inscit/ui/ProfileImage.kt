@@ -17,7 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import com.example.inscit.NeonCyan
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun ProfileImage(
@@ -26,20 +26,21 @@ fun ProfileImage(
     placeholderColor: Color = NeonCyan
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     var profileBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
 
     LaunchedEffect(photoUrl) {
         if (photoUrl != null) {
-            scope.launch(Dispatchers.IO) {
+            withContext(Dispatchers.IO) {
                 try {
-                    val inputStream = if (photoUrl.scheme == "content" || photoUrl.scheme == "file") {
+                    val stream = if (photoUrl.scheme == "content" || photoUrl.scheme == "file") {
                         context.contentResolver.openInputStream(photoUrl)
                     } else {
                         java.net.URL(photoUrl.toString()).openStream()
                     }
-                    val b = BitmapFactory.decodeStream(inputStream)
-                    profileBitmap = b?.asImageBitmap()
+                    stream?.use { inputStream ->
+                        val b = BitmapFactory.decodeStream(inputStream)
+                        profileBitmap = b?.asImageBitmap()
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

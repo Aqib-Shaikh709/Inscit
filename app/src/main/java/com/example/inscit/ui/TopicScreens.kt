@@ -36,7 +36,8 @@ fun TopicSelectionScreen(
     accent: Color,
     txtCol: Color,
     onBack: () -> Unit,
-    onTopicClick: (TopicDetail) -> Unit
+    onTopicClick: (TopicDetail) -> Unit,
+    onLangChange: (Lang) -> Unit = {}
 ) {
     val topics = remember(branch, lang) { TopicSyllabus.getTopics(branch, lang) }
     val spacing = MaterialTheme.spacing
@@ -84,6 +85,8 @@ fun TopicSelectionScreen(
                     val selectText = if (lang == Lang.EN) "Select a specialized module to explore detailed scientific concepts and interactive simulations."
                     else "विस्तृत वैज्ञानिक अवधारणाओं और इंटरैक्टिव सिमुलेशन का पता लगाने के लिए एक विशेष मॉड्यूल चुनें।"
                     TtsController(selectText, tts, accent, iconSize = 24.dp)
+                    Spacer(Modifier.width(4.dp))
+                    LangToggleButton(currentLang = lang, accent = accent, onToggle = onLangChange)
                 }
             }
 
@@ -145,7 +148,8 @@ fun TopicDetailScreen(
     userNote: UserNote,
     onNoteChange: (UserNote) -> Unit,
     onBack: () -> Unit,
-    onLabClick: () -> Unit
+    onLabClick: () -> Unit,
+    onLangChange: (Lang) -> Unit = {}
 ) {
     var showNotes by remember { mutableStateOf(false) }
     val spacing = MaterialTheme.spacing
@@ -170,6 +174,8 @@ fun TopicDetailScreen(
                     style = MaterialTheme.typography.titleLarge, color = txtCol, letterSpacing = 1.sp,
                     modifier = Modifier.weight(1f)
                 )
+                LangToggleButton(currentLang = lang, accent = accent, onToggle = onLangChange)
+                Spacer(Modifier.width(4.dp))
                 IconButton(onClick = { showNotes = !showNotes }) {
                     DrawingIcon(color = if (showNotes) accent else txtCol.copy(alpha = 0.5f))
                 }
@@ -220,9 +226,26 @@ fun TopicDetailScreen(
                                 lineHeight = 26.sp
                             )
                         }
-                    }
-                }
-                
+    }
+}
+
+@Composable
+fun LangToggleButton(currentLang: Lang, accent: Color, modifier: Modifier = Modifier, onToggle: (Lang) -> Unit) {
+    val nextLang = if (currentLang == Lang.EN) Lang.HI else Lang.EN
+    val label = if (currentLang == Lang.EN) "HI" else "EN"
+    Surface(
+        onClick = { onToggle(nextLang) },
+        modifier = modifier.size(36.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = accent.copy(alpha = 0.1f),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accent)
+        }
+    }
+}
+
                 Spacer(Modifier.height(spacing.extraLarge))
                 
                 Button(

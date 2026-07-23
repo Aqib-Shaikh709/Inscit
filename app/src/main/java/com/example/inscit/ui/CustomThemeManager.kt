@@ -47,7 +47,11 @@ object CustomThemeManager {
         return data.split("||").mapNotNull {
             val parts = it.split("|")
             if (parts.size == 4) {
-                CustomTheme(parts[0], parts[1].toInt(), parts[2].toInt(), parts[3].toInt())
+                try {
+                    CustomTheme(parts[0], parts[1].toInt(), parts[2].toInt(), parts[3].toInt())
+                } catch (_: NumberFormatException) {
+                    null
+                }
             } else null
         }
     }

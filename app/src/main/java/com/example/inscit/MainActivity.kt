@@ -61,6 +61,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -79,6 +80,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -115,9 +117,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.lifecycle.Lifecycle
 import com.example.inscit.models.Lang
 import com.example.inscit.models.QuizProgress
 import com.example.inscit.models.CustomTheme
@@ -161,6 +165,8 @@ import com.example.inscit.ui.ReviewScreen
 import com.example.inscit.ui.theme.spacing
 import com.example.inscit.xp.Rank
 import com.example.inscit.xp.StreakManager
+import com.example.inscit.xp.XpManager
+import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -231,10 +237,11 @@ fun saveProfileImageLocally(context: Context, uri: Uri): String? {
     return try {
         val inputStream = context.contentResolver.openInputStream(uri) ?: return null
         val file = File(context.filesDir, "profile_pic.jpg")
-        val outputStream = FileOutputStream(file)
-        inputStream.copyTo(outputStream)
-        inputStream.close()
-        outputStream.close()
+        inputStream.use { input ->
+            FileOutputStream(file).use { output ->
+                input.copyTo(output)
+            }
+        }
         Uri.fromFile(file).toString()
     } catch (e: Exception) {
         e.printStackTrace()
@@ -292,6 +299,10 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
         tts?.shutdown()
     }
 }
+
+private const val CONTACT_EMAIL_FRONTEND = "aqibm5m488@gmail.com"
+private const val CONTACT_EMAIL_ACCOUNT = "jaiswalaman7138@gmail.com"
+private const val CONTACT_PHONE = "8104878086"
 
 fun getExportFolder(context: Context): File {
     val folder = File(context.getExternalFilesDir(null), "InscitExports")
@@ -487,20 +498,33 @@ fun AppEngine(tts: TTSManager) {
 
     val activeCustomTheme = savedCustomThemes.find { it.name == selectedCustomThemeName }
 
-    // Immediate persistence to SharedPreferences
+    // Immediate persistence to SharedPreferences (debounced)
     LaunchedEffect(userDocument) {
+        kotlinx.coroutines.delay(1000)
         saveUserDocument(context, userDocument)
     }
 
-    // Track app usage time
-    LaunchedEffect(Unit) {
-        while(true) {
-            kotlinx.coroutines.delay(60000) // Update every minute
-            userDocument = userDocument.copy(
-                stats = userDocument.stats.copy(
-                    totalUsageTime = userDocument.stats.totalUsageTime + 60000
+    // Track app usage time (only while foreground)
+    var isForeground by remember { mutableStateOf(true) }
+    val appLifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(appLifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            isForeground = event == Lifecycle.Event.ON_START
+        }
+        appLifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { appLifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(isForeground, currentScreen) {
+        if (isForeground && currentScreen != Screen.SPLASH) {
+            while (true) {
+                kotlinx.coroutines.delay(60000)
+                userDocument = userDocument.copy(
+                    stats = userDocument.stats.copy(
+                        totalUsageTime = userDocument.stats.totalUsageTime + 60000
+                    )
                 )
-            )
+            }
         }
     }
 
@@ -513,18 +537,8 @@ fun AppEngine(tts: TTSManager) {
                 Screen.TOPIC_SELECTION -> currentScreen = Screen.HOME
                 Screen.TOPIC_DETAIL -> currentScreen = Screen.TOPIC_SELECTION
                 Screen.THEME_CONFIG -> currentScreen = Screen.HOME
-                Screen.NOTES_FOLDER -> currentScreen = Screen.THEME_CONFIG
-                Screen.RANKINGS -> currentScreen = Screen.HOME
                 Screen.PROGRESS_REPORT -> currentScreen = Screen.HOME
                 Screen.REVIEWS -> currentScreen = Screen.HOME
-                Screen.LAB -> {
-                    tts.stop()
-                    currentScreen = Screen.HOME
-                }
-                Screen.NOTES -> {
-                    tts.stop()
-                    currentScreen = Screen.LAB
-                }
                 Screen.NOTES_FOLDER -> currentScreen = Screen.THEME_CONFIG
                 Screen.RANKINGS -> currentScreen = Screen.HOME
                 Screen.LAB -> {
@@ -667,6 +681,9 @@ fun AppEngine(tts: TTSManager) {
                             onTopicClick = { topic ->
                                 selectedTopic = topic
                                 currentScreen = Screen.TOPIC_DETAIL
+                            },
+                            onLangChange = { newLang ->
+                                userDocument = userDocument.copy(settings = userDocument.settings.copy(language = newLang))
                             }
                         )
                         Screen.TOPIC_DETAIL -> selectedTopic?.let { topic ->
@@ -683,7 +700,10 @@ fun AppEngine(tts: TTSManager) {
                                     userDocument = userDocument.copy(userNotes = updatedNotes)
                                 },
                                 onBack = { currentScreen = Screen.TOPIC_SELECTION },
-                                onLabClick = { currentScreen = Screen.LAB }
+                                onLabClick = { currentScreen = Screen.LAB },
+                                onLangChange = { newLang ->
+                                    userDocument = userDocument.copy(settings = userDocument.settings.copy(language = newLang))
+                                }
                             )
                         }
                         Screen.THEME_CONFIG -> ThemeSelectionScreen(
@@ -775,7 +795,7 @@ fun AppEngine(tts: TTSManager) {
                                     val updatedStats = StreakManager.updateStreak(
                                         userDocument.stats.copy(
                                             xp = newXp,
-                                            level = (newXp / 100) + 1,
+                                            level = XpManager.calculateLevel(newXp),
                                             quizzesTaken = userDocument.stats.quizzesTaken + 1
                                         ),
                                         score.toFloat()
@@ -864,7 +884,10 @@ fun AppEngine(tts: TTSManager) {
                         )
 
                         else -> {
-
+                            LaunchedEffect(Unit) { currentScreen = Screen.HOME }
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = primaryAccent)
+                            }
                         }
                     }
                 }
@@ -1058,19 +1081,16 @@ fun DailyQuizScreen(
     onBack: () -> Unit
 ) {
     val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-    val status = userDocument.dailyChallengeStatus
+    val initialStatus = userDocument.dailyChallengeStatus
+    val status = if (initialStatus.lastCompletionDate != today) {
+        initialStatus.copy(isCompletedToday = false, currentRound = 1, lastCompletionDate = today)
+    } else initialStatus
     val context = LocalContext.current
 
     // Reset if it's a new day
     LaunchedEffect(Unit) {
-        if (status.lastCompletionDate != today) {
-            onUpdateUser(userDocument.copy(
-                dailyChallengeStatus = com.example.inscit.models.DailyChallengeStatus(
-                    lastCompletionDate = status.lastCompletionDate,
-                    currentRound = 1,
-                    isCompletedToday = false
-                )
-            ))
+        if (initialStatus.lastCompletionDate != today) {
+            onUpdateUser(userDocument.copy(dailyChallengeStatus = status))
         }
     }
 
@@ -1374,11 +1394,11 @@ fun ContactUsScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit
         ContactItem(
             icon = { EmailIcon(it) },
             label = if (lang == Lang.EN) "FRONTEND & UI ISSUES" else "फ्रंटएंड और यूआई मुद्दे",
-            value = "aqibm5m488@gmail.com",
+            value = CONTACT_EMAIL_FRONTEND,
             accent = accent,
             onClick = {
                 val intent = Intent(Intent.ACTION_SENDTO).apply {
-                    data = Uri.parse("mailto:aqibm5m488@gmail.com")
+                    data = Uri.parse("mailto:$CONTACT_EMAIL_FRONTEND")
                 }
                 context.startActivity(intent)
             }
@@ -1387,11 +1407,11 @@ fun ContactUsScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit
         ContactItem(
             icon = { EmailIcon(it) },
             label = if (lang == Lang.EN) "ACCOUNT & CLOUD ISSUES" else "खाता और क्लाउड मुद्दे",
-            value = "jaiswalaman7138@gmail.com",
+            value = CONTACT_EMAIL_ACCOUNT,
             accent = accent,
             onClick = {
                 val intent = Intent(Intent.ACTION_SENDTO).apply {
-                    data = Uri.parse("mailto:jaiswalaman7138@gmail.com")
+                    data = Uri.parse("mailto:$CONTACT_EMAIL_ACCOUNT")
                 }
                 context.startActivity(intent)
             }
@@ -1400,11 +1420,11 @@ fun ContactUsScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit
         ContactItem(
             icon = { PhoneIcon(it) },
             label = if (lang == Lang.EN) "CONTACT NUMBER" else "संपर्क नंबर",
-            value = "8104878086",
+            value = CONTACT_PHONE,
             accent = accent,
             onClick = {
                 val intent = Intent(Intent.ACTION_DIAL).apply {
-                    data = Uri.parse("tel:8104878086")
+                    data = Uri.parse("tel:$CONTACT_PHONE")
                 }
                 context.startActivity(intent)
             }

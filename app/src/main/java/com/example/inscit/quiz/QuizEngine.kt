@@ -44,6 +44,8 @@ class QuizEngine {
 
         val strengthsEn = radarData.filter { it.score >= 0.8f }.map { it.domain.displayNameEn }
         val strengthsHi = radarData.filter { it.score >= 0.8f }.map { it.domain.displayNameHi }
+        val averageEn = radarData.filter { it.score in 0.5f..<0.8f }.map { it.domain.displayNameEn }
+        val averageHi = radarData.filter { it.score in 0.5f..<0.8f }.map { it.domain.displayNameHi }
         val weaknessesEn = radarData.filter { it.score < 0.5f }.map { it.domain.displayNameEn }
         val weaknessesHi = radarData.filter { it.score < 0.5f }.map { it.domain.displayNameHi }
 
@@ -62,6 +64,8 @@ class QuizEngine {
             strengthsHi = strengthsHi,
             weaknessesEn = weaknessesEn,
             weaknessesHi = weaknessesHi,
+            averageEn = averageEn,
+            averageHi = averageHi,
             explanations = explanations
         )
     }
@@ -494,7 +498,7 @@ class QuizEngine {
         ),
         ScienceQuestion(
             id = "q10", domain = ScienceDomain.BIOLOGY,
-            text = "मािटोकॉन्ड्रिया केवल ATP उत्पन्न करते हैं?",
+            text = "माइटोकॉन्ड्रिया केवल ATP उत्पन्न करते हैं?",
             options = listOf(QuizOption(1, "सही", false), QuizOption(2, "गलत", true)),
             explanation = "ATP संश्लेषण के साथ, माइटोकॉन्ड्रिया अन्य कोशिकीय कार्यों को भी नियंत्रित करते हैं।"
         ),

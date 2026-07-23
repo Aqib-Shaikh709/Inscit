@@ -77,8 +77,8 @@ fun ScienceQuizScreen(
                         onFinish(
                             viewModel.getFinalXp(),
                             currentState.analytics.overallScore,
-                            currentState.analytics.strengthsEn, // Using English for saving
-                            currentState.analytics.weaknessesEn
+                            if (lang == Lang.HI) currentState.analytics.strengthsHi else currentState.analytics.strengthsEn,
+                            if (lang == Lang.HI) currentState.analytics.weaknessesHi else currentState.analytics.weaknessesEn
                         )
                     }
                 )

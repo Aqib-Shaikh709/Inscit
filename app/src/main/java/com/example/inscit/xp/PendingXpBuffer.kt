@@ -1,17 +1,14 @@
 package com.example.inscit.xp
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableIntStateOf
-
 class PendingXpBuffer {
-    private val _pendingXp = mutableIntStateOf(0)
-    val pendingXp: Int get() = _pendingXp.intValue
+    private var _pendingXp = 0
+    val pendingXp: Int get() = _pendingXp
 
     fun add(amount: Int) {
-        _pendingXp.intValue += amount
+        _pendingXp += amount
     }
 
     fun clear() {
-        _pendingXp.intValue = 0
+        _pendingXp = 0
     }
 }

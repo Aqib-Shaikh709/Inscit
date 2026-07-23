@@ -42,7 +42,7 @@ object ProfanityFilter {
     fun containsBadWords(text: String): Boolean {
         val lowerText = text.lowercase(Locale.ROOT)
         return profanityMap.keys.any { badWord ->
-            Regex("(?i)\\b$badWord\\b").containsMatchIn(lowerText)
+            Regex("(?i)(?<![\\p{L}])${Regex.escape(badWord)}(?![\\p{L}])").containsMatchIn(lowerText)
         }
     }
 
@@ -52,7 +52,7 @@ object ProfanityFilter {
     fun convertToMild(text: String): String {
         var processedText = text
         profanityMap.forEach { (bad, mild) ->
-            val regex = Regex("(?i)\\b$bad\\b") // Case-insensitive, whole word
+            val regex = Regex("(?i)(?<![\\p{L}])${Regex.escape(bad)}(?![\\p{L}])") // Unicode-aware, whole word
             processedText = processedText.replace(regex, mild)
         }
         return processedText
@@ -64,7 +64,7 @@ object ProfanityFilter {
     fun maskBadWords(text: String): String {
         var processedText = text
         profanityMap.keys.forEach { bad ->
-            val regex = Regex("(?i)\\b$bad\\b")
+            val regex = Regex("(?i)(?<![\\p{L}])${Regex.escape(bad)}(?![\\p{L}])")
             processedText = processedText.replace(regex, "*".repeat(bad.length))
         }
         return processedText
