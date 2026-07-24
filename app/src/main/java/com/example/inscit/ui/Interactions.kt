@@ -351,7 +351,7 @@ fun NuclearPhysicsInteraction(accent: Color) {
                 
                 // Released Neutrons
                 repeat(3) { i ->
-                    val ang = i * 120f
+                    val ang = Math.toRadians((i * 120f).toDouble()).toFloat()
                     val nx = center.x + progress * 250f * cos(ang)
                     val ny = center.y + progress * 250f * sin(ang)
                     drawCircle(Color.White, radius = 4f, center = Offset(nx, ny))
@@ -396,7 +396,7 @@ fun PeriodicTrendsInteraction(accent: Color) {
             
             // Attraction vectors
             repeat(8) { i ->
-                val ang = i * 45f
+                val ang = Math.toRadians((i * 45f).toDouble()).toFloat()
                 val start = Offset(center.x + (10f+atomicNumber)*cos(ang), center.y + (10f+atomicNumber)*sin(ang))
                 val end = Offset(center.x + radius*cos(ang), center.y + radius*sin(ang))
                 drawLine(PowerRed.copy(alpha = 0.3f), start, end, strokeWidth = 1f)
@@ -1099,7 +1099,7 @@ fun AtomModelInteraction(accent: Color) {
             
             // Nucleus
             repeat(protons) { i ->
-                val ang = i * (360f/protons)
+                val ang = Math.toRadians((i * (360f/protons)).toDouble()).toFloat()
                 val off = Offset(center.x + 6f * cos(ang), center.y + 6f * sin(ang))
                 drawCircle(PowerRed, radius = 6f, center = off)
                 drawCircle(Color.Gray, radius = 6f, center = Offset(off.x + 4f, off.y + 4f))
@@ -1177,7 +1177,7 @@ fun ChemicalChangeInteraction(accent: Color) {
                 }
                 // Energy release (sparkles)
                 repeat(8) { i ->
-                    val ang = i * 45f + progress * 100f
+                    val ang = Math.toRadians((i * 45f + progress * 100f).toDouble()).toFloat()
                     val rx = centerX + 60f * cos(ang)
                     val ry = centerY + 60f * sin(ang)
                     drawCircle(Color.Yellow, radius = 2f, center = Offset(rx, ry))

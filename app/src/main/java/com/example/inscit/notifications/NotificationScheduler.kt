@@ -17,7 +17,7 @@ object NotificationScheduler {
 
         WorkManager.getInstance(context).enqueueUniqueWork(
             WORK_NAME,
-            ExistingWorkPolicy.KEEP, // Keep existing work, don't replace/reset timer
+            ExistingWorkPolicy.REPLACE, // Replace existing work to reset the inactivity timer
             workRequest
         )
     }

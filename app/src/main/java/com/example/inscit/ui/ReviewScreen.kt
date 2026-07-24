@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,6 +26,8 @@ import com.example.inscit.models.Lang
 import com.example.inscit.models.Review
 import com.example.inscit.utils.ProfanityFilter
 import java.util.UUID
+import android.content.Context
+import android.content.SharedPreferences
 
 @Composable
 fun ReviewScreen(
@@ -39,17 +42,9 @@ fun ReviewScreen(
     var showProfanityAlert by remember { mutableStateOf(false) }
     var mildMessage by remember { mutableStateOf("") }
 
-    // Initial example reviews
-    val initialReviews = remember {
-        mutableStateListOf(
-            Review(UUID.randomUUID().toString(), "Dr. Smith", 5, "Incredible learning tool! The simulations are top-notch."),
-            Review(UUID.randomUUID().toString(), "Aman Jaiswal", 4, "Great app, helps me understand physics easily."),
-            Review(UUID.randomUUID().toString(), "Priya Sharma", 5, "बहुत ही शानदार ऐप है, विज्ञान को समझना आसान हो गया।"),
-            Review(UUID.randomUUID().toString(), "Rahul", 3, "Decent app, but needs more biology topics."),
-            Review(UUID.randomUUID().toString(), "Aqib Shaikh", 5, "great app, it just solves one of the biggest problems i face nowadays in my tenth grade.")
-
-        )
-    }
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("inscit_reviews", Context.MODE_PRIVATE) }
+    val reviews = remember { mutableStateListOf<Review>().apply { addAll(loadReviews(prefs)) } }
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -123,11 +118,11 @@ fun ReviewScreen(
                             if (wasModified) {
                                 mildMessage = mild
                                 showProfanityAlert = true
-                                // Add the MASKED version to reviews
-                                initialReviews.add(0, Review(UUID.randomUUID().toString(), userName, rating, masked))
+                                reviews.add(0, Review(UUID.randomUUID().toString(), userName, rating, masked))
                             } else {
-                                initialReviews.add(0, Review(UUID.randomUUID().toString(), userName, rating, reviewText))
+                                reviews.add(0, Review(UUID.randomUUID().toString(), userName, rating, reviewText))
                             }
+                            saveReviews(prefs, reviews.toList())
                             reviewText = ""
                             rating = 5
                         }
@@ -156,7 +151,7 @@ fun ReviewScreen(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(initialReviews) { review ->
+            items(reviews) { review ->
                 ReviewItem(review, accent)
             }
         }
@@ -233,4 +228,40 @@ fun ReviewItem(review: Review, accent: Color) {
             )
         }
     }
+}
+
+private const val KEY_REVIEWS = "saved_reviews"
+
+private fun saveReviews(prefs: SharedPreferences, reviews: List<Review>) {
+    val data = reviews.joinToString("|||") { r ->
+        "${r.id}::${r.userName.replace(":", "\\:").replace("|", "\\|")}::${r.rating}::${r.comment.replace(":", "\\:").replace("|", "\\|")}::${r.timestamp}"
+    }
+    prefs.edit().putString(KEY_REVIEWS, data).apply()
+}
+
+private fun loadReviews(prefs: SharedPreferences): List<Review> {
+    val data = prefs.getString(KEY_REVIEWS, "") ?: ""
+    if (data.isEmpty()) {
+        return listOf(
+            Review(UUID.randomUUID().toString(), "Dr. Smith", 5, "Incredible learning tool! The simulations are top-notch."),
+            Review(UUID.randomUUID().toString(), "Aman Jaiswal", 4, "Great app, helps me understand physics easily."),
+            Review(UUID.randomUUID().toString(), "Priya Sharma", 5, "बहुत ही शानदार ऐप है, विज्ञान को समझना आसान हो गया।"),
+            Review(UUID.randomUUID().toString(), "Rahul", 3, "Decent app, but needs more biology topics."),
+            Review(UUID.randomUUID().toString(), "Aqib Shaikh", 5, "great app, it just solves one of the biggest problems i face nowadays in my tenth grade.")
+        )
+    }
+    return data.split("|||").mapNotNull { entry ->
+        val parts = entry.split("::")
+        if (parts.size >= 5) {
+            try {
+                Review(
+                    id = parts[0],
+                    userName = parts[1].replace("\\|", "|").replace("\\:", ":"),
+                    rating = parts[2].toInt(),
+                    comment = parts[3].replace("\\|", "|").replace("\\:", ":"),
+                    timestamp = parts[4].toLong()
+                )
+            } catch (_: Exception) { null }
+        } else null
+    }.sortedByDescending { it.timestamp }
 }

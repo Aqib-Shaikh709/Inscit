@@ -36,7 +36,7 @@ object CustomThemeManager {
 
     fun saveThemes(context: Context, themes: List<CustomTheme>) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val data = themes.joinToString("||") { "${it.name}|${it.primaryAccent}|${it.background}|${it.textColor}" }
+        val data = themes.joinToString("||") { "${it.name.replace("\\", "\\\\").replace("|", "\\|")}|${it.primaryAccent}|${it.background}|${it.textColor}" }
         prefs.edit().putString(KEY_THEMES, data).apply()
     }
 
@@ -45,10 +45,11 @@ object CustomThemeManager {
         val data = prefs.getString(KEY_THEMES, "") ?: ""
         if (data.isEmpty()) return emptyList()
         return data.split("||").mapNotNull {
-            val parts = it.split("|")
+            val parts = it.split("""(?<!\\)\|""".toRegex())
             if (parts.size == 4) {
+                val name = parts[0].replace("\\|", "|").replace("\\\\", "\\")
                 try {
-                    CustomTheme(parts[0], parts[1].toInt(), parts[2].toInt(), parts[3].toInt())
+                    CustomTheme(name, parts[1].toInt(), parts[2].toInt(), parts[3].toInt())
                 } catch (_: NumberFormatException) {
                     null
                 }

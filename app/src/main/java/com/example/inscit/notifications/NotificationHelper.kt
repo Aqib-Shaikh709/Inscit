@@ -43,6 +43,7 @@ object NotificationHelper {
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
 
-        notificationManager.notify(System.currentTimeMillis().toInt(), builder.build())
+        val notifId = (System.currentTimeMillis() and 0xFFFFFF).toInt()
+        notificationManager.notify(notifId, builder.build())
     }
 }

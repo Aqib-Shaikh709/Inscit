@@ -12,6 +12,8 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -165,6 +167,7 @@ import com.example.inscit.ui.ReviewScreen
 import com.example.inscit.ui.theme.spacing
 import com.example.inscit.xp.Rank
 import com.example.inscit.xp.StreakManager
+import com.example.inscit.xp.StreakTracker
 import com.example.inscit.xp.XpManager
 import androidx.lifecycle.LifecycleEventObserver
 import kotlinx.coroutines.launch
@@ -264,9 +267,13 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
     private var isReady = false
     var isSpeaking by mutableStateOf(false)
         private set
+    var currentLang by mutableStateOf(Lang.EN)
+        private set
+
+    private var hindiAvailable = false
 
     init {
-        tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) { isSpeaking = true }
             override fun onDone(utteranceId: String?) { isSpeaking = false }
             override fun onError(utteranceId: String?) { isSpeaking = false }
@@ -275,18 +282,47 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
+            val hiResult = tts?.setLanguage(Locale.forLanguageTag("hi-IN")) ?: TextToSpeech.LANG_NOT_SUPPORTED
+            hindiAvailable = hiResult in arrayOf(
+                TextToSpeech.LANG_AVAILABLE,
+                TextToSpeech.LANG_COUNTRY_AVAILABLE,
+                TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE
+            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val hiVoice = tts?.voices?.find { it.locale.language == "hi" && it.locale.country == "IN" }
+                if (hiVoice != null) hindiAvailable = true
+            }
             tts?.language = Locale.US
             isReady = true
         }
     }
 
-    fun speak(text: String) {
-        if (isReady) {
-            val params = Bundle()
-            params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "id")
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "id")
-            isSpeaking = true
+    fun isHindiVoiceAvailable(): Boolean = hindiAvailable
+
+    fun getInstallVoiceIntent(): Intent =
+        Intent().setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)
+
+    fun setLanguage(lang: Lang) {
+        currentLang = lang
+        if (!isReady) return
+        val locale = if (lang == Lang.HI) Locale.forLanguageTag("hi-IN") else Locale.US
+        val result = tts?.setLanguage(locale) ?: TextToSpeech.LANG_NOT_SUPPORTED
+        if (lang == Lang.HI && result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            tts?.language = Locale.US
         }
+    }
+
+    fun speak(text: String) {
+        if (!isReady) return
+        val params = Bundle()
+        params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "id")
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "id")
+        isSpeaking = true
+    }
+
+    fun speak(text: String, lang: Lang) {
+        setLanguage(lang)
+        speak(text)
     }
 
     fun stop() {
@@ -300,8 +336,7 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
     }
 }
 
-private const val CONTACT_EMAIL_FRONTEND = "aqibm5m488@gmail.com"
-private const val CONTACT_EMAIL_ACCOUNT = "jaiswalaman7138@gmail.com"
+private const val CONTACT_EMAIL = "Inscit66@gmail.com"
 private const val CONTACT_PHONE = "8104878086"
 
 fun getExportFolder(context: Context): File {
@@ -399,6 +434,9 @@ class MainActivity : ComponentActivity() {
 }
 
 
+private fun escapePipe(s: String): String = s.replace("\\", "\\\\").replace("|", "\\|")
+private fun unescapePipe(s: String): String = s.replace("\\|", "|").replace("\\\\", "\\")
+
 // Custom helper to serialize UserDocument for persistence
 fun serializeUserDocument(doc: UserDocument): String {
     val notesStr = doc.userNotes.entries.joinToString("|||") { (k, v) ->
@@ -408,7 +446,7 @@ fun serializeUserDocument(doc: UserDocument): String {
     }
     val challengeDates = doc.stats.completedChallengeDates.joinToString(",")
     val challengeStatus = "${doc.dailyChallengeStatus.lastCompletionDate},${doc.dailyChallengeStatus.currentRound},${doc.dailyChallengeStatus.isCompletedToday}"
-    return "${doc.profile.name}|${doc.profile.photoUrl ?: ""}|${doc.stats.xp}|${doc.stats.level}|${doc.stats.quizzesTaken}|${doc.quizProgress.lastScore}|${doc.settings.language.name}|${doc.settings.theme.name}|$notesStr|$challengeDates|$challengeStatus|${doc.settings.lastReportDate}|${doc.stats.totalUsageTime}|${doc.stats.currentStreak}|${doc.stats.longestStreak}|${doc.stats.lastActivityDate}"
+    return "${escapePipe(doc.profile.name)}|${escapePipe(doc.profile.photoUrl ?: "")}|${doc.stats.xp}|${doc.stats.level}|${doc.stats.quizzesTaken}|${doc.quizProgress.lastScore}|${doc.settings.language.name}|${doc.settings.theme.name}|$notesStr|$challengeDates|${escapePipe(challengeStatus)}|${doc.settings.lastReportDate}|${doc.stats.totalUsageTime}|${doc.stats.currentStreak}|${doc.stats.longestStreak}|${escapePipe(doc.stats.lastActivityDate)}"
 }
 
 // Custom Saver for UserDocument to ensure perfect persistence
@@ -428,7 +466,7 @@ val UserDocumentSaver = Saver<UserDocument, String>(
                 }
             }
             val challengeDates = if (parts.size > 9) parts[9].split(",").filter { it.isNotEmpty() }.toSet() else emptySet()
-            val challengeStatusParts = if (parts.size > 10) parts[10].split(",") else emptyList()
+            val challengeStatusParts = if (parts.size > 10) unescapePipe(parts[10]).split(",") else emptyList()
             val challengeStatus = if (challengeStatusParts.size >= 3) {
                 com.example.inscit.models.DailyChallengeStatus(
                     lastCompletionDate = challengeStatusParts[0],
@@ -438,7 +476,7 @@ val UserDocumentSaver = Saver<UserDocument, String>(
             } else com.example.inscit.models.DailyChallengeStatus()
 
             UserDocument(
-                profile = UserProfile(name = parts[0], photoUrl = parts[1].takeIf { it.isNotEmpty() }),
+                profile = UserProfile(name = unescapePipe(s = parts[0]), photoUrl = unescapePipe(s = parts[1]).takeIf { it.isNotEmpty() }),
                 stats = UserStats(
                     xp = parts[2].toInt(),
                     level = parts[3].toInt(),
@@ -447,7 +485,7 @@ val UserDocumentSaver = Saver<UserDocument, String>(
                     totalUsageTime = if (parts.size > 12) parts[12].toLong() else 0L,
                     currentStreak = if (parts.size > 13) parts[13].toInt() else 0,
                     longestStreak = if (parts.size > 14) parts[14].toInt() else 0,
-                    lastActivityDate = if (parts.size > 15) parts[15] else ""
+                    lastActivityDate = if (parts.size > 15) unescapePipe(parts[15]) else ""
                 ),
                 quizProgress = QuizProgress(lastScore = parts[5].toFloat()),
                 settings = UserSettings(
@@ -472,8 +510,8 @@ fun AppEngine(tts: TTSManager) {
     // Local user state with robust persistence and rememberSaveable
     var userDocument by rememberSaveable(
         saver = Saver<MutableState<UserDocument>, String>(
-            save = { state -> with(UserDocumentSaver) { save(state.value) } },
-            restore = { value -> UserDocumentSaver.restore(value)?.let { mutableStateOf(it) } }
+            save = { state -> with(receiver = UserDocumentSaver) { save(state.value) } },
+            restore = { value -> UserDocumentSaver.restore(value)?.let { mutableStateOf(value = it) } }
         )
     ) {
         mutableStateOf(loadUserDocument(context))
@@ -497,6 +535,11 @@ fun AppEngine(tts: TTSManager) {
     val themeMode = userDocument.settings.theme
 
     val activeCustomTheme = savedCustomThemes.find { it.name == selectedCustomThemeName }
+
+    // Check streak status on app start
+    LaunchedEffect(Unit) {
+        StreakTracker.checkAndResetIfMissed(context)
+    }
 
     // Immediate persistence to SharedPreferences (debounced)
     LaunchedEffect(userDocument) {
@@ -634,6 +677,7 @@ fun AppEngine(tts: TTSManager) {
                                 photoUrl = userDocument.profile.photoUrl?.let { Uri.parse(it) },
                                 onLangChange = { newLang ->
                                     userDocument = userDocument.copy(settings = userDocument.settings.copy(language = newLang))
+                                    tts.setLanguage(newLang)
                                 },
                                 onNav = { branch ->
                                     triggerVibration(context, "CLICK")
@@ -684,6 +728,7 @@ fun AppEngine(tts: TTSManager) {
                             },
                             onLangChange = { newLang ->
                                 userDocument = userDocument.copy(settings = userDocument.settings.copy(language = newLang))
+                                tts.setLanguage(newLang)
                             }
                         )
                         Screen.TOPIC_DETAIL -> selectedTopic?.let { topic ->
@@ -703,6 +748,7 @@ fun AppEngine(tts: TTSManager) {
                                 onLabClick = { currentScreen = Screen.LAB },
                                 onLangChange = { newLang ->
                                     userDocument = userDocument.copy(settings = userDocument.settings.copy(language = newLang))
+                                    tts.setLanguage(newLang)
                                 }
                             )
                         }
@@ -806,6 +852,7 @@ fun AppEngine(tts: TTSManager) {
                                         weaknesses = weaknesses
                                     )
                                     userDocument = userDocument.copy(stats = updatedStats, quizProgress = newProgress)
+                                    StreakTracker.recordQuiz(context, score.toFloat())
                                     NotificationScheduler.scheduleInactivityNotification(context)
                                     currentScreen = Screen.HOME
                                 }
@@ -943,9 +990,9 @@ fun DrawerContent(
 
             DrawerItem(
                 label = if (lang == Lang.EN) {
-                    if (isChallengeDone) "DAILY CHALLENGE" else "DAILY CHALLENGE"
+                    if (isChallengeDone) "CHALLENGE ✓" else "DAILY CHALLENGE"
                 } else {
-                    if (isChallengeDone) "दैनिक चुनौती" else "दैनिक चुनौती"
+                    if (isChallengeDone) "चुनौती ✓" else "दैनिक चुनौती"
                 },
                 trailingIcon = { if (isChallengeDone) CheckIcon(accent, Modifier.size(16.dp)) },
                 screen = Screen.DAILY_QUIZ,
@@ -1183,6 +1230,7 @@ fun DailyQuizScreen(
                             triggerVibration(context, "SUCCESS")
                             isQuizActive = false
                         }
+                        StreakTracker.recordQuiz(context, score.toFloat())
                     } else {
                         triggerVibration(context, "CLICK")
                         isQuizActive = false
@@ -1393,25 +1441,12 @@ fun ContactUsScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit
         
         ContactItem(
             icon = { EmailIcon(it) },
-            label = if (lang == Lang.EN) "FRONTEND & UI ISSUES" else "फ्रंटएंड और यूआई मुद्दे",
-            value = CONTACT_EMAIL_FRONTEND,
+            label = if (lang == Lang.EN) "EMAIL US" else "हमें ईमेल करें",
+            value = CONTACT_EMAIL,
             accent = accent,
             onClick = {
                 val intent = Intent(Intent.ACTION_SENDTO).apply {
-                    data = Uri.parse("mailto:$CONTACT_EMAIL_FRONTEND")
-                }
-                context.startActivity(intent)
-            }
-        )
-
-        ContactItem(
-            icon = { EmailIcon(it) },
-            label = if (lang == Lang.EN) "ACCOUNT & CLOUD ISSUES" else "खाता और क्लाउड मुद्दे",
-            value = CONTACT_EMAIL_ACCOUNT,
-            accent = accent,
-            onClick = {
-                val intent = Intent(Intent.ACTION_SENDTO).apply {
-                    data = Uri.parse("mailto:$CONTACT_EMAIL_ACCOUNT")
+                    data = Uri.parse("mailto:$CONTACT_EMAIL")
                 }
                 context.startActivity(intent)
             }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -97,7 +98,7 @@ fun TopicSelectionScreen(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(bottom = spacing.large)
             ) {
-                items(topics) { topic ->
+                itemsIndexed(topics) { index, topic ->
                     Surface(
                         onClick = { onTopicClick(topic) },
                         modifier = Modifier.fillMaxWidth(),
@@ -117,7 +118,7 @@ fun TopicSelectionScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    (topics.indexOf(topic) + 1).toString(),
+                                    (index + 1).toString(),
                                     color = accent,
                                     style = MaterialTheme.typography.titleMedium
                                 )
