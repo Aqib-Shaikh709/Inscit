@@ -19,15 +19,15 @@ fun HomeIcon(color: Color = Color.White, modifier: Modifier = Modifier.size(24.d
         val w = size.width
         val h = size.height
         val path = Path().apply {
-            moveTo(w * 0.15f, h * 0.45f)
-            lineTo(w * 0.5f, h * 0.15f)
-            lineTo(w * 0.85f, h * 0.45f)
-            lineTo(w * 0.85f, h * 0.85f)
-            lineTo(w * 0.6f, h * 0.85f)
-            lineTo(w * 0.6f, h * 0.6f)
-            lineTo(w * 0.4f, h * 0.6f)
-            lineTo(w * 0.4f, h * 0.85f)
-            lineTo(w * 0.15f, h * 0.85f)
+            moveTo( x = w * 0.15f, y = h * 0.45f)
+            lineTo( x = w *  0.5f,  y = h * 0.15f)
+            lineTo( x = w * 0.85f, y = h * 0.45f)
+            lineTo( x = w * 0.85f, y = h * 0.85f)
+            lineTo( x = w *  0.6f,  y = h * 0.85f)
+            lineTo( x = w *  0.6f,  y = h * 0.6f)
+            lineTo( x = w *  0.4f,  y = h * 0.6f)
+            lineTo( x = w *  0.4f,  y = h * 0.85f)
+            lineTo( x = w * 0.15f, y = h * 0.85f)
             close()
         }
         drawPath(path, color)
@@ -647,5 +647,53 @@ fun ParentalIcon(color: Color = Color.White, modifier: Modifier = Modifier.size(
             cubicTo(cx + hw, cy - hh, cx + hw, cy - hh * 0.3f, cx, cy + hh * 0.5f)
         }
         drawPath(heart, color)
+    }
+}
+
+@Composable
+fun InstagramIcon(color: Color = Color.White, modifier: Modifier = Modifier.size(24.dp)) {
+    Canvas(modifier = modifier) {
+        val s = size.minDimension
+        val inset = s * 0.1f
+        drawRoundRect(color, Offset(inset, inset), Size(s - inset * 2, s - inset * 2), CornerRadius(s * 0.2f, s * 0.2f), style = Stroke(width = s * 0.07f))
+        drawCircle(color, radius = s * 0.15f, center = Offset(s / 2, s / 2), style = Stroke(width = s * 0.07f))
+        drawCircle(color, radius = s * 0.03f, center = Offset(s * 0.7f, s * 0.3f))
+    }
+}
+
+@Composable
+fun XIcon(color: Color = Color.White, modifier: Modifier = Modifier.size(24.dp)) {
+    Canvas(modifier = modifier) {
+        val s = size.minDimension
+        val inset = s * 0.15f
+        val path = Path().apply {
+            moveTo(inset, inset)
+            lineTo(s - inset, s - inset)
+            moveTo(s - inset, inset)
+            lineTo(inset, s - inset)
+        }
+        drawPath(path, color, style = Stroke(width = s * 0.1f, cap = StrokeCap.Round))
+    }
+}
+
+@Composable
+fun YouTubeIcon(color: Color = Color.White, modifier: Modifier = Modifier.size(24.dp)) {
+    Canvas(modifier = modifier) {
+        val s = size.minDimension
+        val h = s * 0.8f
+        val w = s * 0.9f
+        val x = (s - w) / 2
+        val y = (s - h) / 2
+        drawRoundRect(color, Offset(x, y), Size(w, h), CornerRadius(s * 0.15f, s * 0.15f))
+        val triPath = Path().apply {
+            val cx = s * 0.42f
+            val cy = s * 0.5f
+            val triH = h * 0.4f
+            moveTo(cx, cy - triH / 2)
+            lineTo(cx, cy + triH / 2)
+            lineTo(cx + w * 0.35f, cy)
+            close()
+        }
+        drawPath(triPath, Color.Black)
     }
 }

@@ -2,12 +2,15 @@ package com.example.inscit
 
 import android.Manifest
 import android.content.ClipData
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -162,6 +165,9 @@ import com.example.inscit.ui.TopicDetailScreen
 import com.example.inscit.ui.TopicSelectionScreen
 import com.example.inscit.ui.TrophyIcon
 import com.example.inscit.ui.TtsController
+import com.example.inscit.ui.InstagramIcon
+import com.example.inscit.ui.XIcon
+import com.example.inscit.ui.YouTubeIcon
 import com.example.inscit.ui.WebIcon
 import com.example.inscit.ui.ReviewScreen
 import com.example.inscit.ui.theme.spacing
@@ -228,12 +234,34 @@ fun triggerVibration(context: Context, type: String) {
 
 private const val PREFS_NAME = "inscit_prefs"
 private const val KEY_USER_DATA = "user_data"
+private const val BACKUP_FILE_NAME = "inscit_backup.dat"
 
 fun saveUserDocument(context: Context, userDoc: UserDocument) {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     val data = serializeUserDocument(userDoc)
     prefs.edit().putString(KEY_USER_DATA, data).apply()
 
+    try {
+        context.openFileOutput(BACKUP_FILE_NAME, Context.MODE_PRIVATE).use { it.write(data.toByteArray()) }
+    } catch (_: Exception) {}
+
+    exportBackupToPublic(context, data)
+}
+
+private fun exportBackupToPublic(context: Context, data: String) {
+    try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, "Inscit_Backup_${System.currentTimeMillis()}.dat")
+                put(MediaStore.Downloads.MIME_TYPE, "application/octet-stream")
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            }
+            val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            uri?.let {
+                context.contentResolver.openOutputStream(it)?.use { os -> os.write(data.toByteArray()) }
+            }
+        }
+    } catch (_: Exception) {}
 }
 
 fun saveProfileImageLocally(context: Context, uri: Uri): String? {
@@ -254,7 +282,11 @@ fun saveProfileImageLocally(context: Context, uri: Uri): String? {
 
 fun loadUserDocument(context: Context): UserDocument {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    val data = prefs.getString(KEY_USER_DATA, null) ?: return UserDocument(profile = UserProfile(name = "Core Explorer"))
+    var data = prefs.getString(KEY_USER_DATA, null)
+    if (data == null) {
+        data = try { context.openFileInput(BACKUP_FILE_NAME).use { it.readBytes().decodeToString() } } catch (_: Exception) { null }
+    }
+    if (data == null) return UserDocument(profile = UserProfile(name = "Core Explorer"))
     return try {
         UserDocumentSaver.restore(data) ?: UserDocument(profile = UserProfile(name = "Core Explorer"))
     } catch (e: Exception) {
@@ -1473,6 +1505,49 @@ fun ContactUsScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit
             onClick = {
                 val intent = Intent(Intent.ACTION_VIEW).apply {
                     data = Uri.parse("https://www.inscit.com")
+                }
+                context.startActivity(intent)
+            }
+        )
+
+        Spacer(Modifier.height(24.dp))
+        Text(if (lang == Lang.EN) "FOLLOW US" else "हमें फॉलो करें", fontWeight = FontWeight.Bold, color = accent)
+        Spacer(Modifier.height(8.dp))
+
+        ContactItem(
+            icon = { InstagramIcon(it) },
+            label = "Instagram",
+            value = "@inscit_edutech",
+            accent = accent,
+            onClick = {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("https://www.instagram.com/inscit_edutech")
+                }
+                context.startActivity(intent)
+            }
+        )
+
+        ContactItem(
+            icon = { XIcon(it) },
+            label = "X (Twitter)",
+            value = "@Inscit_Edutech",
+            accent = accent,
+            onClick = {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("https://x.com/Inscit_Edutech")
+                }
+                context.startActivity(intent)
+            }
+        )
+
+        ContactItem(
+            icon = { YouTubeIcon(it) },
+            label = "YouTube",
+            value = "Inscit",
+            accent = accent,
+            onClick = {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("https://www.youtube.com/@Inscit")
                 }
                 context.startActivity(intent)
             }
