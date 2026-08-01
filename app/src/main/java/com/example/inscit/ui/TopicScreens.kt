@@ -229,6 +229,47 @@ fun TopicDetailScreen(
                         }
                     }
                 }
+
+                Spacer(Modifier.height(spacing.large))
+
+                val futureText = TopicSyllabus.getFutureImpact(topic.id, lang)
+                if (futureText.isNotBlank()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = spacing.small),
+                        shape = RoundedCornerShape(24.dp),
+                        color = accent.copy(alpha = 0.08f),
+                        border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
+                    ) {
+                        Column(modifier = Modifier.padding(spacing.large)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        if (lang == Lang.EN) "FUTURE IMPACT" else "भविष्य प्रभाव",
+                                        color = accent,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        letterSpacing = 2.sp
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        if (lang == Lang.EN) "How this helps you in real life" else "यह वास्तविक जीवन में आपकी कैसे मदद करेगा",
+                                        color = GhostWhite.copy(alpha = 0.5f),
+                                        fontSize = 11.sp
+                                    )
+                                }
+                                TtsController(futureText, tts, accent, iconSize = 24.dp)
+                            }
+                            Spacer(Modifier.height(spacing.medium))
+                            Text(
+                                futureText,
+                                color = GhostWhite.copy(alpha = 0.85f),
+                                style = MaterialTheme.typography.bodyLarge,
+                                lineHeight = 26.sp
+                            )
+                        }
+                    }
+                }
             }
             Spacer(Modifier.height(spacing.extraLarge))
             Button(
