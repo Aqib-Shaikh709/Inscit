@@ -37,7 +37,8 @@ fun ProgressReportScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
@@ -97,8 +98,8 @@ fun ProgressReportScreen(
             // Preview (Non-editable)
             Box(
                 modifier = Modifier
-                    .weight(1f)
                     .fillMaxWidth()
+                    .heightIn(min = 160.dp, max = 480.dp)
                     .background(DeepSpace.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
                     .border(BorderStroke(1.dp, GhostWhite.copy(alpha = 0.1f)), RoundedCornerShape(16.dp))
                     .padding(16.dp)

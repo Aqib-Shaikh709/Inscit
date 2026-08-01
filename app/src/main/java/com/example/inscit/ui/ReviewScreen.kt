@@ -46,7 +46,7 @@ fun ReviewScreen(
     val prefs = remember { context.getSharedPreferences("inscit_reviews", Context.MODE_PRIVATE) }
     val reviews = remember { mutableStateListOf<Review>().apply { addAll(loadReviews(prefs)) } }
 
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { BackIcon(txtCol) }
             Text(
@@ -148,7 +148,7 @@ fun ReviewScreen(
         Spacer(Modifier.height(16.dp))
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(reviews) { review ->

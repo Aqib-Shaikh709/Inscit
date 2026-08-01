@@ -1066,47 +1066,54 @@ fun FeedbackScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit)
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     var feedbackText by remember { mutableStateOf("") }
-    Column(modifier = Modifier.fillMaxSize().imePadding().padding(24.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(txtCol) }
-            Text(if (lang == Lang.EN) "FEEDBACK" else "फीडबैक", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
-        }
-        Spacer(Modifier.height(32.dp))
-        Text(if (lang == Lang.EN) "Share your thoughts on how we can improve Inscit." else "Inscit को बेहतर बनाने के बारे में अपने विचार साझा करें।", color = GhostWhite.copy(alpha = 0.7f))
-        Spacer(Modifier.height(16.dp))
-        OutlinedTextField(
-            value = feedbackText,
-            onValueChange = { feedbackText = it },
-            modifier = Modifier.fillMaxWidth().height(200.dp),
-            placeholder = { Text("Write here...") },
-            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accent, unfocusedBorderColor = GhostWhite.copy(alpha = 0.1f))
-        )
-        Spacer(Modifier.height(24.dp))
-        Button(
-            onClick = {
-                focusManager.clearFocus()
-                if (feedbackText.isBlank()) {
-                    Toast.makeText(context, if (lang == Lang.EN) "Please write your feedback first." else "कृपया पहले अपनी प्रतिक्रिया लिखें।", Toast.LENGTH_SHORT).show()
-                    return@Button
-                }
-                try {
-                    val intent = Intent(Intent.ACTION_SENDTO).apply {
-                        data = Uri.parse("mailto:")
-                        putExtra(Intent.EXTRA_SUBJECT, "Inscit Feedback")
-                        putExtra(Intent.EXTRA_TEXT, feedbackText)
-                    }
-                    context.startActivity(Intent.createChooser(intent, if (lang == Lang.EN) "Send feedback" else "प्रतिक्रिया भेजें"))
-                    Toast.makeText(context, if (lang == Lang.EN) "Thank you for your feedback!" else "आपकी प्रतिक्रिया के लिए धन्यवाद!", Toast.LENGTH_SHORT).show()
-                    feedbackText = ""
-                    onBack()
-                } catch (e: Exception) {
-                    Toast.makeText(context, if (lang == Lang.EN) "No email app found." else "कोई ईमेल ऐप नहीं मिला।", Toast.LENGTH_SHORT).show()
-                }
-            },
-            modifier = Modifier.fillMaxWidth().height(60.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val maxH = maxHeight
+        val maxW = maxWidth
+        val hPad = if (maxW > 600.dp) 48.dp else 24.dp
+        Column(
+            modifier = Modifier.fillMaxSize().imePadding().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState())
         ) {
-            Text("SUBMIT FEEDBACK", fontWeight = FontWeight.ExtraBold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { BackIcon(txtCol) }
+                Text(if (lang == Lang.EN) "FEEDBACK" else "फीडबैक", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
+            }
+            Spacer(Modifier.height(32.dp))
+            Text(if (lang == Lang.EN) "Share your thoughts on how we can improve Inscit." else "Inscit को बेहतर बनाने के बारे में अपने विचार साझा करें।", color = GhostWhite.copy(alpha = 0.7f))
+            Spacer(Modifier.height(16.dp))
+            OutlinedTextField(
+                value = feedbackText,
+                onValueChange = { feedbackText = it },
+                modifier = Modifier.fillMaxWidth().height(minOf(200.dp, maxH * 0.3f)),
+                placeholder = { Text("Write here...") },
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accent, unfocusedBorderColor = GhostWhite.copy(alpha = 0.1f))
+            )
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = {
+                    focusManager.clearFocus()
+                    if (feedbackText.isBlank()) {
+                        Toast.makeText(context, if (lang == Lang.EN) "Please write your feedback first." else "कृपया पहले अपनी प्रतिक्रिया लिखें।", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    try {
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:")
+                            putExtra(Intent.EXTRA_SUBJECT, "Inscit Feedback")
+                            putExtra(Intent.EXTRA_TEXT, feedbackText)
+                        }
+                        context.startActivity(Intent.createChooser(intent, if (lang == Lang.EN) "Send feedback" else "प्रतिक्रिया भेजें"))
+                        Toast.makeText(context, if (lang == Lang.EN) "Thank you for your feedback!" else "आपकी प्रतिक्रिया के लिए धन्यवाद!", Toast.LENGTH_SHORT).show()
+                        feedbackText = ""
+                        onBack()
+                    } catch (e: Exception) {
+                        Toast.makeText(context, if (lang == Lang.EN) "No email app found." else "कोई ईमेल ऐप नहीं मिला।", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(minOf(60.dp, maxH * 0.1f)),
+                colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace)
+            ) {
+                Text("SUBMIT FEEDBACK", fontWeight = FontWeight.ExtraBold)
+            }
         }
     }
 }
@@ -1366,21 +1373,24 @@ fun DailyChallengeCalendar(completedDates: Set<String>, accent: Color) {
 
 @Composable
 fun NewsUpdatesScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(txtCol) }
-            Text(if (lang == Lang.EN) "LAB UPDATES" else "लैब अपडेट", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
-        }
-        Spacer(Modifier.height(32.dp))
-        repeat(3) { i ->
-            Surface(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                color = CardBg,
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(Modifier.padding(20.dp)) {
-                    Text("System Update v9.0.$i", fontWeight = FontWeight.Bold, color = accent)
-                    Text("Optimized core simulations and added new syllabus modules.", color = GhostWhite.copy(alpha = 0.7f), fontSize = 14.sp)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val hPad = if (maxWidth > 600.dp) 48.dp else 24.dp
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState())) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { BackIcon(txtCol) }
+                Text(if (lang == Lang.EN) "LAB UPDATES" else "लैब अपडेट", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
+            }
+            Spacer(Modifier.height(32.dp))
+            repeat(3) { i ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    color = CardBg,
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(Modifier.padding(20.dp)) {
+                        Text("System Update v9.0.$i", fontWeight = FontWeight.Bold, color = accent)
+                        Text("Optimized core simulations and added new syllabus modules.", color = GhostWhite.copy(alpha = 0.7f), fontSize = 14.sp)
+                    }
                 }
             }
         }
@@ -1594,29 +1604,37 @@ fun ContactItem(
 @Composable
 fun DonateScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
     val context = LocalContext.current
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(txtCol) }
-            Text(if (lang == Lang.EN) "SUPPORT US" else "हमारा समर्थन करें", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
-        }
-        Spacer(Modifier.height(64.dp))
-        Text("♥", fontSize = 64.sp, color = PowerRed)
-        Spacer(Modifier.height(16.dp))
-        Text(
-            if (lang == Lang.EN) "Your support helps us keep Inscit free and build more amazing features."
-            else "आपका समर्थन हमें Inscit को मुफ्त रखने और अधिक अद्भुत सुविधाएं बनाने में मदद करता है।",
-            textAlign = TextAlign.Center, color = GhostWhite.copy(alpha = 0.8f)
-        )
-        Spacer(Modifier.height(48.dp))
-        Button(
-            onClick = {
-                Toast.makeText(context, if (lang == Lang.EN) "Coming soon!" else "जल्द आ रहा है!", Toast.LENGTH_SHORT).show()
-            },
-            modifier = Modifier.fillMaxWidth().height(60.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val maxH = maxHeight
+        val maxW = maxWidth
+        val hPad = if (maxW > 600.dp) 48.dp else 24.dp
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(if (lang == Lang.EN) "DONATE NOW" else "अभी दान करें", fontWeight = FontWeight.ExtraBold)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { BackIcon(txtCol) }
+                Text(if (lang == Lang.EN) "SUPPORT US" else "हमारा समर्थन करें", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
+            }
+            Spacer(Modifier.height(maxH * 0.06f))
+            Text("♥", fontSize = minOf(64f, maxW.value * 0.06f).sp, color = PowerRed)
+            Spacer(Modifier.height(16.dp))
+            Text(
+                if (lang == Lang.EN) "Your support helps us keep Inscit free and build more amazing features."
+                else "आपका समर्थन हमें Inscit को मुफ्त रखने और अधिक अद्भुत सुविधाएं बनाने में मदद करता है।",
+                textAlign = TextAlign.Center, color = GhostWhite.copy(alpha = 0.8f)
+            )
+            Spacer(Modifier.height(maxH * 0.04f))
+            Button(
+                onClick = {
+                    Toast.makeText(context, if (lang == Lang.EN) "Coming soon!" else "जल्द आ रहा है!", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace)
+            ) {
+                Text(if (lang == Lang.EN) "DONATE NOW" else "अभी दान करें", fontWeight = FontWeight.ExtraBold)
+            }
         }
     }
 }
@@ -1629,47 +1647,50 @@ fun NotesFolderScreen(
     onBack: () -> Unit,
     onOpenNote: (Branch, Lang) -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val hPad = if (maxWidth > 600.dp) 48.dp else 24.dp
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            IconButton(onClick = onBack) { BackIcon(color = txtCol) }
-            Text(if (lang == Lang.EN) "KNOWLEDGE HUB" else "नॉलेज हब", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 2.sp)
-        }
-
-        Spacer(Modifier.height(40.dp))
-
-        Branch.entries.forEach { branch ->
-            Surface(
-                onClick = { onOpenNote(branch, lang) },
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                shape = RoundedCornerShape(20.dp),
-                color = CardBg,
-                border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(40.dp).clip(CircleShape).background(accent.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                        when(branch) {
-                            Branch.PHYSICS -> AtomIcon(accent)
-                            Branch.CHEMISTRY -> FlaskIcon(accent)
-                            Branch.BIOLOGY -> DNAIcon(accent)
+                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                Text(if (lang == Lang.EN) "KNOWLEDGE HUB" else "नॉलेज हब", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 2.sp)
+            }
+
+            Spacer(Modifier.height(40.dp))
+
+            Branch.entries.forEach { branch ->
+                Surface(
+                    onClick = { onOpenNote(branch, lang) },
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = CardBg,
+                    border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
+                ) {
+                    Row(Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(40.dp).clip(CircleShape).background(accent.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                            when(branch) {
+                                Branch.PHYSICS -> AtomIcon(accent)
+                                Branch.CHEMISTRY -> FlaskIcon(accent)
+                                Branch.BIOLOGY -> DNAIcon(accent)
+                            }
                         }
+                        Spacer(Modifier.width(20.dp))
+                        Column {
+                            Text(if (lang == Lang.EN) branch.name else when(branch) {
+                                Branch.PHYSICS -> "भौतिकी"
+                                Branch.CHEMISTRY -> "रसायन विज्ञान"
+                                Branch.BIOLOGY -> "जीव विज्ञान"
+                            }, fontWeight = FontWeight.Bold, color = GhostWhite, fontSize = 18.sp)
+                            Text(if (lang == Lang.EN) "SYLLABUS MODULES" else "सिलेबस मॉड्यूल", fontSize = 10.sp, color = accent, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.weight(1f))
+                        Text("→", color = GhostWhite.copy(alpha = 0.3f))
                     }
-                    Spacer(Modifier.width(20.dp))
-                    Column {
-                        Text(if (lang == Lang.EN) branch.name else when(branch) {
-                            Branch.PHYSICS -> "भौतिकी"
-                            Branch.CHEMISTRY -> "रसायन विज्ञान"
-                            Branch.BIOLOGY -> "जीव विज्ञान"
-                        }, fontWeight = FontWeight.Bold, color = GhostWhite, fontSize = 18.sp)
-                        Text(if (lang == Lang.EN) "SYLLABUS MODULES" else "सिलेबस मॉड्यूल", fontSize = 10.sp, color = accent, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.weight(1f))
-                    Text("→", color = GhostWhite.copy(alpha = 0.3f))
                 }
             }
         }
@@ -1691,54 +1712,59 @@ fun LabScreen(
         Branch.CHEMISTRY -> "रसायन विज्ञान"
         Branch.BIOLOGY -> "जीव विज्ञान"
     }
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(color = txtCol) }
-            Text("$branchName LAB", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 2.sp)
-        }
-
-        Spacer(Modifier.height(60.dp))
-
-        InteractiveDiagram(branch, accent)
-
-        Spacer(Modifier.height(40.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                if (lang == Lang.EN) "EXPERIMENTAL DATA" else "प्रायोगिक डेटा",
-                fontSize = 14.sp, fontWeight = FontWeight.Bold, color = accent
-            )
-            Spacer(Modifier.width(8.dp))
-            val labText = if (lang == Lang.EN) "Access the detailed scientific syllabus and interactive modules."
-                          else "विस्तृत वैज्ञानिक पाठ्यक्रम और इंटरैक्टिव मॉड्यूल तक पहुंचें।"
-            TtsController(labText, tts, accent, iconSize = 16.dp)
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        Text(
-            if (lang == Lang.EN) "Access the detailed scientific syllabus and interactive modules."
-            else "विस्तृत वैज्ञानिक पाठ्यक्रम और इंटरैक्टिव मॉड्यूल तक पहुंचें।",
-            textAlign = TextAlign.Center,
-            color = txtCol.copy(alpha = 0.7f),
-            fontSize = 16.sp,
-            modifier = Modifier.padding(horizontal = 20.dp)
-        )
-
-        Spacer(Modifier.weight(1f))
-
-        Button(
-            onClick = onNotes,
-            modifier = Modifier.fillMaxWidth().height(60.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val maxH = maxHeight
+        val maxW = maxWidth
+        val hPad = if (maxW > 600.dp) 48.dp else 24.dp
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(if (lang == Lang.EN) "OPEN MODULE NOTES" else "मॉड्यूल नोट्स खोलें", fontWeight = FontWeight.ExtraBold)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                Text("$branchName LAB", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 2.sp)
+            }
+
+            Spacer(Modifier.height(maxH * 0.05f))
+
+            InteractiveDiagram(branch, accent, modifier = Modifier.fillMaxWidth())
+
+            Spacer(Modifier.height(32.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (lang == Lang.EN) "EXPERIMENTAL DATA" else "प्रायोगिक डेटा",
+                    fontSize = 14.sp, fontWeight = FontWeight.Bold, color = accent
+                )
+                Spacer(Modifier.width(8.dp))
+                val labText = if (lang == Lang.EN) "Access the detailed scientific syllabus and interactive modules."
+                              else "विस्तृत वैज्ञानिक पाठ्यक्रम और इंटरैक्टिव मॉड्यूल तक पहुंचें।"
+                TtsController(labText, tts, accent, iconSize = 16.dp)
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            Text(
+                if (lang == Lang.EN) "Access the detailed scientific syllabus and interactive modules."
+                else "विस्तृत वैज्ञानिक पाठ्यक्रम और इंटरैक्टिव मॉड्यूल तक पहुंचें।",
+                textAlign = TextAlign.Center,
+                color = txtCol.copy(alpha = 0.7f),
+                fontSize = 16.sp,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+
+            Spacer(Modifier.height(40.dp))
+
+            Button(
+                onClick = onNotes,
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace)
+            ) {
+                Text(if (lang == Lang.EN) "OPEN MODULE NOTES" else "मॉड्यूल नोट्स खोलें", fontWeight = FontWeight.ExtraBold)
+            }
+            Spacer(Modifier.height(16.dp))
         }
-        Spacer(Modifier.height(16.dp))
     }
 }
 
@@ -2245,7 +2271,9 @@ fun IosSlider(
 
 @Composable
 fun FullSplashScreen(accent: Color, onExplore: () -> Unit) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        val maxH = maxHeight
+        val maxW = maxWidth
         HexagonGrid(accent.copy(alpha = 0.08f))
         
         Text(
@@ -2259,19 +2287,26 @@ fun FullSplashScreen(accent: Color, onExplore: () -> Unit) {
                 .padding(24.dp)
         )
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            val logoSize = minOf(160.dp, maxW * 0.45f)
             Image(
                 painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = "App Logo",
                 modifier = Modifier
-                    .size(160.dp)
+                    .size(logoSize)
                     .clip(RoundedCornerShape(32.dp))
             )
-            Spacer(Modifier.height(80.dp))
+            Spacer(Modifier.height(maxH * 0.08f))
             IosSlider(
                 onSwipeComplete = onExplore,
                 accentColor = accent,
-                modifier = Modifier.width(280.dp).height(64.dp)
+                modifier = Modifier.fillMaxWidth(0.85f).height(64.dp)
             )
         }
     }
@@ -2307,100 +2342,128 @@ fun ModernHome(
     onXpClick: () -> Unit,
     onMenuClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onMenuClick) {
-                MenuIcon(color = txtCol)
-            }
-            Surface(
-                onClick = onProfile,
-                modifier = Modifier.size(50.dp),
-                shape = CircleShape,
-                color = CardBg,
-                border = BorderStroke(1.dp, accent.copy(alpha = 0.5f))
-            ) {
-                ProfileImage(
-                    photoUrl = photoUrl,
-                    modifier = Modifier.fillMaxSize(),
-                    placeholderColor = accent
-                )
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val hPad = if (maxWidth > 600.dp) 48.dp else 24.dp
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                if (lang == Lang.EN) "Hello, $userName" else "नमस्ते, $userName",
-                color = GhostWhite,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.sp
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        // Stats Overview - Slimmer version
-        Surface(
-            onClick = onXpClick,
-            modifier = Modifier.fillMaxWidth().height(80.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = CardBg,
-            border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
-        ) {
             Row(
-                modifier = Modifier.padding(horizontal = 20.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(if (lang == Lang.EN) "CURRENT XP" else "कुल XP", fontSize = 9.sp, color = accent, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                    Text(totalXp.toString(), fontSize = 24.sp, fontWeight = FontWeight.Black, color = GhostWhite)
+                IconButton(onClick = onMenuClick) {
+                    MenuIcon(color = txtCol)
                 }
-                Box(
-                    modifier = Modifier.size(44.dp).clip(CircleShape).background(accent.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
+                Surface(
+                    onClick = onProfile,
+                    modifier = Modifier.size(50.dp),
+                    shape = CircleShape,
+                    color = CardBg,
+                    border = BorderStroke(1.dp, accent.copy(alpha = 0.5f))
                 ) {
-                    StarIcon(accent, Modifier.size(24.dp))
+                    ProfileImage(
+                        photoUrl = photoUrl,
+                        modifier = Modifier.fillMaxSize(),
+                        placeholderColor = accent
+                    )
                 }
             }
-        }
 
-        Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(16.dp))
 
-        // Quick Actions
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            ActionCard(if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें", accent, Modifier.weight(1.3f), onQuiz)
-            ActionCard(if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स", GhostWhite.copy(alpha = 0.05f), Modifier.weight(0.7f), onTheme)
-        }
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    if (lang == Lang.EN) "Hello, $userName" else "नमस्ते, $userName",
+                    color = GhostWhite,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp
+                )
+            }
 
-        Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(12.dp))
 
-        Text(
-            if (lang == Lang.EN) "SCIENCE BRANCHES" else "विज्ञान की शाखाएं",
-            color = accent,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp,
-            modifier = Modifier.align(Alignment.Start)
-        )
+            // Stats Overview - Slimmer version
+            Surface(
+                onClick = onXpClick,
+                modifier = Modifier.fillMaxWidth().height(80.dp),
+                shape = RoundedCornerShape(20.dp),
+                color = CardBg,
+                border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            if (lang == Lang.EN) "CURRENT XP" else "कुल XP",
+                            fontSize = 9.sp,
+                            color = accent,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            totalXp.toString(),
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Black,
+                            color = GhostWhite
+                        )
+                    }
+                    Box(
+                        modifier = Modifier.size(44.dp).clip(CircleShape)
+                            .background(accent.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        StarIcon(accent, Modifier.size(24.dp))
+                    }
+                }
+            }
 
-        Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(32.dp))
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(Branch.entries) { branch ->
+            // Quick Actions
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                ActionCard(
+                    if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें",
+                    accent,
+                    Modifier.weight(1.3f),
+                    onQuiz
+                )
+                ActionCard(
+                    if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स",
+                    GhostWhite.copy(alpha = 0.05f),
+                    Modifier.weight(0.7f),
+                    onTheme
+                )
+            }
+
+            Spacer(Modifier.height(40.dp))
+
+            Text(
+                if (lang == Lang.EN) "SCIENCE BRANCHES" else "विज्ञान की शाखाएं",
+                color = accent,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp,
+                modifier = Modifier.align(Alignment.Start)
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            Branch.entries.forEach { branch ->
                 BranchCard(branch, lang, accent, onNav)
+                Spacer(Modifier.height(12.dp))
             }
         }
     }
@@ -2408,791 +2471,183 @@ fun ModernHome(
 
 @Composable
 fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.height(80.dp),
-        shape = RoundedCornerShape(20.dp),
-        color = if (color == GhostWhite.copy(alpha = 0.05f)) CardBg else color,
-        border = if (color == GhostWhite.copy(alpha = 0.05f)) BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f)) else null
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                label,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.sp,
-                color = if (color.luminance() > 0.5f && color != GhostWhite.copy(alpha = 0.05f)) DeepSpace else GhostWhite,
-                fontSize = if (label.length > 12) 11.sp else 13.sp
-            )
-        }
-    }
-}
-
-@Composable
-fun BranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Branch) -> Unit) {
-    Surface(
-        onClick = { onNav(branch) },
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
-    ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(44.dp).clip(CircleShape).background(accent.copy(alpha = 0.08f)),
-                contentAlignment = Alignment.Center
-            ) {
-                when(branch) {
-                    Branch.PHYSICS -> AtomIcon(accent, Modifier.size(24.dp))
-                    Branch.CHEMISTRY -> FlaskIcon(accent, Modifier.size(24.dp))
-                    Branch.BIOLOGY -> DNAIcon(accent, Modifier.size(24.dp))
-                }
-            }
-            Spacer(Modifier.width(20.dp))
-            Column {
-                Text(if (lang == Lang.EN) branch.name else when(branch) {
-                    Branch.PHYSICS -> "भौतिकी"
-                    Branch.CHEMISTRY -> "रसायन विज्ञान"
-                    Branch.BIOLOGY -> "जीव विज्ञान"
-                }, fontWeight = FontWeight.Bold, color = GhostWhite, fontSize = 16.sp)
-                Text(if (lang == Lang.EN) "MODULE READY" else "मॉड्यूल तैयार", fontSize = 9.sp, color = accent.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.weight(1f))
-            Text("→", color = GhostWhite.copy(alpha = 0.2f), fontSize = 20.sp)
-        }
-    }
-}
-
-@Composable
-fun ThemeSelectionScreen(
-    current: ThemeMode,
-    lang: Lang,
-    accent: Color,
-    txtCol: Color,
-    customThemes: List<CustomTheme> = emptyList(),
-    selectedCustomName: String? = null,
-    onToggle: (ThemeMode) -> Unit,
-    onToggleCustom: (String) -> Unit = {},
-    onDeleteCustom: (String) -> Unit = {},
-    onAddCustom: () -> Unit = {},
-    onLangToggle: (Lang) -> Unit,
-    onOpenFolder: () -> Unit,
-    onViewNote: (Branch) -> Unit,
-    onBack: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(color = txtCol) }
-            Text(if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 2.sp)
-        }
-
-        Spacer(Modifier.height(60.dp))
-
-        Text(if (lang == Lang.EN) "APP LANGUAGE" else "ऐप की भाषा", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent, letterSpacing = 2.sp, modifier = Modifier.align(Alignment.Start))
-        Spacer(Modifier.height(16.dp))
-        LanguageSlider(lang, accent, onLangToggle)
-
-        Spacer(Modifier.height(32.dp))
-
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(if (lang == Lang.EN) "INTERFACE THEME" else "इंटरफ़ेस थीम", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent, letterSpacing = 2.sp)
-            IconButton(onClick = onAddCustom) { PencilIcon(color = accent, modifier = Modifier.size(20.dp)) }
-        }
-        Spacer(Modifier.height(16.dp))
-
-        ThemeItem(if (lang == Lang.EN) "NEON PROTOCOL" else "नियॉन प्रोटोकॉल", ThemeMode.NEON, current == ThemeMode.NEON, accent) { onToggle(ThemeMode.NEON) }
-        Spacer(Modifier.height(12.dp))
-        ThemeItem(if (lang == Lang.EN) "NOBLE ARCHIVE" else "नोबल आर्काइव", ThemeMode.NOBLE, current == ThemeMode.NOBLE, accent) { onToggle(ThemeMode.NOBLE) }
-
-        if (customThemes.isNotEmpty()) {
-            Spacer(Modifier.height(32.dp))
-            Text(if (lang == Lang.EN) "CREATED" else "बनाया गया", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent, letterSpacing = 2.sp, modifier = Modifier.align(Alignment.Start))
-            Spacer(Modifier.height(16.dp))
-            customThemes.forEach { theme ->
-                ThemeItem(
-                    label = theme.name.uppercase(),
-                    mode = ThemeMode.CUSTOM,
-                    isSelected = current == ThemeMode.CUSTOM && selectedCustomName == theme.name,
-                    accent = Color(theme.primaryAccent),
-                    onDelete = { onDeleteCustom(theme.name) }
-                ) { onToggleCustom(theme.name) }
-                Spacer(Modifier.height(12.dp))
-            }
-        }
-
-        Spacer(Modifier.height(48.dp))
-
-        Text(if (lang == Lang.EN) "KNOWLEDGE BASE" else "नॉलेज बेस", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent, letterSpacing = 2.sp, modifier = Modifier.align(Alignment.Start))
-        Spacer(Modifier.height(16.dp))
-
         Surface(
-            onClick = onOpenFolder,
-            modifier = Modifier.fillMaxWidth().height(64.dp),
-            shape = RoundedCornerShape(16.dp),
+            onClick = onClick,
+            modifier = modifier.height(80.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = if (color == GhostWhite.copy(alpha = 0.05f)) CardBg else color,
+            border = if (color == GhostWhite.copy(alpha = 0.05f)) BorderStroke(
+                1.dp,
+                GhostWhite.copy(alpha = 0.05f)
+            ) else null
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    label,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.sp,
+                    color = if (color.luminance() > 0.5f && color != GhostWhite.copy(alpha = 0.05f)) DeepSpace else GhostWhite,
+                    fontSize = if (label.length > 12) 11.sp else 13.sp
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun BranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Branch) -> Unit) {
+        Surface(
+            onClick = { onNav(branch) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
             color = CardBg,
             border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
         ) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                NoteIcon(color = accent)
-                Spacer(Modifier.width(16.dp))
-                Text(if (lang == Lang.EN) "EXPLORE ALL NOTES" else "सभी नोट्स देखें", color = GhostWhite, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.weight(1f))
-                Text("→", color = GhostWhite.copy(alpha = 0.2f))
-            }
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        Text(if (lang == Lang.EN) "SAVED OBSERVATIONS" else "सेव की गई ऑब्जर्वेशन", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent, letterSpacing = 2.sp, modifier = Modifier.align(Alignment.Start))
-        Spacer(Modifier.height(16.dp))
-
-        Column(Modifier.fillMaxWidth()) {
-            Branch.entries.forEach { branch ->
-                Surface(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = CardBg.copy(alpha = 0.5f)
+            Row(
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier.size(44.dp).clip(CircleShape)
+                        .background(accent.copy(alpha = 0.08f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(8.dp).background(accent, CircleShape))
-                        Spacer(Modifier.width(12.dp))
-                        Text(if (lang == Lang.EN) branch.name else when(branch) {
+                    when (branch) {
+                        Branch.PHYSICS -> AtomIcon(accent, Modifier.size(24.dp))
+                        Branch.CHEMISTRY -> FlaskIcon(accent, Modifier.size(24.dp))
+                        Branch.BIOLOGY -> DNAIcon(accent, Modifier.size(24.dp))
+                    }
+                }
+                Spacer(Modifier.width(20.dp))
+                Column {
+                    Text(
+                        if (lang == Lang.EN) branch.name else when (branch) {
                             Branch.PHYSICS -> "भौतिकी"
                             Branch.CHEMISTRY -> "रसायन विज्ञान"
                             Branch.BIOLOGY -> "जीव विज्ञान"
-                        }, color = GhostWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.weight(1f))
-                        Text(if (lang == Lang.EN) "VIEW" else "देखें", color = accent, fontSize = 10.sp, fontWeight = FontWeight.Black, modifier = Modifier.clickable {
-                            onViewNote(branch)
-                        })
-                    }
-                }
-            }
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        Text(
-            "INSCIT OMEGA v9.0.4",
-            color = txtCol.copy(alpha = 0.3f),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
-        )
-        Spacer(Modifier.height(16.dp))
-    }
-}
-
-@Composable
-fun LanguageSlider(current: Lang, accent: Color, onToggle: (Lang) -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth().height(64.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize().padding(6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(if (current == Lang.EN) accent else Color.Transparent)
-                    .clickable { onToggle(Lang.EN) },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "ENGLISH",
-                    color = if (current == Lang.EN) DeepSpace else GhostWhite,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 12.sp,
-                    letterSpacing = 1.sp
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(if (current == Lang.HI) accent else Color.Transparent)
-                    .clickable { onToggle(Lang.HI) },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "HINDI",
-                    color = if (current == Lang.HI) DeepSpace else GhostWhite,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 12.sp,
-                    letterSpacing = 1.sp
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ThemeItem(
-    label: String,
-    mode: ThemeMode,
-    isSelected: Boolean,
-    accent: Color,
-    onDelete: (() -> Unit)? = null,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(64.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = if (isSelected) accent.copy(alpha = 0.1f) else CardBg,
-        border = if (isSelected) BorderStroke(2.dp, accent) else null
-    ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, color = if (isSelected) accent else GhostWhite, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.weight(1f))
-            if (isSelected) {
-                Text("ACTIVE", color = accent, fontSize = 10.sp, fontWeight = FontWeight.Black)
-            }
-            if (onDelete != null) {
-                Spacer(Modifier.width(16.dp))
-                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
-                    Text("×", color = PowerRed, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
-                }
-            }
-        }
-    }
-}
-@Composable
-fun UserObservationSection(
-    branch: String,
-    userNote: UserNote,
-    onNoteChange: (UserNote) -> Unit,
-    accent: Color,
-    txtCol: Color,
-    fullSpace: Boolean = false,
-    lang: Lang = Lang.EN
-) {
-    val context = LocalContext.current
-    var text by remember(userNote.content) { mutableStateOf(userNote.content) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .imePadding()
-            .then(if (fullSpace) Modifier.fillMaxHeight() else Modifier.wrapContentHeight())
-            .background(CardBg, RoundedCornerShape(16.dp))
-            .border(1.dp, GhostWhite.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
-            .padding(20.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(if (lang == Lang.EN) "YOUR OBSERVATIONS" else "आपकी ऑब्जर्वेशन", color = accent, fontWeight = FontWeight.Black, fontSize = 14.sp, letterSpacing = 1.sp)
-            Spacer(Modifier.weight(1f))
-            if (fullSpace) {
-                IconButton(onClick = {
-                    val shareIntent = Intent().apply {
-                        action = Intent.ACTION_SEND
-                        putExtra(Intent.EXTRA_TEXT, "Inscit Observations ($branch):\n\n${userNote.content}")
-                        type = "text/plain"
-                    }
-                    context.startActivity(Intent.createChooser(shareIntent, "Share Observations"))
-                }, modifier = Modifier.size(24.dp)) { ShareIcon(accent) }
-                Spacer(Modifier.width(8.dp))
-                IconButton(onClick = {
-                    try {
-                        val folder = getExportFolder(context)
-                        val fileName = "inscit_note_${branch}_${System.currentTimeMillis()}.txt"
-                        val file = File(folder, fileName)
-                        file.writeText("BRANCH: $branch\n\nOBSERVATIONS:\n${userNote.content}")
-                        Toast.makeText(context, "Exported to ${file.name}", Toast.LENGTH_SHORT).show()
-                        shareFile(context, file)
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
-                    }
-                }, modifier = Modifier.size(24.dp)) { ExportIcon(accent) }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-
-        TextField(
-            value = text,
-            onValueChange = {
-                text = it
-                onNoteChange(userNote.copy(content = it))
-            },
-            placeholder = { Text(if (lang == Lang.EN) "Record your findings..." else "अपने निष्कर्ष दर्ज करें...", color = txtCol.copy(alpha = 0.3f)) },
-            modifier = Modifier.fillMaxWidth().then(if (fullSpace) Modifier.height(120.dp) else Modifier),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = accent,
-                unfocusedIndicatorColor = accent.copy(alpha = 0.2f),
-                cursorColor = accent,
-                focusedTextColor = GhostWhite,
-                unfocusedTextColor = GhostWhite
-            )
-        )
-
-        Spacer(Modifier.height(if (fullSpace) 24.dp else 16.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            DrawingIcon(accent, Modifier.size(16.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(if (lang == Lang.EN) "SKETCHPAD" else "स्केचपैड", color = accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.weight(1f))
-            if (userNote.drawingData.isNotEmpty()) {
-                TextButton(onClick = { onNoteChange(userNote.copy(drawingData = "")) }) {
-                    Text(if (lang == Lang.EN) "CLEAR" else "साफ करें", color = PowerRed, fontSize = 10.sp)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        DrawingCanvas(
-            drawingData = userNote.drawingData,
-            onDrawingChange = { onNoteChange(userNote.copy(drawingData = it)) },
-            color = accent,
-            modifier = if (fullSpace) Modifier.weight(1f) else Modifier.height(200.dp)
-        )
-
-        if (!fullSpace) {
-            Spacer(Modifier.height(16.dp))
-
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                IconButton(onClick = {
-                    val shareIntent = Intent().apply {
-                        action = Intent.ACTION_SEND
-                        putExtra(Intent.EXTRA_TEXT, "Inscit Observations ($branch):\n\n${userNote.content}")
-                        type = "text/plain"
-                    }
-                    context.startActivity(Intent.createChooser(shareIntent, "Share Observations"))
-                }) { ShareIcon(accent) }
-
-                IconButton(onClick = {
-                    try {
-                        val folder = getExportFolder(context)
-                        val fileName = "inscit_note_${branch}_${System.currentTimeMillis()}.txt"
-                        val file = File(folder, fileName)
-                        file.writeText("BRANCH: $branch\n\nOBSERVATIONS:\n${userNote.content}")
-                        Toast.makeText(context, "Exported to ${file.name}", Toast.LENGTH_SHORT).show()
-                        shareFile(context, file)
-                    } catch (e: Exception) {
-                        Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
-                    }
-                }) { ExportIcon(accent) }
-            }
-        }
-    }
-}
-
-@Composable
-fun DrawingCanvas(
-    modifier: Modifier = Modifier,
-    drawingData: String,
-    onDrawingChange: (String) -> Unit,
-    color: Color
-) {
-    var currentPath by remember { mutableStateOf<List<Offset>>(emptyList()) }
-    val paths = remember(drawingData) {
-        if (drawingData.isEmpty()) mutableListOf<List<Offset>>()
-        else drawingData.split("|").map { pathStr ->
-            pathStr.split(";").mapNotNull { pointStr ->
-                val coords = pointStr.split(",")
-                if (coords.size == 2) Offset(coords[0].toFloat(), coords[1].toFloat()) else null
-            }
-        }.toMutableList()
-    }
-
-    Canvas(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(DeepSpace.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-            .border(1.dp, color.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { offset -> currentPath = listOf(offset) },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        currentPath = currentPath + change.position
-                    },
-                    onDragEnd = {
-                        val newPaths = paths + listOf(currentPath)
-                        val newData = newPaths.joinToString("|") { path ->
-                            path.joinToString(";") { "${it.x},${it.y}" }
-                        }
-                        onDrawingChange(newData)
-                        currentPath = emptyList()
-                    }
-                )
-            }
-    ) {        paths.forEach { path ->
-            if (path.size > 1) {
-                val p = Path().apply {
-                    moveTo(path[0].x, path[0].y)
-                    path.drop(1).forEach { lineTo(it.x, it.y) }
-                }
-                drawPath(p, color, style = Stroke(width = 4f, cap = StrokeCap.Round))
-            }
-        }
-        if (currentPath.size > 1) {
-            val p = Path().apply {
-                moveTo(currentPath[0].x, currentPath[0].y)
-                currentPath.drop(1).forEach { lineTo(it.x, it.y) }
-            }
-            drawPath(p, color, style = Stroke(width = 4f, cap = StrokeCap.Round))
-        }
-    }
-}
-
-@Composable
-fun ExportListScreen(
-    accent: Color,
-    txtCol: Color,
-    lang: Lang,
-    onBack: () -> Unit,
-    onFileClick: (File) -> Unit
-) {
-    val context = LocalContext.current
-    val exportFolder = remember { getExportFolder(context) }
-    var files by remember { mutableStateOf(exportFolder.listFiles()?.filter { it.isFile }?.sortedByDescending { it.lastModified() } ?: emptyList()) }
-
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp)
-    ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(color = txtCol) }
-            Text(if (lang == Lang.EN) "EXPORTED DATA" else "एक्सपोर्ट किया गया डेटा", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 2.sp)
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        if (files.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(if (lang == Lang.EN) "No exports found." else "कोई एक्सपोर्ट नहीं मिला।", color = txtCol.copy(alpha = 0.5f))
-            }
-        } else {
-        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(files) { file ->
-                    Surface(
-                        onClick = { onFileClick(file) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = CardBg,
-                        border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
-                    ) {
-                        Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(40.dp).clip(CircleShape).background(accent.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                                NoteIcon(accent)
-                            }
-                            Spacer(Modifier.width(16.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(file.name, color = GhostWhite, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text(
-                                    SimpleDateFormat("dd MMM yyyy, HH:mm").format(Date(file.lastModified())),
-                                    color = accent.copy(alpha = 0.6f),
-                                    fontSize = 10.sp
-                                )
-                            }
-                            IconButton(onClick = {
-                                file.delete()
-                                files = exportFolder.listFiles()?.filter { it.isFile }?.sortedByDescending { it.lastModified() } ?: emptyList()
-                            }) {
-                                Text("×", color = PowerRed, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ExportDetailScreen(
-    file: File,
-    accent: Color,
-    txtCol: Color,
-    lang: Lang,
-    onBack: () -> Unit
-) {
-    val context = LocalContext.current
-    val content = remember(file) { try { file.readText() } catch (e: Exception) { "Error reading file" } }
-
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp)
-    ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(color = txtCol) }
-            Text(file.name, fontSize = 16.sp, fontWeight = FontWeight.Black, color = txtCol, modifier = Modifier.weight(1f))
-            IconButton(onClick = { shareFile(context, file) }) { ShareIcon(accent) }
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        Surface(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            shape = RoundedCornerShape(24.dp),
-            color = CardBg,
-            border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
-        ) {
-            Column(Modifier.padding(24.dp).verticalScroll(rememberScrollState())) {
-                Text(content, color = GhostWhite.copy(alpha = 0.8f), fontSize = 14.sp, lineHeight = 22.sp, fontFamily = FontFamily.Monospace)
-            }
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        Button(
-            onClick = { shareFile(context, file) },
-            modifier = Modifier.fillMaxWidth().height(60.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace)
-        ) {
-            Text(if (lang == Lang.EN) "SHARE / EXPORT" else "शेयर / एक्सपोर्ट", fontWeight = FontWeight.ExtraBold)
-        }
-    }
-}
-
-@Composable
-fun RankingsScreen(
-    totalXp: Int,
-    lang: Lang,
-    accent: Color,
-    txtCol: Color,
-    onBack: () -> Unit
-) {
-    val currentRank = Rank.fromXp(totalXp)
-    val nextRank = Rank.entries.getOrNull(currentRank.ordinal + 1)
-    val xpNeeded = nextRank?.let { it.threshold - totalXp } ?: 0
-
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp)
-    ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(color = txtCol) }
-            Text(if (lang == Lang.EN) "RANKING PROTOCOL" else "रैंकिंग प्रोटोकॉल", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 2.sp)
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        // Current Status Card
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            color = accent.copy(alpha = 0.1f),
-            border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
-        ) {
-            Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(currentRank.icon, fontSize = 48.sp)
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    (if (lang == Lang.EN) "CURRENT RANK: " else "वर्तमान रैंक: ") + currentRank.label.uppercase(),
-                    color = GhostWhite,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 18.sp
-                )
-                Spacer(Modifier.height(16.dp))
-                if (nextRank != null) {
-                    Text(
-                        (if (lang == Lang.EN) "NEXT RANK: " else "अगली रैंक: ") + nextRank.label.uppercase(),
-                        color = accent,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+                        }, fontWeight = FontWeight.Bold, color = GhostWhite, fontSize = 16.sp
                     )
-                    Spacer(Modifier.height(4.dp))
                     Text(
-                        (if (lang == Lang.EN) "$xpNeeded MORE XP NEEDED" else "$xpNeeded और XP चाहिए"),
-                        color = GhostWhite.copy(alpha = 0.6f),
-                        fontSize = 10.sp,
+                        if (lang == Lang.EN) "MODULE READY" else "मॉड्यूल तैयार",
+                        fontSize = 9.sp,
+                        color = accent.copy(alpha = 0.6f),
                         fontWeight = FontWeight.Bold
                     )
-                } else {
-                    Text(
-                        if (lang == Lang.EN) "MAX RANK ACHIEVED" else "अधिकतम रैंक प्राप्त की",
-                        color = BioLime,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
                 }
-            }
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        Text(
-            if (lang == Lang.EN) "RANK THRESHOLDS" else "रैंक थ्रेशोल्ड",
-            color = accent,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(Rank.entries) { rank ->
-                val isUnlocked = totalXp >= rank.threshold
-                val isCurrent = rank == currentRank
-
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (isCurrent) accent.copy(alpha = 0.05f) else CardBg,
-                    border = BorderStroke(1.dp, if (isCurrent) accent.copy(alpha = 0.3f) else if (isUnlocked) GhostWhite.copy(alpha = 0.1f) else GhostWhite.copy(alpha = 0.02f))
-                ) {
-                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(rank.icon, fontSize = 24.sp, modifier = Modifier.alpha(if (isUnlocked) 1f else 0.3f))
-                        Spacer(Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                rank.label.uppercase(),
-                                color = if (isUnlocked) GhostWhite else GhostWhite.copy(alpha = 0.3f),
-                                fontWeight = FontWeight.Black,
-                                fontSize = 14.sp
-                            )
-                            Text(
-                                "${rank.threshold} XP",
-                                color = if (isUnlocked) accent else GhostWhite.copy(alpha = 0.1f),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Spacer(Modifier.weight(1f))
-                        if (isCurrent) {
-                            Text("CURRENT", color = accent, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                        } else if (!isUnlocked) {
-                            Text("LOCKED", color = GhostWhite.copy(alpha = 0.1f), fontSize = 10.sp, fontWeight = FontWeight.Black)
-                        }
-                    }
-                }
+                Spacer(Modifier.weight(1f))
+                Text("→", color = GhostWhite.copy(alpha = 0.2f), fontSize = 20.sp)
             }
         }
     }
-}
 
-@Composable
-fun StreakDetailsScreen(
-    userDoc: UserDocument,
-    accent: Color,
-    txtCol: Color,
-    lang: Lang,
-    onBack: () -> Unit
-) {
-    val stats = userDoc.stats
-    val spacing = MaterialTheme.spacing
-    val streakEmoji = if (stats.currentStreak > 0) "🔥" else "❄️"
-    
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+    @Composable
+    fun ThemeSelectionScreen(
+        current: ThemeMode,
+        lang: Lang,
+        accent: Color,
+        txtCol: Color,
+        customThemes: List<CustomTheme> = emptyList(),
+        selectedCustomName: String? = null,
+        onToggle: (ThemeMode) -> Unit,
+        onToggleCustom: (String) -> Unit = {},
+        onDeleteCustom: (String) -> Unit = {},
+        onAddCustom: () -> Unit = {},
+        onLangToggle: (Lang) -> Unit,
+        onOpenFolder: () -> Unit,
+        onViewNote: (Branch) -> Unit,
+        onBack: () -> Unit
     ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(color = txtCol) }
-            Text(
-                if (lang == Lang.EN) "STREAK TRACKER" else "स्ट्रीक ट्रैकर",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Black,
-                color = txtCol,
-                letterSpacing = 2.sp
-            )
-        }
-
-        Spacer(Modifier.height(40.dp))
-
-        // Main Streak Display
-        Surface(
-            modifier = Modifier.fillMaxWidth().height(200.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = accent.copy(alpha = 0.1f),
-            border = BorderStroke(2.dp, accent)
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(streakEmoji, fontSize = 64.sp)
-                Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
                 Text(
-                    "${stats.currentStreak}",
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = accent
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    if (lang == Lang.EN) "DAYS IN A ROW" else "लगातार दिन",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = accent.copy(alpha = 0.7f),
+                    if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = txtCol,
                     letterSpacing = 2.sp
                 )
             }
-        }
 
-        Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(60.dp))
 
-        // Stats Grid
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            StreakStatCard(
-                label = if (lang == Lang.EN) "CURRENT" else "वर्तमान",
-                value = "${stats.currentStreak}",
-                accent = accent,
-                modifier = Modifier.weight(1f)
-            )
-            StreakStatCard(
-                label = if (lang == Lang.EN) "PERSONAL BEST" else "सर्वश्रेष्ठ",
-                value = "${stats.longestStreak}",
-                accent = accent,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        // Info Cards
-        InfoCard(
-            icon = "✨",
-            title = if (lang == Lang.EN) "REQUIREMENT" else "आवश्यकता",
-            description = if (lang == Lang.EN) "Score 80% or above in any quiz to maintain your streak" else "स्ट्रीक बनाए रखने के लिए किसी भी क्विज़ में 80% या उससे अधिक स्कोर करें",
-            accent = accent
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        InfoCard(
-            icon = "📅",
-            title = if (lang == Lang.EN) "ONE PER DAY" else "प्रति दिन एक",
-            description = if (lang == Lang.EN) "Only one 80%+ score per day counts toward your streak" else "प्रति दिन केवल एक 80%+ स्कोर स्ट्रीक की ओर गिना जाता है",
-            accent = accent
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        InfoCard(
-            icon = "⚠️",
-            title = if (lang == Lang.EN) "MISS A DAY?" else "एक दिन मिस?",
-            description = if (lang == Lang.EN) "Missing a single day resets your streak back to 0" else "एक दिन मिस करने से आपकी स्ट्रीक 0 पर रीसेट हो जाती है",
-            accent = accent
-        )
-
-        Spacer(Modifier.height(32.dp))
-
-        // Achievement Section
-        if (stats.longestStreak > 0) {
             Text(
-                if (lang == Lang.EN) "🏆 MILESTONES ACHIEVED" else "🏆 हासिल किए गए मील के पत्थर",
+                if (lang == Lang.EN) "APP LANGUAGE" else "ऐप की भाषा",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = accent,
+                letterSpacing = 2.sp,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(Modifier.height(16.dp))
+            LanguageSlider(lang, accent, onLangToggle)
+
+            Spacer(Modifier.height(32.dp))
+
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    if (lang == Lang.EN) "INTERFACE THEME" else "इंटरफ़ेस थीम",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accent,
+                    letterSpacing = 2.sp
+                )
+                IconButton(onClick = onAddCustom) {
+                    PencilIcon(
+                        color = accent,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+
+            ThemeItem(
+                if (lang == Lang.EN) "NEON PROTOCOL" else "नियॉन प्रोटोकॉल",
+                ThemeMode.NEON,
+                current == ThemeMode.NEON,
+                accent
+            ) { onToggle(ThemeMode.NEON) }
+            Spacer(Modifier.height(12.dp))
+            ThemeItem(
+                if (lang == Lang.EN) "NOBLE ARCHIVE" else "नोबल आर्काइव",
+                ThemeMode.NOBLE,
+                current == ThemeMode.NOBLE,
+                accent
+            ) { onToggle(ThemeMode.NOBLE) }
+
+            if (customThemes.isNotEmpty()) {
+                Spacer(Modifier.height(32.dp))
+                Text(
+                    if (lang == Lang.EN) "CREATED" else "बनाया गया",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accent,
+                    letterSpacing = 2.sp,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+                Spacer(Modifier.height(16.dp))
+                customThemes.forEach { theme ->
+                    ThemeItem(
+                        label = theme.name.uppercase(),
+                        mode = ThemeMode.CUSTOM,
+                        isSelected = current == ThemeMode.CUSTOM && selectedCustomName == theme.name,
+                        accent = Color(theme.primaryAccent),
+                        onDelete = { onDeleteCustom(theme.name) }
+                    ) { onToggleCustom(theme.name) }
+                    Spacer(Modifier.height(12.dp))
+                }
+            }
+
+            Spacer(Modifier.height(48.dp))
+
+            Text(
+                if (lang == Lang.EN) "KNOWLEDGE BASE" else "नॉलेज बेस",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = accent,
@@ -3201,116 +2656,968 @@ fun StreakDetailsScreen(
             )
             Spacer(Modifier.height(16.dp))
 
-            if (stats.longestStreak >= 3) {
-                MilestoneRow(emoji = "3️⃣", label = if (lang == Lang.EN) "3 Day Streak" else "3 दिन की स्ट्रीक", accent)
-                Spacer(Modifier.height(8.dp))
+            Surface(
+                onClick = onOpenFolder,
+                modifier = Modifier.fillMaxWidth().height(64.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = CardBg,
+                border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    NoteIcon(color = accent)
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        if (lang == Lang.EN) "EXPLORE ALL NOTES" else "सभी नोट्स देखें",
+                        color = GhostWhite,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text("→", color = GhostWhite.copy(alpha = 0.2f))
+                }
             }
-            if (stats.longestStreak >= 7) {
-                MilestoneRow(emoji = "7️⃣", label = if (lang == Lang.EN) "Week Warrior" else "सप्ताह योद्धा", accent)
-                Spacer(Modifier.height(8.dp))
-            }
-            if (stats.longestStreak >= 14) {
-                MilestoneRow(emoji = "1️⃣4️⃣", label = if (lang == Lang.EN) "Two Week Champion" else "दो सप्ताह चैंपियन", accent)
-                Spacer(Modifier.height(8.dp))
-            }
-            if (stats.longestStreak >= 30) {
-                MilestoneRow(emoji = "3️⃣0️⃣", label = if (lang == Lang.EN) "Month Master" else "महीना मास्टर", accent)
-                Spacer(Modifier.height(8.dp))
-            }
-        }
 
-        Spacer(Modifier.height(24.dp))
-    }
-}
+            Spacer(Modifier.height(32.dp))
 
-@Composable
-fun StreakStatCard(
-    label: String,
-    value: String,
-    accent: Color,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.height(120.dp),
-        shape = RoundedCornerShape(size = 16.dp),
-        color = CardBg,
-        border = BorderStroke(width = 1.dp, color = accent.copy(alpha = 0.3f))
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(all = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
             Text(
-                value,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = accent
+                if (lang == Lang.EN) "SAVED OBSERVATIONS" else "सेव की गई ऑब्जर्वेशन",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = accent,
+                letterSpacing = 2.sp,
+                modifier = Modifier.align(Alignment.Start)
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(16.dp))
+
+            Column(Modifier.fillMaxWidth()) {
+                Branch.entries.forEach { branch ->
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = CardBg.copy(alpha = 0.5f)
+                    ) {
+                        Row(
+                            Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(Modifier.size(8.dp).background(accent, CircleShape))
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                if (lang == Lang.EN) branch.name else when (branch) {
+                                    Branch.PHYSICS -> "भौतिकी"
+                                    Branch.CHEMISTRY -> "रसायन विज्ञान"
+                                    Branch.BIOLOGY -> "जीव विज्ञान"
+                                },
+                                color = GhostWhite,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.weight(1f))
+                            Text(
+                                if (lang == Lang.EN) "VIEW" else "देखें",
+                                color = accent,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.clickable {
+                                    onViewNote(branch)
+                                })
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+
             Text(
-                label,
+                "INSCIT OMEGA v9.0.4",
+                color = txtCol.copy(alpha = 0.3f),
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = GhostWhite.copy(alpha = 0.6f),
                 letterSpacing = 1.sp
             )
+            Spacer(Modifier.height(16.dp))
         }
     }
-}
 
-@Composable
-fun InfoCard(
-    icon: String,
-    title: String,
-    description: String,
-    accent: Color
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(size = 16.dp),
-        color = CardBg,
-        border = BorderStroke(width = 1.dp, color = accent.copy(alpha = 0.2f))
-    ) {
-        Row(
-            modifier = Modifier.padding(all = 16.dp),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+    @Composable
+    fun LanguageSlider(current: Lang, accent: Color, onToggle: (Lang) -> Unit) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().height(64.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = CardBg,
+            border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
         ) {
-            Text(icon, fontSize = 24.sp)
-            Column(Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (current == Lang.EN) accent else Color.Transparent)
+                        .clickable { onToggle(Lang.EN) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "ENGLISH",
+                        color = if (current == Lang.EN) DeepSpace else GhostWhite,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp,
+                        letterSpacing = 1.sp
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (current == Lang.HI) accent else Color.Transparent)
+                        .clickable { onToggle(Lang.HI) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "HINDI",
+                        color = if (current == Lang.HI) DeepSpace else GhostWhite,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp,
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun ThemeItem(
+        label: String,
+        mode: ThemeMode,
+        isSelected: Boolean,
+        accent: Color,
+        onDelete: (() -> Unit)? = null,
+        onClick: () -> Unit
+    ) {
+        Surface(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth().height(64.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = if (isSelected) accent.copy(alpha = 0.1f) else CardBg,
+            border = if (isSelected) BorderStroke(2.dp, accent) else null
+        ) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    title,
+                    label,
+                    color = if (isSelected) accent else GhostWhite,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.weight(1f))
+                if (isSelected) {
+                    Text("ACTIVE", color = accent, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                }
+                if (onDelete != null) {
+                    Spacer(Modifier.width(16.dp))
+                    IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                        Text(
+                            "×",
+                            color = PowerRed,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun UserObservationSection(
+        branch: String,
+        userNote: UserNote,
+        onNoteChange: (UserNote) -> Unit,
+        accent: Color,
+        txtCol: Color,
+        fullSpace: Boolean = false,
+        lang: Lang = Lang.EN
+    ) {
+        val context = LocalContext.current
+        var text by remember(userNote.content) { mutableStateOf(userNote.content) }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .imePadding()
+                .then(if (fullSpace) Modifier.fillMaxHeight() else Modifier.wrapContentHeight())
+                .background(CardBg, RoundedCornerShape(16.dp))
+                .border(1.dp, GhostWhite.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                .padding(20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (lang == Lang.EN) "YOUR OBSERVATIONS" else "आपकी ऑब्जर्वेशन",
+                    color = accent,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 14.sp,
+                    letterSpacing = 1.sp
+                )
+                Spacer(Modifier.weight(1f))
+                if (fullSpace) {
+                    IconButton(onClick = {
+                        val shareIntent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(
+                                Intent.EXTRA_TEXT,
+                                "Inscit Observations ($branch):\n\n${userNote.content}"
+                            )
+                            type = "text/plain"
+                        }
+                        context.startActivity(
+                            Intent.createChooser(
+                                shareIntent,
+                                "Share Observations"
+                            )
+                        )
+                    }, modifier = Modifier.size(24.dp)) { ShareIcon(accent) }
+                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = {
+                        try {
+                            val folder = getExportFolder(context)
+                            val fileName = "inscit_note_${branch}_${System.currentTimeMillis()}.txt"
+                            val file = File(folder, fileName)
+                            file.writeText("BRANCH: $branch\n\nOBSERVATIONS:\n${userNote.content}")
+                            Toast.makeText(context, "Exported to ${file.name}", Toast.LENGTH_SHORT)
+                                .show()
+                            shareFile(context, file)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
+                        }
+                    }, modifier = Modifier.size(24.dp)) { ExportIcon(accent) }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            TextField(
+                value = text,
+                onValueChange = {
+                    text = it
+                    onNoteChange(userNote.copy(content = it))
+                },
+                placeholder = {
+                    Text(
+                        if (lang == Lang.EN) "Record your findings..." else "अपने निष्कर्ष दर्ज करें...",
+                        color = txtCol.copy(alpha = 0.3f)
+                    )
+                },
+                modifier = Modifier.fillMaxWidth()
+                    .then(if (fullSpace) Modifier.height(120.dp) else Modifier),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = accent,
+                    unfocusedIndicatorColor = accent.copy(alpha = 0.2f),
+                    cursorColor = accent,
+                    focusedTextColor = GhostWhite,
+                    unfocusedTextColor = GhostWhite
+                )
+            )
+
+            Spacer(Modifier.height(if (fullSpace) 24.dp else 16.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                DrawingIcon(accent, Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    if (lang == Lang.EN) "SKETCHPAD" else "स्केचपैड",
+                    color = accent,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.weight(1f))
+                if (userNote.drawingData.isNotEmpty()) {
+                    TextButton(onClick = { onNoteChange(userNote.copy(drawingData = "")) }) {
+                        Text(
+                            if (lang == Lang.EN) "CLEAR" else "साफ करें",
+                            color = PowerRed,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            DrawingCanvas(
+                drawingData = userNote.drawingData,
+                onDrawingChange = { onNoteChange(userNote.copy(drawingData = it)) },
+                color = accent,
+                modifier = if (fullSpace) Modifier.weight(1f) else Modifier.height(200.dp)
+            )
+
+            if (!fullSpace) {
+                Spacer(Modifier.height(16.dp))
+
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    IconButton(onClick = {
+                        val shareIntent = Intent().apply {
+                            action = Intent.ACTION_SEND
+                            putExtra(
+                                Intent.EXTRA_TEXT,
+                                "Inscit Observations ($branch):\n\n${userNote.content}"
+                            )
+                            type = "text/plain"
+                        }
+                        context.startActivity(
+                            Intent.createChooser(
+                                shareIntent,
+                                "Share Observations"
+                            )
+                        )
+                    }) { ShareIcon(accent) }
+
+                    IconButton(onClick = {
+                        try {
+                            val folder = getExportFolder(context)
+                            val fileName = "inscit_note_${branch}_${System.currentTimeMillis()}.txt"
+                            val file = File(folder, fileName)
+                            file.writeText("BRANCH: $branch\n\nOBSERVATIONS:\n${userNote.content}")
+                            Toast.makeText(context, "Exported to ${file.name}", Toast.LENGTH_SHORT)
+                                .show()
+                            shareFile(context, file)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
+                        }
+                    }) { ExportIcon(accent) }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun DrawingCanvas(
+        modifier: Modifier = Modifier,
+        drawingData: String,
+        onDrawingChange: (String) -> Unit,
+        color: Color
+    ) {
+        var currentPath by remember { mutableStateOf<List<Offset>>(emptyList()) }
+        val paths = remember(drawingData) {
+            if (drawingData.isEmpty()) mutableListOf<List<Offset>>()
+            else drawingData.split("|").map { pathStr ->
+                pathStr.split(";").mapNotNull { pointStr ->
+                    val coords = pointStr.split(",")
+                    if (coords.size == 2) Offset(coords[0].toFloat(), coords[1].toFloat()) else null
+                }
+            }.toMutableList()
+        }
+
+        Canvas(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(DeepSpace.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                .border(1.dp, color.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragStart = { offset -> currentPath = listOf(offset) },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            currentPath = currentPath + change.position
+                        },
+                        onDragEnd = {
+                            val newPaths = paths + listOf(currentPath)
+                            val newData = newPaths.joinToString("|") { path ->
+                                path.joinToString(";") { "${it.x},${it.y}" }
+                            }
+                            onDrawingChange(newData)
+                            currentPath = emptyList()
+                        }
+                    )
+                }
+        ) {
+            paths.forEach { path ->
+                if (path.size > 1) {
+                    val p = Path().apply {
+                        moveTo(path[0].x, path[0].y)
+                        path.drop(1).forEach { lineTo(it.x, it.y) }
+                    }
+                    drawPath(p, color, style = Stroke(width = 4f, cap = StrokeCap.Round))
+                }
+            }
+            if (currentPath.size > 1) {
+                val p = Path().apply {
+                    moveTo(currentPath[0].x, currentPath[0].y)
+                    currentPath.drop(1).forEach { lineTo(it.x, it.y) }
+                }
+                drawPath(p, color, style = Stroke(width = 4f, cap = StrokeCap.Round))
+            }
+        }
+    }
+
+    @Composable
+    fun ExportListScreen(
+        accent: Color,
+        txtCol: Color,
+        lang: Lang,
+        onBack: () -> Unit,
+        onFileClick: (File) -> Unit
+    ) {
+        val context = LocalContext.current
+        val exportFolder = remember { getExportFolder(context) }
+        var files by remember {
+            mutableStateOf(exportFolder.listFiles()?.filter { it.isFile }
+                ?.sortedByDescending { it.lastModified() } ?: emptyList())
+        }
+
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp)
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                Text(
+                    if (lang == Lang.EN) "EXPORTED DATA" else "एक्सपोर्ट किया गया डेटा",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = txtCol,
+                    letterSpacing = 2.sp
+                )
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            if (files.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        if (lang == Lang.EN) "No exports found." else "कोई एक्सपोर्ट नहीं मिला।",
+                        color = txtCol.copy(alpha = 0.5f)
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(files) { file ->
+                        Surface(
+                            onClick = { onFileClick(file) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            color = CardBg,
+                            border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
+                        ) {
+                            Row(
+                                Modifier.padding(20.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    Modifier.size(40.dp).clip(CircleShape)
+                                        .background(accent.copy(alpha = 0.1f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    NoteIcon(accent)
+                                }
+                                Spacer(Modifier.width(16.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        file.name,
+                                        color = GhostWhite,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                    Text(
+                                        SimpleDateFormat("dd MMM yyyy, HH:mm").format(Date(file.lastModified())),
+                                        color = accent.copy(alpha = 0.6f),
+                                        fontSize = 10.sp
+                                    )
+                                }
+                                IconButton(onClick = {
+                                    file.delete()
+                                    files = exportFolder.listFiles()?.filter { it.isFile }
+                                        ?.sortedByDescending { it.lastModified() } ?: emptyList()
+                                }) {
+                                    Text(
+                                        "×",
+                                        color = PowerRed,
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun ExportDetailScreen(
+        file: File,
+        accent: Color,
+        txtCol: Color,
+        lang: Lang,
+        onBack: () -> Unit
+    ) {
+        val context = LocalContext.current
+        val content = remember(file) {
+            try {
+                file.readText()
+            } catch (e: Exception) {
+                "Error reading file"
+            }
+        }
+
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp)
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                Text(
+                    file.name,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    color = txtCol,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { shareFile(context, file) }) { ShareIcon(accent) }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                shape = RoundedCornerShape(24.dp),
+                color = CardBg,
+                border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
+            ) {
+                Column(Modifier.padding(24.dp).verticalScroll(rememberScrollState())) {
+                    Text(
+                        content,
+                        color = GhostWhite.copy(alpha = 0.8f),
+                        fontSize = 14.sp,
+                        lineHeight = 22.sp,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            Button(
+                onClick = { shareFile(context, file) },
+                modifier = Modifier.fillMaxWidth().height(60.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = accent,
+                    contentColor = DeepSpace
+                )
+            ) {
+                Text(
+                    if (lang == Lang.EN) "SHARE / EXPORT" else "शेयर / एक्सपोर्ट",
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun RankingsScreen(
+        totalXp: Int,
+        lang: Lang,
+        accent: Color,
+        txtCol: Color,
+        onBack: () -> Unit
+    ) {
+        val currentRank = Rank.fromXp(totalXp)
+        val nextRank = Rank.entries.getOrNull(currentRank.ordinal + 1)
+        val xpNeeded = nextRank?.let { it.threshold - totalXp } ?: 0
+
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp)
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                Text(
+                    if (lang == Lang.EN) "RANKING PROTOCOL" else "रैंकिंग प्रोटोकॉल",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = txtCol,
+                    letterSpacing = 2.sp
+                )
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            // Current Status Card
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = accent.copy(alpha = 0.1f),
+                border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
+            ) {
+                Column(
+                    Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(currentRank.icon, fontSize = 48.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        (if (lang == Lang.EN) "CURRENT RANK: " else "वर्तमान रैंक: ") + currentRank.label.uppercase(),
+                        color = GhostWhite,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    if (nextRank != null) {
+                        Text(
+                            (if (lang == Lang.EN) "NEXT RANK: " else "अगली रैंक: ") + nextRank.label.uppercase(),
+                            color = accent,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            (if (lang == Lang.EN) "$xpNeeded MORE XP NEEDED" else "$xpNeeded और XP चाहिए"),
+                            color = GhostWhite.copy(alpha = 0.6f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        Text(
+                            if (lang == Lang.EN) "MAX RANK ACHIEVED" else "अधिकतम रैंक प्राप्त की",
+                            color = BioLime,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            Text(
+                if (lang == Lang.EN) "RANK THRESHOLDS" else "रैंक थ्रेशोल्ड",
+                color = accent,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(Rank.entries) { rank ->
+                    val isUnlocked = totalXp >= rank.threshold
+                    val isCurrent = rank == currentRank
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isCurrent) accent.copy(alpha = 0.05f) else CardBg,
+                        border = BorderStroke(
+                            1.dp,
+                            if (isCurrent) accent.copy(alpha = 0.3f) else if (isUnlocked) GhostWhite.copy(
+                                alpha = 0.1f
+                            ) else GhostWhite.copy(alpha = 0.02f)
+                        )
+                    ) {
+                        Row(
+                            Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                rank.icon,
+                                fontSize = 24.sp,
+                                modifier = Modifier.alpha(if (isUnlocked) 1f else 0.3f)
+                            )
+                            Spacer(Modifier.width(16.dp))
+                            Column {
+                                Text(
+                                    rank.label.uppercase(),
+                                    color = if (isUnlocked) GhostWhite else GhostWhite.copy(alpha = 0.3f),
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 14.sp
+                                )
+                                Text(
+                                    "${rank.threshold} XP",
+                                    color = if (isUnlocked) accent else GhostWhite.copy(alpha = 0.1f),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Spacer(Modifier.weight(1f))
+                            if (isCurrent) {
+                                Text(
+                                    "CURRENT",
+                                    color = accent,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            } else if (!isUnlocked) {
+                                Text(
+                                    "LOCKED",
+                                    color = GhostWhite.copy(alpha = 0.1f),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun StreakDetailsScreen(
+        userDoc: UserDocument,
+        accent: Color,
+        txtCol: Color,
+        lang: Lang,
+        onBack: () -> Unit
+    ) {
+        val stats = userDoc.stats
+        val spacing = MaterialTheme.spacing
+        val streakEmoji = if (stats.currentStreak > 0) "🔥" else "❄️"
+
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                Text(
+                    if (lang == Lang.EN) "STREAK TRACKER" else "स्ट्रीक ट्रैकर",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = txtCol,
+                    letterSpacing = 2.sp
+                )
+            }
+
+            Spacer(Modifier.height(40.dp))
+
+            // Main Streak Display
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(200.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = accent.copy(alpha = 0.1f),
+                border = BorderStroke(2.dp, accent)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(streakEmoji, fontSize = 64.sp)
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "${stats.currentStreak}",
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = accent
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        if (lang == Lang.EN) "DAYS IN A ROW" else "लगातार दिन",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = accent.copy(alpha = 0.7f),
+                        letterSpacing = 2.sp
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            // Stats Grid
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                StreakStatCard(
+                    label = if (lang == Lang.EN) "CURRENT" else "वर्तमान",
+                    value = "${stats.currentStreak}",
+                    accent = accent,
+                    modifier = Modifier.weight(1f)
+                )
+                StreakStatCard(
+                    label = if (lang == Lang.EN) "PERSONAL BEST" else "सर्वश्रेष्ठ",
+                    value = "${stats.longestStreak}",
+                    accent = accent,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            // Info Cards
+            InfoCard(
+                icon = "✨",
+                title = if (lang == Lang.EN) "REQUIREMENT" else "आवश्यकता",
+                description = if (lang == Lang.EN) "Score 80% or above in any quiz to maintain your streak" else "स्ट्रीक बनाए रखने के लिए किसी भी क्विज़ में 80% या उससे अधिक स्कोर करें",
+                accent = accent
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            InfoCard(
+                icon = "📅",
+                title = if (lang == Lang.EN) "ONE PER DAY" else "प्रति दिन एक",
+                description = if (lang == Lang.EN) "Only one 80%+ score per day counts toward your streak" else "प्रति दिन केवल एक 80%+ स्कोर स्ट्रीक की ओर गिना जाता है",
+                accent = accent
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            InfoCard(
+                icon = "⚠️",
+                title = if (lang == Lang.EN) "MISS A DAY?" else "एक दिन मिस?",
+                description = if (lang == Lang.EN) "Missing a single day resets your streak back to 0" else "एक दिन मिस करने से आपकी स्ट्रीक 0 पर रीसेट हो जाती है",
+                accent = accent
+            )
+
+            Spacer(Modifier.height(32.dp))
+
+            // Achievement Section
+            if (stats.longestStreak > 0) {
+                Text(
+                    if (lang == Lang.EN) "🏆 MILESTONES ACHIEVED" else "🏆 हासिल किए गए मील के पत्थर",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = accent,
-                    letterSpacing = 1.sp
+                    letterSpacing = 2.sp,
+                    modifier = Modifier.align(Alignment.Start)
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(16.dp))
+
+                if (stats.longestStreak >= 3) {
+                    MilestoneRow(
+                        emoji = "3️⃣",
+                        label = if (lang == Lang.EN) "3 Day Streak" else "3 दिन की स्ट्रीक",
+                        accent
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                if (stats.longestStreak >= 7) {
+                    MilestoneRow(
+                        emoji = "7️⃣",
+                        label = if (lang == Lang.EN) "Week Warrior" else "सप्ताह योद्धा",
+                        accent
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                if (stats.longestStreak >= 14) {
+                    MilestoneRow(
+                        emoji = "1️⃣4️⃣",
+                        label = if (lang == Lang.EN) "Two Week Champion" else "दो सप्ताह चैंपियन",
+                        accent
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                if (stats.longestStreak >= 30) {
+                    MilestoneRow(
+                        emoji = "3️⃣0️⃣",
+                        label = if (lang == Lang.EN) "Month Master" else "महीना मास्टर",
+                        accent
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    @Composable
+    fun StreakStatCard(
+        label: String,
+        value: String,
+        accent: Color,
+        modifier: Modifier = Modifier
+    ) {
+        Surface(
+            modifier = modifier.height(120.dp),
+            shape = RoundedCornerShape(size = 16.dp),
+            color = CardBg,
+            border = BorderStroke(width = 1.dp, color = accent.copy(alpha = 0.3f))
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(all = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 Text(
-                    description,
-                    fontSize = 11.sp,
-                    color = GhostWhite.copy(alpha = 0.7f),
-                    lineHeight = 16.sp
+                    value,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = accent
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    label,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GhostWhite.copy(alpha = 0.6f),
+                    letterSpacing = 1.sp
                 )
             }
         }
     }
-}
 
-@Composable
-fun MilestoneRow(emoji: String, label: String, accent: Color) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(color = accent.copy(alpha = 0.05f), shape = RoundedCornerShape(size = 12.dp))
-            .padding(all = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    @Composable
+    fun InfoCard(
+        icon: String,
+        title: String,
+        description: String,
+        accent: Color
     ) {
-        Text(emoji, fontSize = 20.sp)
-        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent)
-        Spacer(Modifier.weight(1f))
-        Text("✓", fontSize = 16.sp, color = BioLime, fontWeight = FontWeight.Bold)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(size = 16.dp),
+            color = CardBg,
+            border = BorderStroke(width = 1.dp, color = accent.copy(alpha = 0.2f))
+        ) {
+            Row(
+                modifier = Modifier.padding(all = 16.dp),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(icon, fontSize = 24.sp)
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        title,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = accent,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        description,
+                        fontSize = 11.sp,
+                        color = GhostWhite.copy(alpha = 0.7f),
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+        }
     }
-}
+
+    @Composable
+    fun MilestoneRow(emoji: String, label: String, accent: Color) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    color = accent.copy(alpha = 0.05f),
+                    shape = RoundedCornerShape(size = 12.dp)
+                )
+                .padding(all = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(emoji, fontSize = 20.sp)
+            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent)
+            Spacer(Modifier.weight(1f))
+            Text("✓", fontSize = 16.sp, color = BioLime, fontWeight = FontWeight.Bold)
+        }
+    }
