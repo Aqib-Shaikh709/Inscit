@@ -36,6 +36,7 @@ fun ScienceQuizScreen(
     accent: Color,
     customQuestionCount: Int = 10,
     difficultyFilter: String? = null,
+    round: Int? = null,
     finishButtonLabel: String? = null,
     onFinish: (xpEarned: Int, score: Int, strengths: List<String>, weaknesses: List<String>) -> Unit,
     viewModel: QuizViewModel = viewModel<QuizViewModel>()
@@ -45,7 +46,9 @@ fun ScienceQuizScreen(
     val spacing = MaterialTheme.spacing
 
     LaunchedEffect(Unit) {
-        if (viewModel.uiState.value is QuizUiState.Loading) {
+        if (round != null) {
+            viewModel.startRoundQuiz(lang, round)
+        } else if (viewModel.uiState.value is QuizUiState.Loading) {
             viewModel.startQuiz(lang, customQuestionCount, difficultyFilter)
         }
         viewModel.events.collectLatest { event ->

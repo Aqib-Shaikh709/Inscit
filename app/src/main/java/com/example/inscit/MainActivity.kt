@@ -1224,12 +1224,6 @@ fun DailyQuizScreen(
     }
 
     if (isQuizActive) {
-        val qCount = when(status.currentRound) {
-            1 -> 5
-            2 -> 10
-            else -> 15
-        }
-        
         val buttonLabel = if (status.currentRound < 3) {
             if (lang == Lang.EN) "NEXT ROUND" else "अगला राउंड"
         } else {
@@ -1240,8 +1234,7 @@ fun DailyQuizScreen(
             ScienceQuizScreen(
                 lang = lang,
                 accent = accent,
-                customQuestionCount = qCount,
-                difficultyFilter = "INTERMEDIATE",
+                round = status.currentRound,
                 finishButtonLabel = buttonLabel,
                 onFinish = { xp, score, _, _ ->
                     if (score >= 70) {
@@ -1293,7 +1286,7 @@ fun RoundCard(round: Int, qCount: Int, isUnlocked: Boolean, isCurrent: Boolean, 
             Spacer(Modifier.width(16.dp))
             Column {
                 Text("ROUND $round", fontWeight = FontWeight.Black, color = if (isUnlocked) GhostWhite else GhostWhite.copy(alpha = 0.3f))
-                Text("$qCount QUESTIONS • INTERMEDIATE", fontSize = 10.sp, color = accent)
+                Text("$qCount QUESTIONS • SYLLABUS", fontSize = 10.sp, color = accent)
             }
             Spacer(Modifier.weight(1f))
             if (isCurrent) Text("ACTIVE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = accent)

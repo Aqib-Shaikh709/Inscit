@@ -302,5 +302,3 @@ fun LangToggleButton(currentLang: Lang, accent: Color, modifier: Modifier = Modi
         }
     }
 }
-
-

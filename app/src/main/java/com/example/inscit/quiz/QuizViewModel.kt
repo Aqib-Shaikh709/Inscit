@@ -31,17 +31,40 @@ class QuizViewModel(
 
     private var lastCount: Int = 10
     private var lastDifficulty: String? = null
+    private var lastRound: Int? = null
 
     fun startQuiz(lang: Lang, count: Int = 10, difficulty: String? = null) {
         if (_uiState.value !is QuizUiState.Loading) return
         currentLang = lang
         lastCount = count
         lastDifficulty = difficulty
+        lastRound = null
         xpBuffer.clear()
         userAnswers.clear()
         viewModelScope.launch {
             _uiState.value = QuizUiState.Loading
             questions = engine.getQuestions(lang, count, difficulty)
+            if (questions.isNotEmpty()) {
+                _uiState.value = QuizUiState.QuizInProgress(
+                    currentQuestion = questions.first(),
+                    currentIndex = 0,
+                    totalQuestions = questions.size
+                )
+            } else {
+                _uiState.value = QuizUiState.Error("No questions found.")
+            }
+        }
+    }
+
+    fun startRoundQuiz(lang: Lang, round: Int) {
+        if (_uiState.value is QuizUiState.QuizInProgress && lastRound == round) return
+        currentLang = lang
+        lastRound = round
+        xpBuffer.clear()
+        userAnswers.clear()
+        viewModelScope.launch {
+            _uiState.value = QuizUiState.Loading
+            questions = engine.getDailyRoundQuestions(round, lang)
             if (questions.isNotEmpty()) {
                 _uiState.value = QuizUiState.QuizInProgress(
                     currentQuestion = questions.first(),
@@ -92,6 +115,10 @@ class QuizViewModel(
 
     fun retry() {
         _uiState.value = QuizUiState.Loading
-        startQuiz(currentLang, lastCount, lastDifficulty)
+        if (lastRound != null) {
+            startRoundQuiz(currentLang, lastRound!!)
+        } else {
+            startQuiz(currentLang, lastCount, lastDifficulty)
+        }
     }
 }
