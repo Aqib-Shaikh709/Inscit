@@ -137,7 +137,10 @@ import com.example.inscit.models.UserNote
 import com.example.inscit.models.UserProfile
 import com.example.inscit.models.UserSettings
 import com.example.inscit.models.UserStats
+import com.example.inscit.notifications.NotificationHelper
 import com.example.inscit.notifications.NotificationScheduler
+import com.example.inscit.goals.GoalManager
+import com.example.inscit.goals.GoalScheduler
 import com.example.inscit.syllabus.Syllabus
 import com.example.inscit.ui.AtomIcon
 import com.example.inscit.ui.BackIcon
@@ -147,6 +150,7 @@ import com.example.inscit.ui.CustomThemeManager
 import com.example.inscit.ui.DNAIcon
 import com.example.inscit.ui.DrawingIcon
 import com.example.inscit.ui.EmailIcon
+import com.example.inscit.ui.GoalsScreen
 import com.example.inscit.ui.ExportIcon
 import com.example.inscit.ui.FlaskIcon
 import com.example.inscit.ui.LeaderboardScreen
@@ -188,7 +192,7 @@ import java.util.Calendar
 
 
 enum class Screen {
- SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS, STREAK_DETAILS }
+ SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS, STREAK_DETAILS, GOALS }
 enum class Branch { PHYSICS, CHEMISTRY, BIOLOGY }
 
 
@@ -447,6 +451,7 @@ class MainActivity : ComponentActivity() {
 
         checkNotificationPermission()
         NotificationScheduler.scheduleInactivityNotification(this)
+        GoalScheduler.scheduleDailyGoalReminder(this)
         
         setContent { AppEngine(ttsManager) }
     }
@@ -478,7 +483,11 @@ fun serializeUserDocument(doc: UserDocument): String {
     }
     val challengeDates = doc.stats.completedChallengeDates.joinToString(",")
     val challengeStatus = "${doc.dailyChallengeStatus.lastCompletionDate},${doc.dailyChallengeStatus.currentRound},${doc.dailyChallengeStatus.isCompletedToday}"
-    return "${escapePipe(doc.profile.name)}|${escapePipe(doc.profile.photoUrl ?: "")}|${doc.stats.xp}|${doc.stats.level}|${doc.stats.quizzesTaken}|${doc.quizProgress.lastScore}|${doc.settings.language.name}|${doc.settings.theme.name}|$notesStr|$challengeDates|${escapePipe(challengeStatus)}|${doc.settings.lastReportDate}|${doc.stats.totalUsageTime}|${doc.stats.currentStreak}|${doc.stats.longestStreak}|${escapePipe(doc.stats.lastActivityDate)}"
+    val goalsStr = doc.goals.joinToString(";;") { g ->
+        "${g.id}~${g.title}~${g.type.name}~${g.targetValue}~${g.currentValue}~${g.scoreThreshold}~${g.dailyTarget}~${g.isCompleted}~${g.createdAt}~${g.completedAt}"
+    }
+    val dailyXpStr = doc.dailyXp.entries.joinToString(",") { (k, v) -> "$k:$v" }
+    return "${escapePipe(doc.profile.name)}|${escapePipe(doc.profile.photoUrl ?: "")}|${doc.stats.xp}|${doc.stats.level}|${doc.stats.quizzesTaken}|${doc.quizProgress.lastScore}|${doc.settings.language.name}|${doc.settings.theme.name}|$notesStr|$challengeDates|${escapePipe(challengeStatus)}|${doc.settings.lastReportDate}|${doc.stats.totalUsageTime}|${doc.stats.currentStreak}|${doc.stats.longestStreak}|${escapePipe(doc.stats.lastActivityDate)}|${escapePipe(goalsStr)}|${escapePipe(dailyXpStr)}"
 }
 
 // Custom Saver for UserDocument to ensure perfect persistence
@@ -526,7 +535,9 @@ val UserDocumentSaver = Saver<UserDocument, String>(
                     lastReportDate = if (parts.size > 11) parts[11].toLong() else 0L
                 ),
                 userNotes = notes,
-                dailyChallengeStatus = challengeStatus
+                dailyChallengeStatus = challengeStatus,
+                goals = if (parts.size > 16) GoalManager.parseGoalsFromData(data) else emptyList(),
+                dailyXp = if (parts.size > 17) GoalManager.parseDailyXpFromData(data) else emptyMap()
             )
         } catch (e: Exception) {
             UserDocument(profile = UserProfile(name = "Core Explorer"))
@@ -883,9 +894,20 @@ fun AppEngine(tts: TTSManager) {
                                         strengths = strengths,
                                         weaknesses = weaknesses
                                     )
-                                    userDocument = userDocument.copy(stats = updatedStats, quizProgress = newProgress)
+                                    val (goalDoc, completedGoals) = GoalManager.applyQuizResult(
+                                        userDocument, xpEarned, score.toFloat()
+                                    )
+                                    userDocument = goalDoc.copy(stats = updatedStats, quizProgress = newProgress)
+                                    completedGoals.forEach { goal ->
+                                        NotificationHelper.showNotification(
+                                            context,
+                                            "🎯 GOAL ACHIEVED!",
+                                            "You completed your goal: ${goal.title}!"
+                                        )
+                                    }
                                     StreakTracker.recordQuiz(context, score.toFloat())
                                     NotificationScheduler.scheduleInactivityNotification(context)
+                                    GoalScheduler.scheduleDailyGoalReminder(context)
                                     currentScreen = Screen.HOME
                                 }
                             )
@@ -961,6 +983,14 @@ fun AppEngine(tts: TTSManager) {
                             lang = language,
                             onBack = { currentScreen = Screen.HOME }
                         )
+                        Screen.GOALS -> GoalsScreen(
+                            userDocument = userDocument,
+                            onUpdateUser = { userDocument = it },
+                            accent = primaryAccent,
+                            txtCol = textColor,
+                            lang = language,
+                            onBack = { currentScreen = Screen.HOME }
+                        )
 
                         else -> {
                             LaunchedEffect(Unit) { currentScreen = Screen.HOME }
@@ -1012,6 +1042,14 @@ fun DrawerContent(
             DrawerItem(
                 label = if (lang == Lang.EN) "🔥 STREAK TRACKER" else "🔥 स्ट्रीक ट्रैकर",
                 screen = Screen.STREAK_DETAILS,
+                currentScreen = currentScreen,
+                onNavigate = onNavigate,
+                accent = accent
+            )
+
+            DrawerItem(
+                label = if (lang == Lang.EN) "🎯 GOAL MAKER" else "🎯 लक्ष्य निर्माता",
+                screen = Screen.GOALS,
                 currentScreen = currentScreen,
                 onNavigate = onNavigate,
                 accent = accent
@@ -1238,24 +1276,32 @@ fun DailyQuizScreen(
                 finishButtonLabel = buttonLabel,
                 onFinish = { xp, score, _, _ ->
                     if (score >= 70) {
+                        val (goalDoc, completedGoals) = GoalManager.applyQuizResult(userDocument, xp, score.toFloat())
+                        completedGoals.forEach { goal ->
+                            NotificationHelper.showNotification(
+                                context,
+                                "🎯 GOAL ACHIEVED!",
+                                "You completed your goal: ${goal.title}!"
+                            )
+                        }
                         if (status.currentRound < 3) {
                             val updatedStats = StreakManager.updateStreak(
-                                userDocument.stats.copy(xp = userDocument.stats.xp + xp),
+                                goalDoc.stats.copy(xp = goalDoc.stats.xp + xp),
                                 score.toFloat()
                             )
-                            onUpdateUser(userDocument.copy(
+                            onUpdateUser(goalDoc.copy(
                                 dailyChallengeStatus = status.copy(currentRound = status.currentRound + 1),
                                 stats = updatedStats
                             ))
                             triggerVibration(context, "SUCCESS")
                         } else {
-                            val newDates = userDocument.stats.completedChallengeDates.toMutableSet()
+                            val newDates = goalDoc.stats.completedChallengeDates.toMutableSet()
                             newDates.add(today)
                             val updatedStats = StreakManager.updateStreak(
-                                userDocument.stats.copy(xp = userDocument.stats.xp + xp, completedChallengeDates = newDates),
+                                goalDoc.stats.copy(xp = goalDoc.stats.xp + xp, completedChallengeDates = newDates),
                                 score.toFloat()
                             )
-                            onUpdateUser(userDocument.copy(
+                            onUpdateUser(goalDoc.copy(
                                 dailyChallengeStatus = status.copy(isCompletedToday = true, lastCompletionDate = today),
                                 stats = updatedStats
                             ))
@@ -1263,6 +1309,7 @@ fun DailyQuizScreen(
                             isQuizActive = false
                         }
                         StreakTracker.recordQuiz(context, score.toFloat())
+                        GoalScheduler.scheduleDailyGoalReminder(context)
                     } else {
                         triggerVibration(context, "CLICK")
                         isQuizActive = false

@@ -45,13 +45,30 @@ data class UserNote(
     val drawingData: String = "" // Simplified drawing representation
 )
 
+enum class GoalType { XP, QUIZ }
+
+data class UserGoal(
+    val id: String,
+    val title: String,
+    val type: GoalType,
+    val targetValue: Int,
+    val currentValue: Int = 0,
+    val scoreThreshold: Int = 0,
+    val dailyTarget: Int = 0,
+    val isCompleted: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis(),
+    val completedAt: Long = 0
+)
+
 data class UserDocument(
     val profile: UserProfile = UserProfile(),
     val stats: UserStats = UserStats(),
     val quizProgress: QuizProgress = QuizProgress(),
     val settings: UserSettings = UserSettings(),
     val userNotes: Map<String, UserNote> = emptyMap(),
-    val dailyChallengeStatus: DailyChallengeStatus = DailyChallengeStatus()
+    val dailyChallengeStatus: DailyChallengeStatus = DailyChallengeStatus(),
+    val goals: List<UserGoal> = emptyList(),
+    val dailyXp: Map<String, Int> = emptyMap() // key: "yyyy-MM-dd" -> XP earned that day
 )
 
 data class QuizAttempt(
