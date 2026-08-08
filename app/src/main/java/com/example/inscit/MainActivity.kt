@@ -2294,7 +2294,7 @@ fun FullSplashScreen(accent: Color, onExplore: () -> Unit) {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            val logoSize = minOf(160.dp, maxW * 0.45f)
+            val logoSize = minOf(200.dp, maxW * 0.55f)
             Image(
                 painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = "App Logo",
@@ -2302,11 +2302,11 @@ fun FullSplashScreen(accent: Color, onExplore: () -> Unit) {
                     .size(logoSize)
                     .clip(RoundedCornerShape(32.dp))
             )
-            Spacer(Modifier.height(maxH * 0.08f))
+            Spacer(Modifier.height(maxH * 0.12f))
             IosSlider(
                 onSwipeComplete = onExplore,
                 accentColor = accent,
-                modifier = Modifier.fillMaxWidth(0.85f).height(64.dp)
+                modifier = Modifier.fillMaxWidth(0.58f).height(60.dp)
             )
         }
     }
@@ -2430,22 +2430,9 @@ fun ModernHome(
             Spacer(Modifier.height(32.dp))
 
             // Quick Actions
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                ActionCard(
-                    if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें",
-                    accent,
-                    Modifier.weight(1.3f),
-                    onQuiz
-                )
-                ActionCard(
-                    if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स",
-                    GhostWhite.copy(alpha = 0.05f),
-                    Modifier.weight(0.7f),
-                    onTheme
-                )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ActionCard(if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें", accent, Modifier.weight(1f), onQuiz)
+                ActionCard(if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स", GhostWhite.copy(alpha = 0.05f), Modifier.weight(1f), onTheme)
             }
 
             Spacer(Modifier.height(40.dp))
