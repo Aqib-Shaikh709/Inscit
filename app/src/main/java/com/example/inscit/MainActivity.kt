@@ -142,6 +142,7 @@ import com.example.inscit.notifications.NotificationScheduler
 import com.example.inscit.goals.GoalManager
 import com.example.inscit.goals.GoalScheduler
 import com.example.inscit.syllabus.Syllabus
+import com.example.inscit.utils.DailyFacts
 import com.example.inscit.ui.AtomIcon
 import com.example.inscit.ui.BackIcon
 import com.example.inscit.ui.CheckIcon
@@ -705,7 +706,7 @@ fun AppEngine(tts: TTSManager) {
             Surface(modifier = Modifier.fillMaxSize(), color = appBg) {
                 Crossfade(targetState = currentScreen, animationSpec = tween(600), label = "screen_crossfade") { target ->
                     when (target) {
-                        Screen.SPLASH -> FullSplashScreen(primaryAccent) {
+                        Screen.SPLASH -> FullSplashScreen(primaryAccent, language) {
                             triggerVibration(context, "CLICK")
                             currentScreen = Screen.HOME
                         }
@@ -2310,7 +2311,7 @@ fun IosSlider(
 }
 
 @Composable
-fun FullSplashScreen(accent: Color, onExplore: () -> Unit) {
+fun FullSplashScreen(accent: Color, lang: Lang = Lang.EN, onExplore: () -> Unit) {
     BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val maxH = maxHeight
         val maxW = maxWidth
@@ -2348,6 +2349,35 @@ fun FullSplashScreen(accent: Color, onExplore: () -> Unit) {
                 accentColor = accent,
                 modifier = Modifier.fillMaxWidth(0.58f).height(60.dp)
             )
+
+            Spacer(Modifier.height(maxH * 0.06f))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 40.dp)
+                    .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
+                    .border(1.dp, accent.copy(alpha = 0.15f), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 20.dp, vertical = 14.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        if (lang == Lang.HI) "आज का इनसाइट" else "TODAY'S INSCIT",
+                        color = accent,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 2.sp
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        DailyFacts.getTodaysFact(lang),
+                        color = GhostWhite.copy(alpha = 0.85f),
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
         }
     }
 }
