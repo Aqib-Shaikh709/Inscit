@@ -36,7 +36,9 @@ object DailyFacts {
         "Sloths can hold their breath longer than dolphins — up to 40 minutes.",
         "Your heart beats about 100,000 times every single day.",
         "Ants can carry up to 50 times their own body weight.",
-        "The observable universe is about 93 billion light-years in diameter."
+        "The observable universe is about 93 billion light-years in diameter.",
+        "The visuals of the gargantua in the movie 'Interstellar' were calculated by the director's team and not drawn ",
+        "Chess has more board combinations than there a re atoms in the observable universe"
     )
 
     val hindiFacts: List<String> = listOf(
