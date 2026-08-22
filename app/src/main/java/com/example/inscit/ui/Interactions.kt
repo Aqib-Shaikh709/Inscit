@@ -146,7 +146,7 @@ fun InteractionContainer(
                 )
             }
             
-            Spacer(Modifier.height(20.dp))
+Spacer(Modifier.height(20.dp))
             
             Box(
                 modifier = Modifier

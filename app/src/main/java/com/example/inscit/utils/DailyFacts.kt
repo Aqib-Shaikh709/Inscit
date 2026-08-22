@@ -37,8 +37,9 @@ object DailyFacts {
         "Your heart beats about 100,000 times every single day.",
         "Ants can carry up to 50 times their own body weight.",
         "The observable universe is about 93 billion light-years in diameter.",
-        "The visuals of the gargantua in the movie 'Interstellar' were calculated by the director's team and not drawn ",
-        "Chess has more board combinations than there a re atoms in the observable universe"
+        "The visuals of the gargantua in the movie 'Interstellar' were calculated by the director's team and not drawn.",
+        "Chess has more board combinations than there a re atoms in the observable universe.",
+        "Chess was initially a game for 4 players rather than 2."
     )
 
     val hindiFacts: List<String> = listOf(

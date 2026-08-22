@@ -303,8 +303,8 @@ fun PauseIcon(color: Color, modifier: Modifier = Modifier.size(24.dp)) {
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
-        drawLine(color, Offset(w * 0.35f, h * 0.2f), Offset(w * 0.35f, h * 0.8f), strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
-        drawLine(color, Offset(w * 0.65f, h * 0.2f), Offset(w * 0.65f, h * 0.8f), strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
+        drawLine(color, start = Offset(x = w * 0.35f, y = h * 0.2f), end = Offset(x = w * 0.35f, y = h * 0.8f), strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
+        drawLine(color, start = Offset(x = w * 0.65f, y = h * 0.2f), end = Offset(x = w * 0.65f, y = h * 0.8f), strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
     }
 }
 
@@ -667,10 +667,10 @@ fun XIcon(color: Color = Color.White, modifier: Modifier = Modifier.size(24.dp))
         val s = size.minDimension
         val inset = s * 0.15f
         val path = Path().apply {
-            moveTo(inset, inset)
-            lineTo(s - inset, s - inset)
-            moveTo(s - inset, inset)
-            lineTo(inset, s - inset)
+            moveTo(x =inset, y = inset)
+            lineTo(x =s - inset, y = s - inset)
+            moveTo(x =s - inset, y = inset)
+            lineTo(x =inset, y = s - inset)
         }
         drawPath(path, color, style = Stroke(width = s * 0.1f, cap = StrokeCap.Round))
     }
@@ -689,9 +689,9 @@ fun YouTubeIcon(color: Color = Color.White, modifier: Modifier = Modifier.size(2
             val cx = s * 0.42f
             val cy = s * 0.5f
             val triH = h * 0.4f
-            moveTo(cx, cy - triH / 2)
-            lineTo(cx, cy + triH / 2)
-            lineTo(cx + w * 0.35f, cy)
+            moveTo(x = cx, y = cy - triH / 2)
+            lineTo(x = cx, y = cy + triH / 2)
+            lineTo(x = cx + w * 0.35f, y = cy)
             close()
         }
         drawPath(triPath, Color.Black)
