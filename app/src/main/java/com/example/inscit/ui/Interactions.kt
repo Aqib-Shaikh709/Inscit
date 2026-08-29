@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1519,6 +1521,8 @@ fun PlantReproductionInteraction(accent: Color) {
 @Composable
 fun MetabolismInteraction(accent: Color) {
     var mode by remember { mutableStateOf("Photosynthesis") }
+    var lightIntensity by remember { mutableFloatStateOf(50f) }
+    var temperature by remember { mutableFloatStateOf(37f) }
     
     InteractionContainer(
         title = "Metabolism: Energy Conversion",
@@ -1530,157 +1534,181 @@ fun MetabolismInteraction(accent: Color) {
         liveIndexes = when (mode) {
             "Photosynthesis" -> listOf(
                 "Process:" to "6CO₂ + 6H₂O → C₆H₁₂O₆",
-                "Light:" to "Absorbed",
+                "Light:" to "${lightIntensity.toInt()}%",
                 "Output:" to "O₂ + Glucose"
             )
             else -> listOf(
                 "Process:" to "Catabolism + Anabolism",
                 "Catalyst:" to "Enzyme",
-                "Optimum:" to "37°C"
+                "Temp:" to "${temperature.toInt()}°C"
             )
         },
         controls = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("PHOTOSYNTHESIS", color = if(mode == "Photosynthesis") BioLime else GhostWhite.copy(alpha = 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Black)
-                Switch(checked = mode == "Enzymes", onCheckedChange = { mode = if (it) "Enzymes" else "Photosynthesis" }, colors = SwitchDefaults.colors(checkedThumbColor = accent))
-                Text("ENZYME KINETICS", color = if(mode == "Enzymes") accent else GhostWhite.copy(alpha = 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Black)
-            }
+            MetabolismControls(
+                mode = mode,
+                onModeChange = { mode = it },
+                lightIntensity = lightIntensity,
+                onLightIntensityChange = { lightIntensity = it },
+                temperature = temperature,
+                onTemperatureChange = { temperature = it },
+                accent = accent
+            )
         }
     ) {
         when (mode) {
-            "Photosynthesis" -> PhotosynthesisCanvas(accent)
-            else -> EnzymeKineticsCanvas(accent)
+            "Photosynthesis" -> PhotosynthesisCanvas(accent, lightIntensity)
+            else -> EnzymeKineticsCanvas(accent, temperature)
         }
     }
 }
 
 @Composable
-fun PhotosynthesisCanvas(accent: Color) {
-    var lightIntensity by remember { mutableFloatStateOf(50f) }
-
-    Column(Modifier.fillMaxSize()) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text("Light Intensity", color = Color.Yellow, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.weight(1f))
-            Text("${lightIntensity.toInt()}%", color = GhostWhite, fontSize = 11.sp, fontWeight = FontWeight.Black)
+fun MetabolismControls(
+    mode: String,
+    onModeChange: (String) -> Unit,
+    lightIntensity: Float,
+    onLightIntensityChange: (Float) -> Unit,
+    temperature: Float,
+    onTemperatureChange: (Float) -> Unit,
+    accent: Color
+) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("PHOTOSYNTHESIS", color = if(mode == "Photosynthesis") BioLime else GhostWhite.copy(alpha = 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Black)
+            Switch(checked = mode == "Enzymes", onCheckedChange = { onModeChange(if (it) "Enzymes" else "Photosynthesis") }, colors = SwitchDefaults.colors(checkedThumbColor = accent))
+            Text("ENZYME KINETICS", color = if(mode == "Enzymes") accent else GhostWhite.copy(alpha = 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Black)
         }
-        Slider(
-            value = lightIntensity, onValueChange = { lightIntensity = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            colors = SliderDefaults.colors(thumbColor = Color.Yellow)
-        )
-        Canvas(Modifier.fillMaxSize()) {
-            val center = Offset(size.width / 2f, size.height / 2f)
-            
-            // Leaf cell
-            drawRoundRect(BioLime.copy(alpha = 0.1f), Offset(center.x - 100f, center.y - 60f), Size(200f, 120f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(20f))
-            
-            // Chloroplasts
-            repeat(6) { i ->
-                val ox = center.x - 70f + (i % 3) * 60f
-                val oy = center.y - 30f + (i / 3) * 60f
-                drawOval(BioLime, Offset(ox-20f, oy-10f), Size(40f, 20f))
-            }
-            
-            // Light rays
-            repeat(5) { i ->
-                val lx = 40f + i * 80f
-                val alpha = (lightIntensity / 100f) * 0.5f
-                drawLine(Color.Yellow.copy(alpha = alpha), Offset(lx, 0f), Offset(lx - 40f, 100f), strokeWidth = 4f)
-            }
-            
-            // Glucose production
-            if (lightIntensity > 20f) {
-                repeat(10) { i ->
-                    val gx = (System.currentTimeMillis() / 20 + i * 40) % 200f + (center.x - 100f)
-                    val gy = center.y + sin(gx * 0.1f).toFloat() * 20f
-                    if (gx < center.x + 100f) drawCircle(Color.White, radius = 3f, center = Offset(gx, gy))
+        Spacer(Modifier.height(16.dp))
+        if (mode == "Photosynthesis") {
+            Column(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text("Light Intensity", color = Color.Yellow, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.weight(1f))
+                    Text("${lightIntensity.toInt()}%", color = GhostWhite, fontSize = 11.sp, fontWeight = FontWeight.Black)
                 }
+                Slider(
+                    value = lightIntensity, onValueChange = onLightIntensityChange,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    colors = SliderDefaults.colors(thumbColor = Color.Yellow)
+                )
+            }
+        } else {
+            Column(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text("Temperature", color = GhostWhite, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.weight(1f))
+                    Text("${temperature.toInt()}°C", color = GhostWhite, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                }
+                Slider(
+                    value = temperature, onValueChange = onTemperatureChange, valueRange = 10f..60f,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    colors = SliderDefaults.colors(thumbColor = accent)
+                )
             }
         }
     }
 }
 
 @Composable
-fun EnzymeKineticsCanvas(accent: Color) {
-    var temperature by remember { mutableFloatStateOf(37f) }
+fun PhotosynthesisCanvas(accent: Color, lightIntensity: Float) {
+    Canvas(Modifier.fillMaxSize()) {
+        val center = Offset(size.width / 2f, size.height / 2f)
+        
+        // Leaf cell
+        drawRoundRect(BioLime.copy(alpha = 0.1f), Offset(center.x - 100f, center.y - 60f), Size(200f, 120f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(20f))
+        
+        // Chloroplasts
+        repeat(6) { i ->
+            val ox = center.x - 70f + (i % 3) * 60f
+            val oy = center.y - 30f + (i / 3) * 60f
+            drawOval(BioLime, Offset(ox-20f, oy-10f), Size(40f, 20f))
+        }
+        
+        // Light rays
+        repeat(5) { i ->
+            val lx = 40f + i * 80f
+            val alpha = (lightIntensity / 100f) * 0.5f
+            drawLine(Color.Yellow.copy(alpha = alpha), Offset(lx, 0f), Offset(lx - 40f, 100f), strokeWidth = 4f)
+        }
+        
+        // Glucose production
+        if (lightIntensity > 20f) {
+            repeat(10) { i ->
+                val gx = (System.currentTimeMillis() / 20 + i * 40) % 200f + (center.x - 100f)
+                val gy = center.y + sin(gx * 0.1f).toFloat() * 20f
+                if (gx < center.x + 100f) drawCircle(Color.White, radius = 3f, center = Offset(gx, gy))
+            }
+        }
+    }
+}
+
+@Composable
+fun EnzymeKineticsCanvas(accent: Color, temperature: Float) {
     val flow by rememberInfiniteTransition("enzyme").animateFloat(0f, 1f, infiniteRepeatable(tween(2000, easing = LinearEasing)))
 
     val optimal = 37f
     val spread = 9f
     val rate = exp(-((temperature - optimal) * (temperature - optimal)) / (2f * spread * spread)).toFloat()
 
-    Column(Modifier.fillMaxSize()) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text("Temperature", color = GhostWhite, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.weight(1f))
-            Text("${temperature.toInt()}°C", color = GhostWhite, fontSize = 11.sp, fontWeight = FontWeight.Black)
+    Canvas(Modifier.fillMaxSize()) {
+        val centerY = size.height / 2f
+        
+        // Bell curve (rate vs temperature) as background
+        val curvePath = Path()
+        repeat(size.width.toInt()) { x ->
+            val t = 10f + (x / size.width) * 50f
+            val r = exp(-((t - optimal) * (t - optimal)) / (2f * spread * spread)).toFloat()
+            val cy = size.height * 0.2f + (1f - r) * (size.height * 0.2f)
+            if (x == 0) curvePath.moveTo(x.toFloat(), cy) else curvePath.lineTo(x.toFloat(), cy)
         }
-        Slider(
-            value = temperature, onValueChange = { temperature = it }, valueRange = 10f..60f,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            colors = SliderDefaults.colors(thumbColor = accent)
+        drawPath(curvePath, accent.copy(alpha = 0.15f), style = Stroke(2f))
+        
+        // O2 molecules flowing (bringing energy)
+        repeat(8) { i ->
+            val p = (flow + i * 0.05f) % 1f
+            val x = size.width * p
+            val wave = sin(p * 6.28f * 2f + i) * 12f
+            drawCircle(NeonCyan.copy(alpha = 0.4f), radius = 3f, center = Offset(x, centerY + wave))
+        }
+        
+        // Enzyme (pac-man shape)
+        val enzymeCenter = Offset(size.width * 0.3f, centerY)
+        val radius = 34f
+        drawCircle(accent.copy(alpha = 0.2f), radius = radius + 6f, center = enzymeCenter)
+        drawArc(
+            accent, 
+            startAngle = 30f, sweepAngle = 290f, useCenter = true,
+            topLeft = Offset(enzymeCenter.x - radius, enzymeCenter.y - radius),
+            size = Size(radius * 2, radius * 2)
         )
-        Canvas(Modifier.fillMaxSize()) {
-            val centerY = size.height / 2f
-            
-            // Bell curve (rate vs temperature) as background
-            val curvePath = Path()
-            repeat(size.width.toInt()) { x ->
-                val t = 10f + (x / size.width) * 50f
-                val r = exp(-((t - optimal) * (t - optimal)) / (2f * spread * spread)).toFloat()
-                val cy = size.height * 0.2f + (1f - r) * (size.height * 0.2f)
-                if (x == 0) curvePath.moveTo(x.toFloat(), cy) else curvePath.lineTo(x.toFloat(), cy)
-            }
-            drawPath(curvePath, accent.copy(alpha = 0.15f), style = Stroke(2f))
-            
-            // O2 molecules flowing (bringing energy)
-            repeat(8) { i ->
-                val p = (flow + i * 0.05f) % 1f
-                val x = size.width * p
-                val wave = sin(p * 6.28f * 2f + i) * 12f
-                drawCircle(NeonCyan.copy(alpha = 0.4f), radius = 3f, center = Offset(x, centerY + wave))
-            }
-            
-            // Enzyme (pac-man shape)
-            val enzymeCenter = Offset(size.width * 0.3f, centerY)
-            val radius = 34f
-            drawCircle(accent.copy(alpha = 0.2f), radius = radius + 6f, center = enzymeCenter)
-            drawArc(
-                accent, 
-                startAngle = 30f, sweepAngle = 290f, useCenter = true,
-                topLeft = Offset(enzymeCenter.x - radius, enzymeCenter.y - radius),
-                size = Size(radius * 2, radius * 2)
-            )
-            // Active site notch
-            drawCircle(TechViolet.copy(alpha = 0.4f), radius = 10f, center = Offset(enzymeCenter.x + radius * 0.8f, centerY))
-            
-            if (rate > 0.05f) {
-                // Substrate particles approaching and binding
-                repeat(4) { i ->
-                    val p = (flow * 1.4f + i * 0.25f) % 1f
-                    val sx = enzymeCenter.x + 90f * (1f - p)
-                    val sy = centerY + sin(p * 10f) * 15f + (if (i % 2 == 0) 18f else -18f)
-                    
-                    if (p < 0.75f) {
-                        drawCircle(Color.Yellow, radius = 6f, center = Offset(sx, sy))
-                    } else if (p < 0.9f) {
-                        // bound at active site
-                        drawCircle(Color.Yellow, radius = 8f, center = Offset(enzymeCenter.x + radius * 0.8f, centerY))
-                    } else {
-                        // products released
-                        val ex = enzymeCenter.x + radius * 0.8f + (p - 0.9f) * 120f
-                        drawCircle(NeonCyan, radius = 5f, center = Offset(ex, centerY - 20f))
-                        drawCircle(NeonCyan, radius = 5f, center = Offset(ex, centerY + 20f))
-                    }
+        // Active site notch
+        drawCircle(TechViolet.copy(alpha = 0.4f), radius = 10f, center = Offset(enzymeCenter.x + radius * 0.8f, centerY))
+        
+        if (rate > 0.05f) {
+            // Substrate particles approaching and binding
+            repeat(4) { i ->
+                val p = (flow * 1.4f + i * 0.25f) % 1f
+                val sx = enzymeCenter.x + 90f * (1f - p)
+                val sy = centerY + sin(p * 10f) * 15f + (if (i % 2 == 0) 18f else -18f)
+                
+                if (p < 0.75f) {
+                    drawCircle(Color.Yellow, radius = 6f, center = Offset(sx, sy))
+                } else if (p < 0.9f) {
+                    // bound at active site
+                    drawCircle(Color.Yellow, radius = 8f, center = Offset(enzymeCenter.x + radius * 0.8f, centerY))
+                } else {
+                    // products released
+                    val ex = enzymeCenter.x + radius * 0.8f + (p - 0.9f) * 120f
+                    drawCircle(NeonCyan, radius = 5f, center = Offset(ex, centerY - 20f))
+                    drawCircle(NeonCyan, radius = 5f, center = Offset(ex, centerY + 20f))
                 }
             }
-            
-            // Denaturation message when too hot
-            if (temperature > 50f) {
-                drawCircle(PowerRed.copy(alpha = 0.3f), radius = radius + 10f, center = enzymeCenter)
-                drawCircle(PowerRed, radius = 30f, center = enzymeCenter, style = Stroke(2f, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6f, 6f))))
-            }
+        }
+        
+        // Denaturation message when too hot
+        if (temperature > 50f) {
+            drawCircle(PowerRed.copy(alpha = 0.3f), radius = radius + 10f, center = enzymeCenter)
+            drawCircle(PowerRed, radius = 30f, center = enzymeCenter, style = Stroke(2f, pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(6f, 6f))))
         }
     }
 }
@@ -1688,6 +1716,18 @@ fun EnzymeKineticsCanvas(accent: Color) {
 @Composable
 fun GeneticsInteraction(accent: Color) {
     var mode by remember { mutableStateOf("DNA") }
+    var parentA by remember { mutableIntStateOf(0) }
+    var parentB by remember { mutableIntStateOf(0) }
+
+    val parents = listOf("FF", "Ff", "ff")
+    fun gametes(g: String): List<String> = when (g) {
+        "FF" -> listOf("F", "F")
+        "Ff" -> listOf("F", "f")
+        else -> listOf("f", "f")
+    }
+
+    val a = gametes(parents[parentA])
+    val b = gametes(parents[parentB])
 
     InteractionContainer(
         title = "DNA & Heredity",
@@ -1701,16 +1741,83 @@ fun GeneticsInteraction(accent: Color) {
             else -> listOf("Inheritance:" to "Mendelian", "Ratio:" to "3:1", "Genes:" to "Punnett Sq.")
         },
         controls = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("DNA HELIX", color = if(mode == "DNA") accent else GhostWhite.copy(alpha = 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Black)
-                Switch(checked = mode == "Punnett", onCheckedChange = { mode = if (it) "Punnett" else "DNA" }, colors = SwitchDefaults.colors(checkedThumbColor = accent))
-                Text("PUNNETT SQUARE", color = if(mode == "Punnett") accent else GhostWhite.copy(alpha = 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Black)
-            }
+            GeneticsControls(
+                mode = mode,
+                onModeChange = { mode = it },
+                parentA = parentA,
+                onParentAChange = { parentA = it },
+                parentB = parentB,
+                onParentBChange = { parentB = it },
+                parents = parents,
+                accent = accent
+            )
         }
     ) {
         when (mode) {
             "DNA" -> DnaHelixCanvas(accent)
-            else -> PunnettSquareCanvas(accent)
+            else -> PunnettSquareCanvas(accent, a, b)
+        }
+    }
+}
+
+@Composable
+fun GeneticsControls(
+    mode: String,
+    onModeChange: (String) -> Unit,
+    parentA: Int,
+    onParentAChange: (Int) -> Unit,
+    parentB: Int,
+    onParentBChange: (Int) -> Unit,
+    parents: List<String>,
+    accent: Color
+) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("DNA HELIX", color = if(mode == "DNA") accent else GhostWhite.copy(alpha = 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Black)
+            Switch(checked = mode == "Punnett", onCheckedChange = { onModeChange(if (it) "Punnett" else "DNA") }, colors = SwitchDefaults.colors(checkedThumbColor = accent))
+            Text("PUNNETT SQUARE", color = if(mode == "Punnett") accent else GhostWhite.copy(alpha = 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Black)
+        }
+        if (mode == "Punnett") {
+            Spacer(Modifier.height(16.dp))
+            Column(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    Text("Parent 1:", color = GhostWhite.copy(alpha = 0.6f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(8.dp))
+                    parents.forEachIndexed { idx, g ->
+                        FilterChip(
+                            selected = parentA == idx,
+                            onClick = { onParentAChange(idx) },
+                            label = { Text(g, fontSize = 11.sp, fontWeight = FontWeight.Black) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = accent.copy(alpha = 0.2f),
+                                selectedLabelColor = accent,
+                                containerColor = CardBg,
+                                labelColor = GhostWhite.copy(alpha = 0.6f)
+                            )
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    Text("Parent 2:", color = GhostWhite.copy(alpha = 0.6f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(8.dp))
+                    parents.forEachIndexed { idx, g ->
+                        FilterChip(
+                            selected = parentB == idx,
+                            onClick = { onParentBChange(idx) },
+                            label = { Text(g, fontSize = 11.sp, fontWeight = FontWeight.Black) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = accent.copy(alpha = 0.2f),
+                                selectedLabelColor = accent,
+                                containerColor = CardBg,
+                                labelColor = GhostWhite.copy(alpha = 0.6f)
+                            )
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    }
+                }
+            }
         }
     }
 }
@@ -1772,115 +1879,61 @@ fun DnaHelixCanvas(accent: Color) {
 }
 
 @Composable
-fun PunnettSquareCanvas(accent: Color) {
+fun PunnettSquareCanvas(accent: Color, a: List<String>, b: List<String>) {
     val textMeasurer = rememberTextMeasurer()
-    var parentA by remember { mutableIntStateOf(0) } // index into parents
-    var parentB by remember { mutableIntStateOf(0) }
 
-    val parents = listOf("FF", "Ff", "ff")
-    fun gametes(g: String): List<String> = when (g) {
-        "FF" -> listOf("F", "F")
-        "Ff" -> listOf("F", "f")
-        else -> listOf("f", "f")
-    }
+    Canvas(Modifier.fillMaxSize()) {
+        val cellSize = 46f
+        val startX = (size.width - cellSize * 2) / 2 + 20f
+        val startY = (size.height - cellSize * 2) / 2 + 10f
 
-    val a = gametes(parents[parentA])
-    val b = gametes(parents[parentB])
+        // Header labels (gametes)
+        val aStyle = TextStyle(color = accent, fontSize = 14.sp, fontWeight = FontWeight.Black)
+        val bStyle = TextStyle(color = PowerRed, fontSize = 14.sp, fontWeight = FontWeight.Black)
+        drawText(textMeasurer, a[0], topLeft = Offset(startX + cellSize / 2 - 8f, startY - 26f), style = aStyle)
+        drawText(textMeasurer, a[1], topLeft = Offset(startX + cellSize * 1.5f - 8f, startY - 26f), style = aStyle)
+        drawText(textMeasurer, b[0], topLeft = Offset(20f, startY + cellSize / 2 - 8f), style = bStyle)
+        drawText(textMeasurer, b[1], topLeft = Offset(20f, startY + cellSize * 1.5f - 8f), style = bStyle)
 
-    Column(Modifier.fillMaxSize()) {
-        // Parent selectors
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            Text("Parent 1:", color = GhostWhite.copy(alpha = 0.6f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.width(8.dp))
-            parents.forEachIndexed { idx, g ->
-                FilterChip(
-                    selected = parentA == idx,
-                    onClick = { parentA = idx },
-                    label = { Text(g, fontSize = 11.sp, fontWeight = FontWeight.Black) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = accent.copy(alpha = 0.2f),
-                        selectedLabelColor = accent,
-                        containerColor = CardBg,
-                        labelColor = GhostWhite.copy(alpha = 0.6f)
-                    )
+        // Grid cells
+        for (r in 0 until 2) {
+            for (c in 0 until 2) {
+                val gtype = a[r] + b[c]
+                val hasDominant = 'F' in gtype
+                val color = if (hasDominant) accent else PowerRed
+                drawRoundRect(
+                    color.copy(alpha = 0.18f),
+                    topLeft = Offset(startX + c * cellSize + 2f, startY + r * cellSize + 2f),
+                    size = Size(cellSize - 4f, cellSize - 4f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(10f)
                 )
-                Spacer(Modifier.width(6.dp))
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            Text("Parent 2:", color = GhostWhite.copy(alpha = 0.6f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.width(8.dp))
-            parents.forEachIndexed { idx, g ->
-                FilterChip(
-                    selected = parentB == idx,
-                    onClick = { parentB = idx },
-                    label = { Text(g, fontSize = 11.sp, fontWeight = FontWeight.Black) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = accent.copy(alpha = 0.2f),
-                        selectedLabelColor = accent,
-                        containerColor = CardBg,
-                        labelColor = GhostWhite.copy(alpha = 0.6f)
-                    )
+                drawRoundRect(
+                    color,
+                    topLeft = Offset(startX + c * cellSize + 2f, startY + r * cellSize + 2f),
+                    size = Size(cellSize - 4f, cellSize - 4f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(10f),
+                    style = Stroke(2f)
                 )
-                Spacer(Modifier.width(6.dp))
+                drawText(
+                    textMeasurer, gtype,
+                    topLeft = Offset(startX + c * cellSize + cellSize / 2 - 16f, startY + r * cellSize + 14f),
+                    style = TextStyle(color = GhostWhite, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                )
             }
         }
 
-        Spacer(Modifier.height(6.dp))
-        Canvas(Modifier.fillMaxWidth().weight(1f)) {
-            val cellSize = 46f
-            val startX = (size.width - cellSize * 2) / 2 + 20f
-            val startY = (size.height - cellSize * 2) / 2 + 10f
-
-            // Header labels (gametes)
-            val aStyle = TextStyle(color = accent, fontSize = 14.sp, fontWeight = FontWeight.Black)
-            val bStyle = TextStyle(color = PowerRed, fontSize = 14.sp, fontWeight = FontWeight.Black)
-            drawText(textMeasurer, a[0], topLeft = Offset(startX + cellSize / 2 - 8f, startY - 26f), style = aStyle)
-            drawText(textMeasurer, a[1], topLeft = Offset(startX + cellSize * 1.5f - 8f, startY - 26f), style = aStyle)
-            drawText(textMeasurer, b[0], topLeft = Offset(20f, startY + cellSize / 2 - 8f), style = bStyle)
-            drawText(textMeasurer, b[1], topLeft = Offset(20f, startY + cellSize * 1.5f - 8f), style = bStyle)
-
-            // Grid cells
-            for (r in 0 until 2) {
-                for (c in 0 until 2) {
-                    val gtype = a[r] + b[c]
-                    val hasDominant = 'F' in gtype
-                    val color = if (hasDominant) accent else PowerRed
-                    drawRoundRect(
-                        color.copy(alpha = 0.18f),
-                        topLeft = Offset(startX + c * cellSize + 2f, startY + r * cellSize + 2f),
-                        size = Size(cellSize - 4f, cellSize - 4f),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(10f)
-                    )
-                    drawRoundRect(
-                        color,
-                        topLeft = Offset(startX + c * cellSize + 2f, startY + r * cellSize + 2f),
-                        size = Size(cellSize - 4f, cellSize - 4f),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(10f),
-                        style = Stroke(2f)
-                    )
-                    drawText(
-                        textMeasurer, gtype,
-                        topLeft = Offset(startX + c * cellSize + cellSize / 2 - 16f, startY + r * cellSize + 14f),
-                        style = TextStyle(color = GhostWhite, fontSize = 18.sp, fontWeight = FontWeight.Black)
-                    )
-                }
-            }
-
-            // Phenotype ratio bar
-            drawRoundRect(GhostWhite.copy(alpha = 0.1f), Offset(30f, size.height - 24f), Size(size.width - 60f, 10f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f))
-            val dominantQuarters = (0 until 2).flatMap { r -> (0 until 2).map { c -> a[r] + b[c] } }.count { 'F' in it } / 4f
-            drawRoundRect(
-                accent, Offset(30f, size.height - 24f), Size((size.width - 60f) * dominantQuarters, 10f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f)
-            )
-            drawText(
-                textMeasurer, "${(dominantQuarters * 100).toInt()}% Dominant",
-                topLeft = Offset(32f, size.height - 38f),
-                style = TextStyle(color = accent, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-            )
-        }
+        // Phenotype ratio bar
+        drawRoundRect(GhostWhite.copy(alpha = 0.1f), Offset(30f, size.height - 24f), Size(size.width - 60f, 10f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f))
+        val dominantQuarters = (0 until 2).flatMap { r -> (0 until 2).map { c -> a[r] + b[c] } }.count { 'F' in it } / 4f
+        drawRoundRect(
+            accent, Offset(30f, size.height - 24f), Size((size.width - 60f) * dominantQuarters, 10f),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(5f)
+        )
+        drawText(
+            textMeasurer, "${(dominantQuarters * 100).toInt()}% Dominant",
+            topLeft = Offset(32f, size.height - 38f),
+            style = TextStyle(color = accent, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        )
     }
 }
 
