@@ -147,11 +147,11 @@ fun ReviewScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp),
+        Column(
+            modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(reviews) { review ->
+            reviews.forEach { review ->
                 ReviewItem(review, accent)
             }
         }
@@ -234,7 +234,7 @@ private const val KEY_REVIEWS = "saved_reviews"
 
 private fun saveReviews(prefs: SharedPreferences, reviews: List<Review>) {
     val data = reviews.joinToString("|||") { r ->
-        "${r.id}::${r.userName.replace(":", "\\:").replace("|", "\\|")}::${r.rating}::${r.comment.replace(":", "\\:").replace("|", "\\|")}::${r.timestamp}"
+        "${r.id}::${r.userName.replace("\\", "\\\\").replace(":", "\\:").replace("|", "\\|")}::${r.rating}::${r.comment.replace("\\", "\\\\").replace(":", "\\:").replace("|", "\\|")}::${r.timestamp}"
     }
     prefs.edit().putString(KEY_REVIEWS, data).apply()
 }
@@ -256,9 +256,9 @@ private fun loadReviews(prefs: SharedPreferences): List<Review> {
             try {
                 Review(
                     id = parts[0],
-                    userName = parts[1].replace("\\|", "|").replace("\\:", ":"),
+                    userName = parts[1].replace("\\|", "|").replace("\\:", ":").replace("\\\\", "\\"),
                     rating = parts[2].toInt(),
-                    comment = parts[3].replace("\\|", "|").replace("\\:", ":"),
+                    comment = parts[3].replace("\\|", "|").replace("\\:", ":").replace("\\\\", "\\"),
                     timestamp = parts[4].toLong()
                 )
             } catch (_: Exception) { null }

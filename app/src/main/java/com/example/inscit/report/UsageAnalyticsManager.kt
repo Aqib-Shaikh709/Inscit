@@ -21,9 +21,8 @@ object UsageAnalyticsManager {
         
         return mapOf(
             "Usage Time" to "${usageHours}h ${usageMinutes}m",
-            "Quiz Attempts" to stats.quizzesTaken.toString(),
-            "Quiz Completions" to stats.quizzesTaken.toString(),
-            "Average Score" to "${progress.lastScore.toInt()}%",
+            "Quizzes Taken" to stats.quizzesTaken.toString(),
+            "Last Score" to "${progress.lastScore.toInt()}%",
             "Lessons Opened" to userDoc.userNotes.size.toString(),
             "Current Streak" to streakDisplay,
             "Best Streak" to bestStreakDisplay

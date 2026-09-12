@@ -36,14 +36,18 @@ object ProfanityFilter {
         "mc" to "bhai"
     )
 
+    // Pre-compiled regexes for performance - unicode aware, whole word, case-insensitive
+    private val regexCache: Map<String, Regex> by lazy {
+        profanityMap.keys.associateWith { bad ->
+            Regex("(?<![\\p{L}])${Regex.escape(bad)}(?![\\p{L}])", setOf(RegexOption.IGNORE_CASE))
+        }
+    }
+
     /**
      * Checks if the text contains any bad words.
      */
     fun containsBadWords(text: String): Boolean {
-        val lowerText = text.lowercase(Locale.ROOT)
-        return profanityMap.keys.any { badWord ->
-            Regex("(?i)(?<![\\p{L}])${Regex.escape(badWord)}(?![\\p{L}])").containsMatchIn(lowerText)
-        }
+        return regexCache.any { (_, regex) -> regex.containsMatchIn(text) }
     }
 
     /**
@@ -52,7 +56,7 @@ object ProfanityFilter {
     fun convertToMild(text: String): String {
         var processedText = text
         profanityMap.forEach { (bad, mild) ->
-            val regex = Regex("(?i)(?<![\\p{L}])${Regex.escape(bad)}(?![\\p{L}])") // Unicode-aware, whole word
+            val regex = regexCache[bad] ?: return@forEach
             processedText = processedText.replace(regex, mild)
         }
         return processedText
@@ -64,7 +68,7 @@ object ProfanityFilter {
     fun maskBadWords(text: String): String {
         var processedText = text
         profanityMap.keys.forEach { bad ->
-            val regex = Regex("(?i)(?<![\\p{L}])${Regex.escape(bad)}(?![\\p{L}])")
+            val regex = regexCache[bad] ?: return@forEach
             processedText = processedText.replace(regex, "*".repeat(bad.length))
         }
         return processedText

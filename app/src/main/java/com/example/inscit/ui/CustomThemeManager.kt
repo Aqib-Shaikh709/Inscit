@@ -44,8 +44,8 @@ object CustomThemeManager {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val data = prefs.getString(KEY_THEMES, "") ?: ""
         if (data.isEmpty()) return emptyList()
-        return data.split("||").mapNotNull {
-            val parts = it.split("""(?<!\\)\|""".toRegex())
+        return splitEscapedDoublePipe(data).mapNotNull {
+            val parts = splitEscapedPipe(it)
             if (parts.size == 4) {
                 val name = parts[0].replace("\\|", "|").replace("\\\\", "\\")
                 try {
@@ -55,6 +55,65 @@ object CustomThemeManager {
                 }
             } else null
         }
+    }
+
+    private fun isEscaped(s: String, pos: Int): Boolean {
+        var count = 0
+        var j = pos - 1
+        while (j >= 0 && s[j] == '\\') {
+            count++
+            j--
+        }
+        return count % 2 == 1
+    }
+
+    private fun splitEscapedPipe(s: String): List<String> {
+        val parts = mutableListOf<String>()
+        val sb = StringBuilder()
+        var i = 0
+        while (i < s.length) {
+            val c = s[i]
+            if (c == '\\' && i + 1 < s.length) {
+                val n = s[i + 1]
+                if (n == '|' || n == '\\') {
+                    sb.append(c).append(n)
+                    i += 2
+                    continue
+                }
+            }
+            if (c == '|') {
+                if (!isEscaped(s, i)) {
+                    parts.add(sb.toString())
+                    sb.clear()
+                    i++
+                    continue
+                }
+            }
+            sb.append(c)
+            i++
+        }
+        parts.add(sb.toString())
+        return parts
+    }
+
+    private fun splitEscapedDoublePipe(s: String): List<String> {
+        val parts = mutableListOf<String>()
+        val sb = StringBuilder()
+        var i = 0
+        while (i < s.length) {
+            if (i + 1 < s.length && s[i] == '|' && s[i + 1] == '|') {
+                if (!isEscaped(s, i) && !isEscaped(s, i + 1)) {
+                    parts.add(sb.toString())
+                    sb.clear()
+                    i += 2
+                    continue
+                }
+            }
+            sb.append(s[i])
+            i++
+        }
+        parts.add(sb.toString())
+        return parts
     }
 
     fun saveSelectedCustomThemeName(context: Context, name: String) {
