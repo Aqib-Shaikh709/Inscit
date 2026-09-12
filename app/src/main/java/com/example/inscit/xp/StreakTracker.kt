@@ -17,8 +17,7 @@ object StreakTracker {
     private const val KEY_LAST_NOTIFIED_DATE = "last_notified_date"
     private const val WORK_NAME = "streak_daily_check"
 
-    private fun getToday(): String =
-        SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+    private fun getToday(): String = com.example.inscit.utils.DateUtils.today()
 
     fun recordQuiz(context: Context, score: Float) {
         if (score < 80f) return
@@ -51,9 +50,8 @@ object StreakTracker {
 
         if (lastDate.isEmpty() || lastDate == today) return
 
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val last = sdf.parse(lastDate) ?: return
-        val now = sdf.parse(today) ?: return
+        val last = com.example.inscit.utils.DateUtils.parse(lastDate) ?: return
+        val now = com.example.inscit.utils.DateUtils.parse(today) ?: return
         val diffDays = TimeUnit.MILLISECONDS.toDays(now.time - last.time)
 
         if (diffDays >= 2) {
@@ -66,7 +64,7 @@ object StreakTracker {
                 if (data != null) {
                     val doc = com.example.inscit.UserDocumentSaver.restore(data)
                     if (doc != null && doc.stats.currentStreak != 0) {
-                        val yesterday = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_MONTH, -1) }.time)
+                        val yesterday = com.example.inscit.utils.DateUtils.yesterday()
                         if (doc.stats.lastActivityDate != today && doc.stats.lastActivityDate != yesterday) {
                             val updated = doc.copy(stats = doc.stats.copy(currentStreak = 0))
                             val newData = com.example.inscit.serializeUserDocument(updated)

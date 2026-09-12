@@ -295,6 +295,7 @@ fun BiologyInteractions(topic: TopicDetail, accent: Color) {
 fun ElectromagnetismInteraction(accent: Color) {
     var current by remember { mutableFloatStateOf(2f) }
     val rotation by rememberInfiniteTransition("em").animateFloat(0f, 360f, infiniteRepeatable(tween(2000, easing = LinearEasing)))
+    val electronTime by rememberInfiniteTransition("emTime").animateFloat(0f, 10000f, infiniteRepeatable(tween(10000, easing = LinearEasing)))
 
     InteractionContainer(
         title = "Electromagnetism: Field Lines",
@@ -320,9 +321,9 @@ fun ElectromagnetismInteraction(accent: Color) {
             // Wire
             drawRect(Color.Gray, Offset(center.x - 10f, 20f), Size(20f, size.height - 40f))
             
-            // Electrons
+            // Electrons - animated via state, not System.currentTimeMillis
             repeat(5) { i ->
-                val ey = (System.currentTimeMillis() / 10 + i * 100) % (size.height - 60f) + 30f
+                val ey = (electronTime / 10 + i * 100) % (size.height - 60f) + 30f
                 drawCircle(NeonCyan, radius = 4f, center = Offset(center.x, ey))
             }
             
@@ -708,6 +709,7 @@ fun NewtonsLawInteraction(accent: Color) {
             }
         }
     }
+    val particleTime by rememberInfiniteTransition("newtonParticles").animateFloat(0f, 100f, infiniteRepeatable(tween(1000, easing = LinearEasing)), label = "particleTime")
 
     InteractionContainer(
         title = "Newton's 2nd Law: F = ma",
@@ -754,9 +756,9 @@ fun NewtonsLawInteraction(accent: Color) {
             }
             drawPath(arrowPath, PowerRed)
             
-            // Acceleration Visualizer (Particles)
+            // Acceleration Visualizer (Particles) - animated via state
             for (i in 0..3) {
-                val offset = ((System.currentTimeMillis() / 10 % 100) + i * 25) % 100
+                val offset = ((particleTime + i * 25) % 100)
                 drawCircle(NeonCyan.copy(alpha = 1f - offset/100f), radius = 3f, center = Offset(x + boxSize/2 + 10f + offset * (acceleration/2f), centerY))
             }
         }
@@ -1413,6 +1415,7 @@ fun PlantTissueInteraction(accent: Color) {
 @Composable
 fun NutritionInteraction(accent: Color) {
     var lightIntensity by remember { mutableFloatStateOf(50f) }
+    val time by rememberInfiniteTransition("nutritionTime").animateFloat(0f, 10000f, infiniteRepeatable(tween(10000, easing = LinearEasing)), label = "nutritionTime")
     
     InteractionContainer(
         title = "Photosynthesis: Glucose Synthesis",
@@ -1452,10 +1455,10 @@ fun NutritionInteraction(accent: Color) {
                 drawLine(Color.Yellow.copy(alpha = alpha), Offset(lx, 0f), Offset(lx - 40f, 100f), strokeWidth = 4f)
             }
             
-            // Glucose production
+            // Glucose production - animated via state
             if (lightIntensity > 20f) {
                 repeat(10) { i ->
-                    val gx = (System.currentTimeMillis() / 20 + i * 40) % 200f + (center.x - 100f)
+                    val gx = (time / 20 + i * 40) % 200f + (center.x - 100f)
                     val gy = center.y + sin(gx * 0.1f).toFloat() * 20f
                     if (gx < center.x + 100f) drawCircle(Color.White, radius = 3f, center = Offset(gx, gy))
                 }
@@ -1467,6 +1470,7 @@ fun NutritionInteraction(accent: Color) {
 @Composable
 fun RespirationInteraction(accent: Color) {
     val expansion by rememberInfiniteTransition("resp").animateFloat(0.8f, 1.2f, infiniteRepeatable(tween(3000, easing = LinearEasing), RepeatMode.Reverse))
+    val rotation by rememberInfiniteTransition("respRot").animateFloat(0f, 360f, infiniteRepeatable(tween(8000, easing = LinearEasing)), label = "respRot")
 
     InteractionContainer(
         title = "Cellular Respiration",
@@ -1497,9 +1501,9 @@ fun RespirationInteraction(accent: Color) {
             }
             drawPath(path, accent.copy(alpha = 0.5f), style = Stroke(2f))
             
-            // ATP release
+            // ATP release - animated via state
             repeat(12) { i ->
-                val ang = i * 30f + System.currentTimeMillis() * 0.1f
+                val ang = i * 30f + rotation
                 val dist = 90f * expansion
                 val ax = center.x + dist * cos(Math.toRadians(ang.toDouble())).toFloat()
                 val ay = center.y + dist * sin(Math.toRadians(ang.toDouble())).toFloat()
@@ -1639,6 +1643,7 @@ fun MetabolismControls(
 
 @Composable
 fun PhotosynthesisCanvas(accent: Color, lightIntensity: Float) {
+    val time by rememberInfiniteTransition("photoTime").animateFloat(0f, 10000f, infiniteRepeatable(tween(10000, easing = LinearEasing)), label = "photoTime")
     Canvas(Modifier.fillMaxSize()) {
         val center = Offset(size.width / 2f, size.height / 2f)
         
@@ -1659,10 +1664,10 @@ fun PhotosynthesisCanvas(accent: Color, lightIntensity: Float) {
             drawLine(Color.Yellow.copy(alpha = alpha), Offset(lx, 0f), Offset(lx - 40f, 100f), strokeWidth = 4f)
         }
         
-        // Glucose production
+        // Glucose production - animated via state
         if (lightIntensity > 20f) {
             repeat(10) { i ->
-                val gx = (System.currentTimeMillis() / 20 + i * 40) % 200f + (center.x - 100f)
+                val gx = (time / 20 + i * 40) % 200f + (center.x - 100f)
                 val gy = center.y + sin(gx * 0.1f).toFloat() * 20f
                 if (gx < center.x + 100f) drawCircle(Color.White, radius = 3f, center = Offset(gx, gy))
             }
@@ -1853,6 +1858,7 @@ fun GeneticsControls(
 @Composable
 fun DnaHelixCanvas(accent: Color) {
     val rotation by rememberInfiniteTransition("dna").animateFloat(0f, 360f, infiniteRepeatable(tween(8000, easing = LinearEasing)))
+    val pulse by rememberInfiniteTransition("dnaPulse").animateFloat(0f, 1f, infiniteRepeatable(tween(2000, easing = LinearEasing)), label = "dnaPulse")
 
     Canvas(Modifier.fillMaxSize()) {
         val centerX = size.width / 2f
@@ -1899,8 +1905,7 @@ fun DnaHelixCanvas(accent: Color) {
             drawCircle(colB, radius = 4f, center = Offset(rightX, y))
         }
 
-        // Replication sparkle / hydrogen bond pulses
-        val pulse = (System.currentTimeMillis() % 2000) / 2000f
+        // Replication sparkle / hydrogen bond pulses - animated via state
         val midY = startY + pulse * length
         drawCircle(Color.Yellow.copy(alpha = 0.3f), radius = 8f, center = Offset(centerX, midY))
     }

@@ -4,6 +4,13 @@ import com.example.inscit.models.UserDocument
 
 object DailyReportGenerator {
 
+    private fun escapeHtml(s: String): String = s
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\"", "&quot;")
+        .replace("'", "&#39;")
+
     fun generateSentiment(userDoc: UserDocument): String {
         val xp = userDoc.stats.xp
         val quizzes = userDoc.stats.quizzesTaken
@@ -39,10 +46,10 @@ object DailyReportGenerator {
     fun generateHtmlReport(userDoc: UserDocument): String {
         val metrics = UsageAnalyticsManager.collectMetrics(userDoc)
         val sentiment = generateSentiment(userDoc)
-        val userName = userDoc.profile.name
+        val userName = escapeHtml(userDoc.profile.name)
         
         val tableRows = metrics.map { (k, v) ->
-            "<tr><td style='padding: 8px; border: 1px solid #ddd;'>$k</td><td style='padding: 8px; border: 1px solid #ddd;'>$v</td></tr>"
+            "<tr><td style='padding: 8px; border: 1px solid #ddd;'>${escapeHtml(k)}</td><td style='padding: 8px; border: 1px solid #ddd;'>${escapeHtml(v)}</td></tr>"
         }.joinToString("")
 
         return """

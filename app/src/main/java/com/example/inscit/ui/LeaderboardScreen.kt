@@ -38,11 +38,25 @@ fun LeaderboardScreen(onBack: () -> Unit) {
             }
 
             item {
-                Box(modifier = Modifier.fillParentMaxHeight(0.6f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxWidth().height(320.dp), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("🔭", fontSize = 64.sp)
                         Spacer(Modifier.height(spacing.medium))
-                        Text("Leaderboard requires an internet connection", style = MaterialTheme.typography.titleMedium, color = GhostWhite.copy(alpha = 0.5f))
+                        Text(
+                            "Leaderboard requires an internet connection",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = GhostWhite.copy(alpha = 0.5f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+                        Spacer(Modifier.height(spacing.large))
+                        Button(
+                            onClick = onBack,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = NeonCyan, contentColor = DeepSpace)
+                        ) {
+                            Text("GO BACK", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                        }
                     }
                 }
             }

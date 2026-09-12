@@ -6,17 +6,9 @@ import java.util.*
 
 object StreakManager {
     
-    private fun getCurrentDate(): String {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        return dateFormat.format(Date())
-    }
+    private fun getCurrentDate(): String = com.example.inscit.utils.DateUtils.today()
     
-    private fun getYesterdayDate(): String {
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_MONTH, -1)
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        return dateFormat.format(calendar.time)
-    }
+    private fun getYesterdayDate(): String = com.example.inscit.utils.DateUtils.yesterday()
     
     fun updateStreak(stats: UserStats, scoreObtained: Float): UserStats {
         val currentDate = getCurrentDate()

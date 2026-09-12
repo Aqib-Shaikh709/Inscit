@@ -407,8 +407,8 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
     }
 }
 
-private const val CONTACT_EMAIL = "Inscit66@gmail.com"
-private const val CONTACT_PHONE = "8104878086"
+private const val CONTACT_EMAIL = com.example.inscit.utils.AppConstants.CONTACT_EMAIL
+private const val CONTACT_PHONE = com.example.inscit.utils.AppConstants.CONTACT_PHONE
 
 fun getExportFolder(context: Context): File {
     val folder = File(context.getExternalFilesDir(null), "InscitExports")

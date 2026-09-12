@@ -11,7 +11,7 @@ import java.util.UUID
 
 object GoalManager {
 
-    fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+    fun today(): String = com.example.inscit.utils.DateUtils.today()
 
     fun todayXp(doc: UserDocument): Int = doc.dailyXp[today()] ?: 0
 
