@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -84,7 +86,7 @@ fun GoalsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { BackIcon(txtCol) }
+                IconButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = "Back" }) { BackIcon(txtCol) }
                 Text(
                     if (lang == Lang.EN) "GOAL MAKER" else "लक्ष्य निर्माता",
                     fontSize = 20.sp,

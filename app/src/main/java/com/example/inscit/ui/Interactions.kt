@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -34,6 +33,10 @@ import androidx.compose.ui.unit.sp
 import com.example.inscit.*
 import com.example.inscit.models.TopicDetail
 import kotlin.math.*
+
+private val InteractionDiagramHeight = 200.dp
+private val InteractionLegendDotSize = 10.dp
+private const val InteractionLegendTextSizeSp = 11
 
 @Composable
 fun TtsController(
@@ -185,7 +188,7 @@ fun InteractionContainer(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(InteractionDiagramHeight)
                     .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
                     .background(Color.Black.copy(alpha = 0.35f))
                     .padding(horizontal = 12.dp, vertical = 12.dp)
@@ -208,14 +211,14 @@ fun InteractionContainer(
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Box(
-                                Modifier.size(10.dp)
+                                Modifier.size(InteractionLegendDotSize)
                                     .background(color, CircleShape)
                                     .border(1.5.dp, Color.Black.copy(alpha = 0.4f), CircleShape)
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 label,
-                                fontSize = 11.sp,
+                                fontSize = InteractionLegendTextSizeSp.sp,
                                 color = GhostWhite.copy(alpha = 0.9f),
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,

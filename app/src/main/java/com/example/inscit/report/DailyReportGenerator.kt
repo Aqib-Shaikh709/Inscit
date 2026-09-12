@@ -5,6 +5,10 @@ import com.example.inscit.models.UserDocument
 
 object DailyReportGenerator {
 
+    private const val REPORT_TITLE = "DAILY LEARNING REPORT CARD"
+    private const val REPORT_FOOTER = "Keep encouraging the learning journey!"
+    private const val REPORT_GENERATED_BY = "Generated via Inscit Omega"
+
     private fun escapeHtml(s: String): String = s
         .replace("&", "&amp;")
         .replace("<", "&lt;")
@@ -31,7 +35,7 @@ object DailyReportGenerator {
         val metricsText = metrics.map { (k, v) -> "- $k: $v" }.joinToString("\n")
 
         return """
-            📊 DAILY LEARNING REPORT CARD 📊
+            📊 $REPORT_TITLE 📊
             
             Student: $userName
             Status: $sentiment
@@ -39,8 +43,8 @@ object DailyReportGenerator {
             📈 Performance Metrics:
             $metricsText
             
-            Keep encouraging the learning journey!
-            Generated via Inscit Omega
+            $REPORT_FOOTER
+            $REPORT_GENERATED_BY
         """.trimIndent()
     }
 
