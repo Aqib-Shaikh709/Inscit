@@ -1,8 +1,6 @@
 package com.example.inscit.xp
 
 import com.example.inscit.models.UserStats
-import java.text.SimpleDateFormat
-import java.util.*
 
 object StreakManager {
     

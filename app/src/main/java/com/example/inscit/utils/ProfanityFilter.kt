@@ -1,7 +1,5 @@
 package com.example.inscit.utils
 
-import java.util.Locale
-
 object ProfanityFilter {
     // A simplified map of bad words to mild alternatives.
     // In a real app, this would be a much larger database or an API call.

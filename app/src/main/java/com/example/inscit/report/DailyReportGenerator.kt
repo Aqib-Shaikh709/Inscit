@@ -1,5 +1,6 @@
 package com.example.inscit.report
 
+import com.example.inscit.models.Lang
 import com.example.inscit.models.UserDocument
 
 object DailyReportGenerator {
@@ -14,11 +15,11 @@ object DailyReportGenerator {
     fun generateSentiment(userDoc: UserDocument): String {
         val xp = userDoc.stats.xp
         val quizzes = userDoc.stats.quizzesTaken
-        
+        val isHindi = userDoc.settings.language == Lang.HI
         return when {
-            xp > 500 || quizzes > 10 -> "Wonderful effort today. Consistent learning activity and strong participation were observed."
-            xp > 100 || quizzes > 3 -> "A balanced learning day was recorded with moderate activity."
-            else -> "Today's activity was limited. Additional encouragement may help improve consistency."
+            xp > 500 || quizzes > 10 -> if (isHindi) "आज शानदार प्रयास रहा। लगातार सीखने और मजबूत भागीदारी देखी गई।" else "Wonderful effort today. Consistent learning activity and strong participation were observed."
+            xp > 100 || quizzes > 3 -> if (isHindi) "आज संतुलित सीखने का दिन रहा, जिसमें मध्यम गतिविधि दर्ज की गई।" else "A balanced learning day was recorded with moderate activity."
+            else -> if (isHindi) "आज की गतिविधि सीमित रही। निरंतरता सुधारने के लिए अतिरिक्त प्रोत्साहन मददगार हो सकता है।" else "Today's activity was limited. Additional encouragement may help improve consistency."
         }
     }
 
@@ -43,7 +44,7 @@ object DailyReportGenerator {
         """.trimIndent()
     }
 
-    fun generateHtmlReport(userDoc: UserDocument): String {
+    fun generateHtmlReport(userDoc: UserDocument, accentHex: String = "#00F2FF"): String {
         val metrics = UsageAnalyticsManager.collectMetrics(userDoc)
         val sentiment = generateSentiment(userDoc)
         val userName = escapeHtml(userDoc.profile.name)
@@ -58,7 +59,7 @@ object DailyReportGenerator {
                 <h2>Daily Learning Report Card</h2>
                 <p>Hello Parent,</p>
                 <p>Here is the daily activity summary for your child, <b>$userName</b>:</p>
-                <div style='background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 5px solid #00F2FF;'>
+                <div style='background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 5px solid $accentHex;'>
                     <i>"$sentiment"</i>
                 </div>
                 <h3 style='margin-top: 20px;'>Performance Metrics</h3>

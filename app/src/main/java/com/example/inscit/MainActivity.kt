@@ -1069,13 +1069,6 @@ fun AppEngine(tts: TTSManager) {
                             lang = language,
                             onBack = { currentScreen = Screen.HOME }
                         )
-
-                        else -> {
-                            LaunchedEffect(Unit) { currentScreen = Screen.HOME }
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = primaryAccent)
-                            }
-                        }
                     }
                 }
             }

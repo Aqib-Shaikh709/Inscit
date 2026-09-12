@@ -4,9 +4,6 @@ import android.content.Context
 import com.example.inscit.models.GoalType
 import com.example.inscit.models.UserDocument
 import com.example.inscit.models.UserGoal
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import java.util.UUID
 
 object GoalManager {
