@@ -22,7 +22,6 @@ import com.example.inscit.DeepSpace
 import com.example.inscit.GhostWhite
 import com.example.inscit.models.UserDocument
 import com.example.inscit.ui.BackIcon
-import com.example.inscit.xp.StreakTracker
 
 @Composable
 fun ProgressReportScreen(
@@ -92,8 +91,9 @@ fun ProgressReportScreen(
             
             Spacer(Modifier.height(16.dp))
 
-            val highestStreak = StreakTracker.getHighestStreak(context)
-            val reportText = generatedReport!! + "\n\n🏆 Best Streak: $highestStreak day${if (highestStreak != 1) "s" else ""}"
+            val highestStreak = userDocument.stats.longestStreak
+            val currentStreak = userDocument.stats.currentStreak
+            val reportText = generatedReport!! + "\n\n🔥 Current Streak: $currentStreak day${if (currentStreak != 1) "s" else ""}\n🏆 Best Streak: $highestStreak day${if (highestStreak != 1) "s" else ""}"
             
             // Preview (Non-editable)
             Box(

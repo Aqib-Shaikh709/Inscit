@@ -57,7 +57,7 @@ fun GoalsScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(userDocument.goals) {
         val pruned = GoalManager.pruneExpiredCompletedGoals(userDocument)
         if (pruned.goals != userDocument.goals) {
             onUpdateUser(pruned)
@@ -99,9 +99,9 @@ fun GoalsScreen(
             val xpGoal = activeGoals.firstOrNull { it.type == GoalType.XP }
             val dailyMode = xpGoal != null && xpGoal.dailyTarget > 0
             val needleValue = if (dailyMode) todayXp.toFloat() else (xpGoal?.currentValue ?: 0).toFloat()
-            val needleTarget = if (dailyMode) xpGoal!!.dailyTarget.toFloat() else (xpGoal?.targetValue ?: 1).toFloat()
+            val needleTarget = if (dailyMode) xpGoal!!.dailyTarget.toFloat().coerceAtLeast(1f) else (xpGoal?.targetValue ?: 1).toFloat().coerceAtLeast(1f)
             val fraction = animateFloatAsState(
-                targetValue = if (xpGoal == null) 0f else min(1f, needleValue / needleTarget),
+                targetValue = if (xpGoal == null || needleTarget <= 0f) 0f else min(1f, needleValue / needleTarget),
                 animationSpec = tween(1000),
                 label = "needle"
             )

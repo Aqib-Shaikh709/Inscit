@@ -221,13 +221,22 @@ fun triggerVibration(context: Context, type: String) {
         context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     }
 
+    if (!vibrator.hasVibrator()) return
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val effect = when (type) {
             "CLICK" -> VibrationEffect.createOneShot(10, VibrationEffect.DEFAULT_AMPLITUDE)
-            "SUCCESS" -> VibrationEffect.createWaveform(longArrayOf(0, 20, 10, 30), intArrayOf(0, 128, 0, 255), -1)
+            "SUCCESS" -> {
+                // Check amplitude control for waveform
+                if (vibrator.hasAmplitudeControl()) {
+                    VibrationEffect.createWaveform(longArrayOf(0, 20, 10, 30), intArrayOf(0, 128, 0, 255), -1)
+                } else {
+                    VibrationEffect.createWaveform(longArrayOf(0, 20, 10, 30), -1)
+                }
+            }
             else -> VibrationEffect.createOneShot(5, 50)
         }
-        vibrator.vibrate(effect)
+        try { vibrator.vibrate(effect) } catch (_: Exception) {}
     } else {
         @Suppress("DEPRECATION")
         val duration = when (type) {
@@ -235,7 +244,7 @@ fun triggerVibration(context: Context, type: String) {
             "SUCCESS" -> 50L
             else -> 5L
         }
-        vibrator.vibrate(duration)
+        try { vibrator.vibrate(duration) } catch (_: Exception) {}
     }
 }
 

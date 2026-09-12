@@ -37,8 +37,8 @@ object DailyFacts {
         "Your heart beats about 100,000 times every single day.",
         "Ants can carry up to 50 times their own body weight.",
         "The observable universe is about 93 billion light-years in diameter.",
-        "The visuals of the gargantua in the movie 'Interstellar' were calculated by the director's team and not drawn.",
-        "Chess has more board combinations than there a re atoms in the observable universe.",
+        "The visuals of the Gargantua in the movie 'Interstellar' were calculated by physicists and not drawn.",
+        "Chess has more board combinations than there are atoms in the observable universe.",
         "Chess was initially a game for 4 players rather than 2."
     )
 
@@ -72,7 +72,10 @@ object DailyFacts {
         "स्लॉथ डॉल्फ़िन से अधिक समय तक सांस रोक सकते हैं — 40 मिनट तक।",
         "आपका हृदय हर दिन लगभग 100,000 बार धड़कता है।",
         "चींटियां अपने शरीर के वजन का 50 गुना तक उठा सकती हैं।",
-        "दृश्यमान ब्रह्मांड लगभग 93 अरब प्रकाश-वर्ष चौड़ा है।"
+        "दृश्यमान ब्रह्मांड लगभग 93 अरब प्रकाश-वर्ष चौड़ा है।",
+        "इंटरस्टेलर फिल्म में गरगैंटुआ के दृश्य भौतिकविदों द्वारा गणना किए गए थे, न कि चित्रित।",
+        "शतरंज में अवलोकनीय ब्रह्मांड के परमाणुओं से भी अधिक बोर्ड संयोजन हैं।",
+        "शतरंज शुरू में 2 के बजाय 4 खिलाड़ियों का खेल था।"
     )
 
     fun getTodaysFact(lang: Lang): String {
