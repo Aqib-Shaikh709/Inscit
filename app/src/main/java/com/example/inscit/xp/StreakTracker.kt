@@ -21,7 +21,7 @@ object StreakTracker {
         SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
     fun recordQuiz(context: Context, score: Float) {
-        if (score <= 70f) return
+        if (score < 80f) return
 
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val today = getToday()
@@ -56,9 +56,26 @@ object StreakTracker {
         val now = sdf.parse(today) ?: return
         val diffDays = TimeUnit.MILLISECONDS.toDays(now.time - last.time)
 
-        if (diffDays >= 1) {
+        if (diffDays >= 2) {
             val currentStreak = prefs.getInt(KEY_CURRENT_STREAK, 0)
             prefs.edit().putInt(KEY_CURRENT_STREAK, 0).apply()
+            // Sync UserStats (single source of truth) - also reset inscit_prefs streak
+            try {
+                val inscitPrefs = context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
+                val data = inscitPrefs.getString("user_data", null)
+                if (data != null) {
+                    val doc = com.example.inscit.UserDocumentSaver.restore(data)
+                    if (doc != null && doc.stats.currentStreak != 0) {
+                        val yesterday = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_MONTH, -1) }.time)
+                        if (doc.stats.lastActivityDate != today && doc.stats.lastActivityDate != yesterday) {
+                            val updated = doc.copy(stats = doc.stats.copy(currentStreak = 0))
+                            val newData = com.example.inscit.serializeUserDocument(updated)
+                            inscitPrefs.edit().putString("user_data", newData).apply()
+                            try { context.openFileOutput("inscit_backup.dat", android.content.Context.MODE_PRIVATE).use { it.write(newData.toByteArray()) } } catch (_: Exception) {}
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
 
             if (lastNotified != today) {
                 NotificationHelper.showNotification(
@@ -83,8 +100,12 @@ object StreakTracker {
             .getInt(KEY_HIGHEST_STREAK, 0)
 
     private fun scheduleDailyCheck(context: Context) {
+        val constraints = androidx.work.Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
         val workRequest = PeriodicWorkRequestBuilder<StreakCheckWorker>(1, TimeUnit.DAYS)
             .setInitialDelay(1, TimeUnit.DAYS)
+            .setConstraints(constraints)
             .addTag(WORK_NAME)
             .build()
 

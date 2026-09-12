@@ -1,6 +1,7 @@
 package com.example.inscit.notifications
 
 import android.content.Context
+import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -10,8 +11,12 @@ object NotificationScheduler {
     private const val WORK_NAME = "inactivity_notification_work"
 
     fun scheduleInactivityNotification(context: Context) {
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
         val workRequest = OneTimeWorkRequestBuilder<InactivityWorker>()
             .setInitialDelay(10, TimeUnit.HOURS) // Send after 10 hours of inactivity
+            .setConstraints(constraints)
             .addTag(WORK_NAME)
             .build()
 

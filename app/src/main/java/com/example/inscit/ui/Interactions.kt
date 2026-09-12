@@ -1,7 +1,7 @@
 package com.example.inscit.ui
 
-import android.R.attr.shadowColor
 import androidx.compose.animation.core.*
+import kotlinx.coroutines.isActive
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
@@ -156,20 +156,19 @@ fun InteractionContainer(
                     )
                 }
                 
-                // Live Indexes as horizontal chips
+                // Live Indexes as horizontal chips - scrollable to avoid overlap
                 if (liveIndexes.isNotEmpty()) {
                     Spacer(Modifier.height(12.dp))
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         liveIndexes.forEach { (key, value) ->
                             Box(
                                 modifier = Modifier
-                                    .weight(1f, fill = false)
-                                    .padding(horizontal = 10.dp, vertical = 8.dp)
                                     .background(accent.copy(alpha = 0.12f), RoundedCornerShape(10.dp))
                                     .border(1.dp, accent.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(key, fontSize = 9.sp, color = accent, fontWeight = FontWeight.Black, letterSpacing = 0.5.sp)
@@ -194,38 +193,34 @@ fun InteractionContainer(
                 content()
             }
             
-            // Legend Section - Separate row below canvas
+            // Legend Section - scrollable to avoid overlap with decorum kept
             if (legend.isNotEmpty()) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        legend.forEach { (label, color) ->
-                            Row(
-                                modifier = Modifier.weight(1f, fill = false),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Box(
-                                    Modifier.size(10.dp)
-                                        .background(color, CircleShape)
-                                        .border(1.5.dp, Color.Black.copy(alpha = 0.4f), CircleShape)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    label,
-                                    fontSize = 11.sp,
-                                    color = GhostWhite.copy(alpha = 0.9f),
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
+                    legend.forEach { (label, color) ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                Modifier.size(10.dp)
+                                    .background(color, CircleShape)
+                                    .border(1.5.dp, Color.Black.copy(alpha = 0.4f), CircleShape)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                label,
+                                fontSize = 11.sp,
+                                color = GhostWhite.copy(alpha = 0.9f),
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
@@ -628,16 +623,13 @@ fun EcologyInteraction(accent: Color) {
 fun KinematicsInteraction(accent: Color) {
     var velocity by remember { mutableFloatStateOf(3f) }
     var acceleration by remember { mutableFloatStateOf(0.1f) }
-    var time by remember { mutableFloatStateOf(0f) }
-    
-    LaunchedEffect(Unit) {
-        while(true) {
-            withFrameMillis { 
-                time += 0.016f // approx 60fps
-                if (time > 10f) time = 0f
-            }
-        }
-    }
+    val infiniteTransition = rememberInfiniteTransition(label = "kinematicsTime")
+    val time by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 10f,
+        animationSpec = infiniteRepeatable(tween(10000, easing = LinearEasing)),
+        label = "time"
+    )
 
     val displacement = velocity * time + 0.5f * acceleration * time * time
     val currentVelocity = velocity + acceleration * time
@@ -703,15 +695,15 @@ fun NewtonsLawInteraction(accent: Color) {
     var velX by remember { mutableFloatStateOf(0f) }
 
     LaunchedEffect(force, mass) {
-        var lastTime = System.currentTimeMillis()
-        while(true) {
-            withFrameMillis {
-                val now = System.currentTimeMillis()
-                val dt = (now - lastTime) / 1000f
-                lastTime = now
-                
-                velX += acceleration * dt
-                posX += velX * dt
+        var lastTime = System.nanoTime()
+        while(isActive) {
+            withFrameNanos { frameTimeNanos ->
+                val dt = (frameTimeNanos - lastTime) / 1_000_000_000f
+                lastTime = frameTimeNanos
+                // Clamp dt to avoid huge jumps after pause
+                val clampedDt = dt.coerceIn(0f, 0.05f)
+                velX += acceleration * clampedDt
+                posX += velX * clampedDt
                 if (posX > 1000f) { posX = 0f; velX = 0f }
             }
         }

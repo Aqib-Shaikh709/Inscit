@@ -1,6 +1,7 @@
 package com.example.inscit.goals
 
 import android.content.Context
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -17,8 +18,12 @@ object GoalScheduler {
     private const val WORK_NAME = "goal_daily_reminder"
 
     fun scheduleDailyGoalReminder(context: Context) {
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
         val workRequest = PeriodicWorkRequestBuilder<GoalReminderWorker>(1, TimeUnit.DAYS)
             .setInitialDelay(1, TimeUnit.DAYS)
+            .setConstraints(constraints)
             .addTag(WORK_NAME)
             .build()
 

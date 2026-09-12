@@ -181,6 +181,8 @@ import com.example.inscit.xp.StreakManager
 import com.example.inscit.xp.StreakTracker
 import com.example.inscit.xp.XpManager
 import androidx.lifecycle.LifecycleEventObserver
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
@@ -250,10 +252,11 @@ fun saveUserDocument(context: Context, userDoc: UserDocument) {
         context.openFileOutput(BACKUP_FILE_NAME, Context.MODE_PRIVATE).use { it.write(data.toByteArray()) }
     } catch (_: Exception) {}
 
-    exportBackupToPublic(context, data)
+    // NOTE: Auto-export to Downloads removed to avoid storage pollution (was creating a new file every 1s).
+    // Use exportBackupToPublic() only for explicit manual export.
 }
 
-private fun exportBackupToPublic(context: Context, data: String) {
+fun exportBackupToPublic(context: Context, data: String) {
     try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val values = ContentValues().apply {
@@ -319,42 +322,64 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            val hiResult = tts?.setLanguage(Locale.forLanguageTag("hi-IN")) ?: TextToSpeech.LANG_NOT_SUPPORTED
-            hindiAvailable = hiResult in arrayOf(
-                TextToSpeech.LANG_AVAILABLE,
-                TextToSpeech.LANG_COUNTRY_AVAILABLE,
-                TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE
-            )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val hiVoice = tts?.voices?.find { it.locale.language == "hi" && it.locale.country == "IN" }
-                if (hiVoice != null) hindiAvailable = true
+            try {
+                val hiResult = tts?.setLanguage(Locale.forLanguageTag("hi-IN")) ?: TextToSpeech.LANG_NOT_SUPPORTED
+                hindiAvailable = hiResult in arrayOf(
+                    TextToSpeech.LANG_AVAILABLE,
+                    TextToSpeech.LANG_COUNTRY_AVAILABLE,
+                    TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE
+                ) || hiResult == TextToSpeech.LANG_AVAILABLE
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    try {
+                        val hiVoice = tts?.voices?.find { it.locale.language == "hi" && it.locale.country == "IN" }
+                        if (hiVoice != null) hindiAvailable = true
+                    } catch (_: Exception) {}
+                }
+                // Check for missing data as well
+                if (hiResult == TextToSpeech.LANG_MISSING_DATA) hindiAvailable = false
+            } catch (_: Exception) {
+                hindiAvailable = false
             }
             tts?.language = Locale.US
             isReady = true
+            // Apply pending language if user changed before ready
+            if (currentLang == Lang.HI && hindiAvailable) {
+                tts?.language = Locale.forLanguageTag("hi-IN")
+            }
+        } else {
+            isReady = false
+            hindiAvailable = false
         }
     }
 
-    fun isHindiVoiceAvailable(): Boolean = hindiAvailable
+    fun isHindiVoiceAvailable(): Boolean = isReady && hindiAvailable
 
     fun getInstallVoiceIntent(): Intent =
         Intent().setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)
 
     fun setLanguage(lang: Lang) {
         currentLang = lang
-        if (!isReady) return
+        if (!isReady || tts == null) return
         val locale = if (lang == Lang.HI) Locale.forLanguageTag("hi-IN") else Locale.US
-        val result = tts?.setLanguage(locale) ?: TextToSpeech.LANG_NOT_SUPPORTED
-        if (lang == Lang.HI && result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            tts?.language = Locale.US
-        }
+        try {
+            val result = tts?.setLanguage(locale) ?: TextToSpeech.LANG_NOT_SUPPORTED
+            if (lang == Lang.HI && (result == TextToSpeech.LANG_NOT_SUPPORTED || result == TextToSpeech.LANG_MISSING_DATA)) {
+                tts?.language = Locale.US
+            }
+        } catch (_: Exception) {}
     }
 
     fun speak(text: String) {
-        if (!isReady) return
+        if (!isReady || tts == null) return
+        if (text.isBlank()) return
         val params = Bundle()
         params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "id")
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "id")
-        isSpeaking = true
+        try {
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "id")
+            isSpeaking = true
+        } catch (_: Exception) {
+            isSpeaking = false
+        }
     }
 
     fun speak(text: String, lang: Lang) {
@@ -465,6 +490,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 101) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                NotificationScheduler.scheduleInactivityNotification(this)
+                GoalScheduler.scheduleDailyGoalReminder(this)
+            } else {
+                // Permission denied - avoid scheduling silent work
+                NotificationScheduler.cancelAll(this)
+            }
+        }
+    }
+
     override fun onDestroy() {
         ttsManager.shutdown()
         super.onDestroy()
@@ -474,6 +512,33 @@ class MainActivity : ComponentActivity() {
 
 private fun escapePipe(s: String): String = s.replace("\\", "\\\\").replace("|", "\\|")
 private fun unescapePipe(s: String): String = s.replace("\\|", "|").replace("\\\\", "\\")
+
+private fun splitEscapedPipe(data: String): List<String> {
+    val parts = mutableListOf<String>()
+    val sb = StringBuilder()
+    var i = 0
+    while (i < data.length) {
+        val c = data[i]
+        if (c == '\\' && i + 1 < data.length) {
+            val n = data[i + 1]
+            if (n == '|' || n == '\\') {
+                sb.append(c).append(n)
+                i += 2
+                continue
+            }
+        }
+        if (c == '|') {
+            parts.add(sb.toString())
+            sb.clear()
+            i++
+            continue
+        }
+        sb.append(c)
+        i++
+    }
+    parts.add(sb.toString())
+    return parts
+}
 
 // Custom helper to serialize UserDocument for persistence
 fun serializeUserDocument(doc: UserDocument): String {
@@ -495,7 +560,7 @@ fun serializeUserDocument(doc: UserDocument): String {
 val UserDocumentSaver = Saver<UserDocument, String>(
     save = { doc -> serializeUserDocument(doc) },
     restore = { data ->
-        val parts = data.split("|")
+        val parts = splitEscapedPipe(data)
         try {
             val notesStr = if (parts.size > 8) parts[8] else ""
             val notes = if (notesStr.isEmpty()) emptyMap() else {
@@ -602,15 +667,18 @@ fun AppEngine(tts: TTSManager) {
         onDispose { appLifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    LaunchedEffect(isForeground, currentScreen) {
-        if (isForeground && currentScreen != Screen.SPLASH) {
-            while (true) {
+    LaunchedEffect(isForeground) {
+        if (isForeground) {
+            while (isActive) {
                 kotlinx.coroutines.delay(60000)
-                userDocument = userDocument.copy(
-                    stats = userDocument.stats.copy(
-                        totalUsageTime = userDocument.stats.totalUsageTime + 60000
+                ensureActive()
+                if (currentScreen != Screen.SPLASH) {
+                    userDocument = userDocument.copy(
+                        stats = userDocument.stats.copy(
+                            totalUsageTime = userDocument.stats.totalUsageTime + 60000
+                        )
                     )
-                )
+                }
             }
         }
     }

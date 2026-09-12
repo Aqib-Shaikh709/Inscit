@@ -34,7 +34,7 @@ class QuizViewModel(
     private var lastRound: Int? = null
 
     fun startQuiz(lang: Lang, count: Int = 10, difficulty: String? = null) {
-        if (_uiState.value !is QuizUiState.Loading) return
+        if (_uiState.value is QuizUiState.QuizInProgress) return
         currentLang = lang
         lastCount = count
         lastDifficulty = difficulty

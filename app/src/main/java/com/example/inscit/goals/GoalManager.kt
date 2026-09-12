@@ -138,7 +138,7 @@ object GoalManager {
     // Goal field 16 is wrapped with escapePipe in serialization; titles are sanitized
     // so goals never contain raw separators ("~", ";;", "|") and are safe to parse raw.
     fun parseGoalsFromData(data: String): List<UserGoal> {
-        val parts = data.split("|")
+        val parts = splitEscapedPipe(data)
         if (parts.size <= 16) return emptyList()
         return unescapePipeSafe(parts[16]).split(";;").mapNotNull { raw ->
             val seg = raw.split("~")
@@ -163,11 +163,13 @@ object GoalManager {
     }
 
     fun parseDailyXpFromData(data: String): Map<String, Int> {
-        val parts = data.split("|")
+        val parts = splitEscapedPipe(data)
         if (parts.size <= 17) return emptyMap()
-        return unescapePipeSafe(parts[17]).split("|").mapNotNull { raw ->
-            val seg = raw.split(":")
-            if (seg.size == 2) runCatching { seg[0] to seg[1].toInt() }.getOrNull() else null
+        val raw = unescapePipeSafe(parts[17])
+        if (raw.isBlank()) return emptyMap()
+        return raw.split(",").mapNotNull { entry ->
+            val seg = entry.split(":")
+            if (seg.size == 2) runCatching { seg[0].trim() to seg[1].trim().toInt() }.getOrNull() else null
         }.toMap()
     }
 
@@ -176,4 +178,31 @@ object GoalManager {
 
     private fun unescapePipeSafe(s: String): String =
         s.replace("\\|", "|").replace("\\\\", "\\")
+
+    private fun splitEscapedPipe(data: String): List<String> {
+        val parts = mutableListOf<String>()
+        val sb = StringBuilder()
+        var i = 0
+        while (i < data.length) {
+            val c = data[i]
+            if (c == '\\' && i + 1 < data.length) {
+                val n = data[i + 1]
+                if (n == '|' || n == '\\') {
+                    sb.append(c).append(n)
+                    i += 2
+                    continue
+                }
+            }
+            if (c == '|') {
+                parts.add(sb.toString())
+                sb.clear()
+                i++
+                continue
+            }
+            sb.append(c)
+            i++
+        }
+        parts.add(sb.toString())
+        return parts
+    }
 }
