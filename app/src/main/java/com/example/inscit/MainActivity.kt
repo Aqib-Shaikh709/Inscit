@@ -181,6 +181,9 @@ import com.example.inscit.xp.StreakManager
 import com.example.inscit.xp.StreakTracker
 import com.example.inscit.xp.XpManager
 import androidx.lifecycle.LifecycleEventObserver
+import com.example.inscit.transfer.NearbyTransferManager
+import com.example.inscit.ui.TransferReceiveScreen
+import com.example.inscit.ui.TransferSendScreen
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -195,7 +198,7 @@ import java.util.Calendar
 
 
 enum class Screen {
- SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS, STREAK_DETAILS, GOALS }
+ SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS, STREAK_DETAILS, GOALS, TRANSFER_SEND, TRANSFER_RECEIVE }
 enum class Branch { PHYSICS, CHEMISTRY, BIOLOGY }
 
 
@@ -639,6 +642,7 @@ fun AppEngine(tts: TTSManager) {
     var selectedBranch by rememberSaveable { mutableStateOf(Branch.PHYSICS) }
     var selectedTopic by remember { mutableStateOf<TopicDetail?>(null) }
     var selectedExportFile by remember { mutableStateOf<File?>(null) }
+    var transferManager by remember { mutableStateOf(NearbyTransferManager(context)) }
 
     val customThemes = remember { CustomThemeManager.loadThemes(context) }
     var savedCustomThemes by remember { mutableStateOf(customThemes) }
@@ -674,6 +678,10 @@ fun AppEngine(tts: TTSManager) {
         }
         appLifecycleOwner.lifecycle.addObserver(observer)
         onDispose { appLifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { transferManager.disconnect() }
     }
 
     LaunchedEffect(isForeground) {
@@ -721,6 +729,10 @@ fun AppEngine(tts: TTSManager) {
                 Screen.EXPORTS_LIST -> currentScreen = Screen.PROFILE
                 Screen.EXPORT_DETAIL -> currentScreen = Screen.EXPORTS_LIST
                 Screen.ABOUT_US, Screen.CONTACT_US, Screen.DONATE -> currentScreen = Screen.HOME
+                Screen.TRANSFER_SEND, Screen.TRANSFER_RECEIVE -> {
+                    transferManager.disconnect()
+                    currentScreen = Screen.PROFILE
+                }
                 else -> {}
             }
         }
@@ -1003,6 +1015,8 @@ fun AppEngine(tts: TTSManager) {
                                 onViewExports = {
                                     currentScreen = Screen.EXPORTS_LIST
                                 },
+                                onTransferSend = { currentScreen = Screen.TRANSFER_SEND },
+                                onTransferReceive = { currentScreen = Screen.TRANSFER_RECEIVE },
                                 onBack = { currentScreen = Screen.HOME }
                             )
                         }
@@ -1068,6 +1082,35 @@ fun AppEngine(tts: TTSManager) {
                             txtCol = textColor,
                             lang = language,
                             onBack = { currentScreen = Screen.HOME }
+                        )
+                        Screen.TRANSFER_SEND -> TransferSendScreen(
+                            userDoc = userDocument,
+                            accent = primaryAccent,
+                            txtCol = textColor,
+                            manager = transferManager,
+                            onBack = {
+                                transferManager.disconnect()
+                                currentScreen = Screen.PROFILE
+                            }
+                        )
+                        Screen.TRANSFER_RECEIVE -> TransferReceiveScreen(
+                            manager = transferManager,
+                            onSuccess = { importedDoc ->
+                                userDocument = importedDoc
+                                saveUserDocument(context, importedDoc)
+                                triggerVibration(context, "SUCCESS")
+                                currentScreen = Screen.HOME
+                            },
+                            onGuest = {
+                                transferManager.disconnect()
+                                currentScreen = Screen.HOME
+                            },
+                            accent = primaryAccent,
+                            txtCol = textColor,
+                            onBack = {
+                                transferManager.disconnect()
+                                currentScreen = Screen.PROFILE
+                            }
                         )
                     }
                 }
@@ -2153,6 +2196,8 @@ fun LocalProfileView(
     onUpdateProfile: (UserDocument) -> Unit,
     onSaveProgress: () -> Unit,
     onViewExports: () -> Unit,
+    onTransferSend: () -> Unit = {},
+    onTransferReceive: () -> Unit = {},
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -2261,6 +2306,30 @@ fun LocalProfileView(
             border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.2f))
         ) {
             Text(if (lang == Lang.EN) "VIEW EXPORTS" else "एक्सपोर्ट्स देखें", fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Button(
+            onClick = onTransferSend,
+            modifier = Modifier.fillMaxWidth().height(60.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = accent.copy(alpha = 0.15f), contentColor = accent),
+            border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
+        ) {
+            Text(if (lang == Lang.EN) "SEND TO NEW DEVICE" else "नए डिवाइस पर भेजें", fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        Button(
+            onClick = onTransferReceive,
+            modifier = Modifier.fillMaxWidth().height(60.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = GhostWhite.copy(alpha = 0.05f), contentColor = GhostWhite),
+            border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.2f))
+        ) {
+            Text(if (lang == Lang.EN) "RECEIVE ON NEW DEVICE" else "नए डिवाइस पर प्राप्त करें", fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
         }
 
         Spacer(Modifier.height(24.dp))
