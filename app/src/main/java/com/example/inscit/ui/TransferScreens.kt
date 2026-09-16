@@ -406,16 +406,18 @@ fun TransferReceiveScreen(
     }
 }
 
-// Helper to generate QR bitmap via zxing
+// Helper to generate QR bitmap via zxing - GBA-style link-code
 fun generateQrBitmap(text: String, size: Int): androidx.compose.ui.graphics.ImageBitmap? {
+    if (text.isBlank() || size <= 0) return null
     return try {
         val writer = QRCodeWriter()
         val hints = mapOf(com.google.zxing.EncodeHintType.MARGIN to 1)
-        val bitMatrix = writer.encode(text, BarcodeFormat.QR_CODE, size, size, hints)
+        val matrix = writer.encode(text, BarcodeFormat.QR_CODE, size, size, hints)
         val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        for (x in 0 until size) {
-            for (y in 0 until size) {
-                bmp.setPixel(x, y, if (bitMatrix.get(x, y)) 0xFF000000.toInt() else 0xFFFFFFFF.toInt())
+        // y-outer for better bitmap cache locality
+        for (y in 0 until size) {
+            for (x in 0 until size) {
+                bmp.setPixel(x, y, if (matrix.get(x, y)) 0xFF000000.toInt() else 0xFFFFFFFF.toInt())
             }
         }
         bmp.asImageBitmap()
