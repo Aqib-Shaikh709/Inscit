@@ -410,11 +410,12 @@ fun TransferReceiveScreen(
 fun generateQrBitmap(text: String, size: Int): androidx.compose.ui.graphics.ImageBitmap? {
     return try {
         val writer = QRCodeWriter()
-        val bitMatrix = writer.encode(text, BarcodeFormat.QR_CODE, size, size)
-        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565)
+        val hints = mapOf(com.google.zxing.EncodeHintType.MARGIN to 1)
+        val bitMatrix = writer.encode(text, BarcodeFormat.QR_CODE, size, size, hints)
+        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         for (x in 0 until size) {
             for (y in 0 until size) {
-                bmp.setPixel(x, y, if (bitMatrix.get(x, y)) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+                bmp.setPixel(x, y, if (bitMatrix.get(x, y)) 0xFF000000.toInt() else 0xFFFFFFFF.toInt())
             }
         }
         bmp.asImageBitmap()
