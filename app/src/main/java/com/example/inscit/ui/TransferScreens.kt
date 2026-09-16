@@ -1,7 +1,5 @@
-package com.example.inscit.ui
+﻿package com.example.inscit.ui
 
-import android.graphics.Bitmap
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -14,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,8 +30,6 @@ import com.example.inscit.transfer.TransferStage
 import com.example.inscit.transfer.TransferViewModel
 import com.example.inscit.triggerVibration
 import com.example.inscit.ui.BackIcon
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.qrcode.QRCodeWriter
 import kotlinx.coroutines.delay
 
 @Composable
@@ -142,20 +137,8 @@ fun TransferSendScreen(
         ) {
             Text(pairCode, fontSize = 36.sp, fontWeight = FontWeight.Black, color = accent, modifier = Modifier.padding(horizontal = 32.dp, vertical = 16.dp), letterSpacing = 4.sp)
         }
-        Spacer(Modifier.height(24.dp))
-        val qrText = "inscit://transfer?code=$pairCode&name=${userDoc.profile.name}"
-        val qrBitmap = remember(qrText) { generateQrBitmap(qrText, 600) }
-        if (qrBitmap != null) {
-            Image(
-                bitmap = qrBitmap,
-                contentDescription = "QR Code",
-                modifier = Modifier.size(220.dp).clip(RoundedCornerShape(16.dp)).background(Color.White).padding(12.dp)
-            )
-        } else {
-            Box(Modifier.size(220.dp).clip(RoundedCornerShape(16.dp)).background(Color.White.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                Text("QR", color = GhostWhite.copy(alpha = 0.3f))
-            }
-        }
+        Spacer(Modifier.height(16.dp))
+        Text("Share this 6-digit code with the new device. No QR needed.", color = GhostWhite.copy(alpha = 0.6f), fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 16.dp))
         Spacer(Modifier.height(24.dp))
         when (state.stage) {
             TransferStage.ADVERTISING -> {
@@ -178,7 +161,7 @@ fun TransferSendScreen(
                 }
             }
             TransferStage.SUCCESS -> {
-                Text("✓ Transfer Complete!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("âœ“ Transfer Complete!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(12.dp))
                 Button(onClick = {
                     manager.disconnect()
@@ -260,7 +243,7 @@ fun TransferReceiveScreen(
         Spacer(Modifier.height(32.dp))
 
         if (!isDiscovering) {
-            Text("Discover nearby devices or scan QR", color = GhostWhite.copy(alpha = 0.7f), fontSize = 14.sp, textAlign = TextAlign.Center)
+            Text("Discover nearby devices with code", color = GhostWhite.copy(alpha = 0.7f), fontSize = 14.sp, textAlign = TextAlign.Center)
             Spacer(Modifier.height(24.dp))
             Button(
                 onClick = {
@@ -287,7 +270,7 @@ fun TransferReceiveScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace),
                 modifier = Modifier.fillMaxWidth().height(60.dp)
             ) {
-                Text("🔍 DISCOVER DEVICES", fontWeight = FontWeight.Black)
+                Text("ðŸ” DISCOVER DEVICES", fontWeight = FontWeight.Black)
             }
             Spacer(Modifier.height(16.dp))
             OutlinedTextField(
@@ -311,7 +294,7 @@ fun TransferReceiveScreen(
                 Text("SKIP - CONTINUE AS GUEST")
             }
             Spacer(Modifier.height(12.dp))
-            Text("QR Scan fallback: Enter code above", color = GhostWhite.copy(alpha = 0.4f), fontSize = 11.sp)
+            Text("Enter the 6-digit code shown on sender", color = GhostWhite.copy(alpha = 0.4f), fontSize = 11.sp)
         } else {
             when (state.stage) {
                 TransferStage.DISCOVERING -> {
@@ -337,7 +320,7 @@ fun TransferReceiveScreen(
                                 ) {
                                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Box(Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(accent.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
-                                            Text("📱", fontSize = 20.sp)
+                                            Text("ðŸ“±", fontSize = 20.sp)
                                         }
                                         Spacer(Modifier.width(12.dp))
                                         Column(Modifier.weight(1f)) {
@@ -376,7 +359,7 @@ fun TransferReceiveScreen(
                     }
                 }
                 TransferStage.SUCCESS -> {
-                    Text("✓ Profile Imported!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("âœ“ Profile Imported!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
                     Text("Your data has been restored. Welcome!", color = GhostWhite.copy(alpha = 0.7f), fontSize = 14.sp)
                 }
@@ -405,26 +388,4 @@ fun TransferReceiveScreen(
         }
     }
 }
-
-// Helper to generate QR bitmap via zxing - GBA-style link-code
-fun generateQrBitmap(text: String, size: Int): androidx.compose.ui.graphics.ImageBitmap? {
-    if (text.isBlank() || size <= 0) return null
-    return try {
-        val writer = QRCodeWriter()
-        val hints = mapOf(com.google.zxing.EncodeHintType.MARGIN to 1)
-        val matrix = writer.encode(text, BarcodeFormat.QR_CODE, size, size, hints)
-        val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        // y-outer for better bitmap cache locality
-        for (y in 0 until size) {
-            for (x in 0 until size) {
-                bmp.setPixel(x, y, if (matrix.get(x, y)) 0xFF000000.toInt() else 0xFFFFFFFF.toInt())
-            }
-        }
-        bmp.asImageBitmap()
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
-
 
