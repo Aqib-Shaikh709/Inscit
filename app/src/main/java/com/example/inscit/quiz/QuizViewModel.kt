@@ -86,8 +86,8 @@ class QuizViewModel(
 
         userAnswers[currentState.currentQuestion.id] = selectedOption
 
-        // Update XP Buffer only
-        xpBuffer.add(if (isCorrect) 10 else -5)
+        // XP economy: +10 correct, -2 wrong (was -5, too punitive)
+        xpBuffer.add(if (isCorrect) 10 else -2)
 
         viewModelScope.launch {
             _events.emit(QuizEvent.TriggerVibration(if (isCorrect) "SUCCESS" else "FAILURE"))
@@ -112,6 +112,30 @@ class QuizViewModel(
     }
 
     fun getFinalXp() = maxOf(a = 0, b = xpBuffer.pendingXp)
+
+    // XP economy: +20 perfect bonus at 100%, 1.2x streak multiplier when streak>=3
+    fun getFinalXp(streak: Int, scorePercent: Int): Int {
+        var xp = xpBuffer.pendingXp
+        if (scorePercent >= 100) xp += 20
+        if (streak >= 3) xp = (xp * 1.2f).toInt()
+        return maxOf(0, xp)
+    }
+
+    fun startQuizWithWeakDomains(lang: Lang, weakDomains: Set<ScienceDomain>) {
+        if (_uiState.value is QuizUiState.QuizInProgress) return
+        currentLang = lang
+        xpBuffer.clear()
+        userAnswers.clear()
+        viewModelScope.launch {
+            _uiState.value = QuizUiState.Loading
+            questions = engine.getQuestions(lang, 10, lastDifficulty, weakDomains)
+            if (questions.isNotEmpty()) {
+                _uiState.value = QuizUiState.QuizInProgress(questions.first(), 0, questions.size)
+            } else {
+                _uiState.value = QuizUiState.Error("No weak-domain questions.")
+            }
+        }
+    }
 
     fun retry() {
         _uiState.value = QuizUiState.Loading

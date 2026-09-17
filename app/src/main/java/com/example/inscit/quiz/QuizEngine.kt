@@ -7,20 +7,25 @@ class QuizEngine {
     fun getQuestions(
         lang: Lang,
         count: Int = 10,
-        difficulty: String? = null
+        difficulty: String? = null,
+        weakDomains: Set<ScienceDomain> = emptySet()
     ): List<ScienceQuestion> {
         val all = when (lang) {
             Lang.HI -> getHindiQuestions()
             else -> getEnglishQuestions()
         }
+        // Weight weak domains 2x so next quiz targets remediation (review link)
+        val weighted = if (weakDomains.isNotEmpty()) {
+            all.flatMap { q -> if (q.domain in weakDomains) listOf(q, q) else listOf(q) }
+        } else all
         val filtered = if (difficulty != null) {
-            val byDifficulty = all.filter { it.difficulty == difficulty }
+            val byDifficulty = weighted.filter { it.difficulty == difficulty }
             if (byDifficulty.isEmpty()) {
-                all
+                weighted
             } else {
                 byDifficulty
             }
-        } else all
+        } else weighted
 
         return filtered.shuffled().take(count)
     }

@@ -19,6 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,6 +42,7 @@ fun ScienceQuizScreen(
     difficultyFilter: String? = null,
     round: Int? = null,
     finishButtonLabel: String? = null,
+    currentStreak: Int = 0,
     onFinish: (xpEarned: Int, score: Int, strengths: List<String>, weaknesses: List<String>) -> Unit,
     viewModel: QuizViewModel = viewModel<QuizViewModel>()
 ) {
@@ -70,15 +75,40 @@ fun ScienceQuizScreen(
                 QuizContent(currentState, lang, accent, viewModel)
             }
             is QuizUiState.Completed -> {
+                // Persist attempt history for review link (cap 50, JSON array in quiz_history prefs)
+                androidx.compose.runtime.LaunchedEffect(currentState.analytics) {
+                    try {
+                        val prefs = context.getSharedPreferences("quiz_history", android.content.Context.MODE_PRIVATE)
+                        val history = prefs.getString("attempts", "[]") ?: "[]"
+                        val entry = """{"id":"${System.currentTimeMillis()}","score":${currentState.analytics.overallScore},"xp":${viewModel.getFinalXp(currentStreak, currentState.analytics.overallScore)},"time":${System.currentTimeMillis()}}"""
+                        val updated = if (history == "[]") "[$entry]"
+                        else {
+                            val inner = history.removePrefix("[").removeSuffix("]")
+                            val parts = if (inner.isEmpty()) emptyList() else inner.split("},{").mapIndexed { i, p ->
+                                (if (!p.startsWith("{")) "{" else "") + p + (if (!p.endsWith("}")) "}" else "")
+                            }
+                            val kept = (parts + entry).takeLast(50)
+                            "[" + kept.joinToString(",") + "]"
+                        }
+                        prefs.edit().putString("attempts", updated).apply()
+                    } catch (_: Exception) {}
+                }
+                val weakDomains = remember(currentState.analytics) {
+                    val names = currentState.analytics.weaknessesEn + currentState.analytics.weaknessesHi
+                    ScienceDomain.entries.filter { d -> d.displayNameEn in names || d.displayNameHi in names }.toSet()
+                }
                 ScienceResultScreen(
                     analytics = currentState.analytics,
                     lang = lang,
                     accent = accent,
                     finishButtonLabel = finishButtonLabel,
                     onRetry = viewModel::retry,
+                    onPracticeWeakness = if (weakDomains.isEmpty()) null else ({
+                        viewModel.startQuizWithWeakDomains(lang, weakDomains)
+                    }),
                     onFinish = {
                         onFinish(
-                            viewModel.getFinalXp(),
+                            viewModel.getFinalXp(currentStreak, currentState.analytics.overallScore),
                             currentState.analytics.overallScore,
                             if (lang == Lang.HI) currentState.analytics.strengthsHi else currentState.analytics.strengthsEn,
                             if (lang == Lang.HI) currentState.analytics.weaknessesHi else currentState.analytics.weaknessesEn
@@ -209,7 +239,11 @@ private fun QuizContent(
                             enabled = !state.isTransitioning,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(84.dp),
+                                .height(84.dp)
+                                .semantics {
+                                    contentDescription = "Answer option: ${option.text}"
+                                    role = Role.Button
+                                },
                             shape = RoundedCornerShape(24.dp),
                             color = backgroundColor,
                             border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor)
@@ -315,7 +349,11 @@ private fun QuizContent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = spacing.small)
-                                    .height(72.dp),
+                                    .height(72.dp)
+                                    .semantics {
+                                        contentDescription = "Answer option: ${option.text}"
+                                        role = Role.Button
+                                    },
                                 shape = RoundedCornerShape(20.dp),
                                 color = backgroundColor,
                                 border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor)

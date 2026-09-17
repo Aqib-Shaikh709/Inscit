@@ -40,6 +40,7 @@ fun ScienceResultScreen(
     accent: Color,
     finishButtonLabel: String? = null,
     onRetry: () -> Unit,
+    onPracticeWeakness: (() -> Unit)? = null,
     onFinish: () -> Unit
 ) {
     val spacing = MaterialTheme.spacing
@@ -146,6 +147,21 @@ fun ScienceResultScreen(
                     Text(if (lang == Lang.EN) "RETRY QUIZ" else "पुनः प्रयास करें", style = MaterialTheme.typography.titleMedium)
                 }
                 Spacer(Modifier.height(spacing.medium))
+                // Practice Weakness (10 Q): relaunch filtered on weak domains weighted 2x
+                val weakList = if (lang == Lang.EN) analytics.weaknessesEn else analytics.weaknessesHi
+                if (onPracticeWeakness != null && weakList.isNotEmpty()) {
+                    Button(
+                        onClick = onPracticeWeakness,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PowerRed, contentColor = Color.White)
+                    ) {
+                        Text(if (lang == Lang.EN) "PRACTICE WEAKNESS (10 Q)" else "कमजोरी अभ्यास (10 प्रश्न)", style = MaterialTheme.typography.titleMedium)
+                    }
+                    Spacer(Modifier.height(spacing.medium))
+                }
                 OutlinedButton(
                     onClick = onFinish,
                     modifier = Modifier

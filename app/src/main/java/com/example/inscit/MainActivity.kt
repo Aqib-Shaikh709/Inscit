@@ -52,6 +52,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -362,10 +364,12 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
     private var hindiAvailable = false
 
     init {
+        // Utterance callbacks arrive on a binder thread - post to Main for mutableState safety
+        val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String?) { isSpeaking = true }
-            override fun onDone(utteranceId: String?) { isSpeaking = false }
-            override fun onError(utteranceId: String?) { isSpeaking = false }
+            override fun onStart(utteranceId: String?) { mainHandler.post { isSpeaking = true } }
+            override fun onDone(utteranceId: String?) { mainHandler.post { isSpeaking = false } }
+            override fun onError(utteranceId: String?) { mainHandler.post { isSpeaking = false } }
         })
     }
 
@@ -685,6 +689,7 @@ fun AppEngine(tts: TTSManager) {
 
     var currentScreen by rememberSaveable { mutableStateOf(Screen.SPLASH) }
     var selectedBranch by rememberSaveable { mutableStateOf(Branch.PHYSICS) }
+    var selectedDifficulty by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTopic by remember { mutableStateOf<TopicDetail?>(null) }
     var selectedExportFile by remember { mutableStateOf<File?>(null) }
     var transferManager by remember { mutableStateOf(NearbyTransferManager(context)) }
@@ -706,6 +711,13 @@ fun AppEngine(tts: TTSManager) {
     // Check streak status on app start
     LaunchedEffect(Unit) {
         StreakTracker.checkAndResetIfMissed(context)
+    }
+
+    // Stop TTS whenever leaving a TTS screen (LAB/NOTES/QUIZ use speech)
+    LaunchedEffect(currentScreen) {
+        if (currentScreen != Screen.LAB && currentScreen != Screen.NOTES && currentScreen != Screen.QUIZ) {
+            try { tts.stop() } catch (_: Exception) {}
+        }
     }
 
     // Immediate persistence to SharedPreferences (debounced)
@@ -845,6 +857,27 @@ fun AppEngine(tts: TTSManager) {
                             currentScreen = Screen.HOME
                         }
                         Screen.HOME -> {
+                            Column(Modifier.fillMaxSize()) {
+                                // Difficulty filter chips -> passed to QuizEngine.getQuestions
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Difficulty:", color = textColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    val chips = listOf<Pair<String?, String>>(null to "ALL", "BASIC" to "BASIC", "INTERMEDIATE" to "INT", "ADVANCED" to "ADV")
+                                    for ((value, label) in chips) {
+                                        val isSel = selectedDifficulty == value
+                                        Button(
+                                            onClick = { selectedDifficulty = value; triggerVibration(context, "CLICK") },
+                                            colors = ButtonDefaults.buttonColors(containerColor = if (isSel) primaryAccent else CardBg, contentColor = if (isSel) DeepSpace else GhostWhite),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                            modifier = Modifier.height(32.dp)
+                                        ) {
+                                            Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
                             ModernHome(
                                 lang = language,
                                 theme = themeMode,
@@ -854,8 +887,14 @@ fun AppEngine(tts: TTSManager) {
                                 userName = userDocument.profile.name,
                                 photoUrl = userDocument.profile.photoUrl?.let { Uri.parse(it) },
                                 onLangChange = { newLang ->
-                                    userDocument = userDocument.copy(settings = userDocument.settings.copy(language = newLang))
-                                    tts.setLanguage(newLang)
+                                    // Guard Hindi toggle when voice data missing: offer install instead of silent fallback
+                                    if (newLang == Lang.HI && !tts.isHindiVoiceAvailable()) {
+                                        try { context.startActivity(tts.getInstallVoiceIntent()) } catch (_: Exception) {}
+                                        Toast.makeText(context, "Install Hindi Voice", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        userDocument = userDocument.copy(settings = userDocument.settings.copy(language = newLang))
+                                        tts.setLanguage(newLang)
+                                    }
                                 },
                                 onNav = { branch ->
                                     triggerVibration(context, "CLICK")
@@ -882,6 +921,7 @@ fun AppEngine(tts: TTSManager) {
                                     scope.launch { drawerState.open() }
                                 }
                             )
+                            }
                         }
                         Screen.RANKINGS -> RankingsScreen(
                             totalXp = userDocument.stats.xp,
@@ -1013,6 +1053,8 @@ fun AppEngine(tts: TTSManager) {
                             ScienceQuizScreen(
                                 lang = language,
                                 accent = primaryAccent,
+                                difficultyFilter = selectedDifficulty,
+                                currentStreak = userDocument.stats.currentStreak,
                                 onFinish = { xpEarned, score, strengths, weaknesses ->
                                     tts.stop()
                                     val newXp = userDocument.stats.xp + xpEarned
@@ -1433,6 +1475,7 @@ fun DailyQuizScreen(
                 accent = accent,
                 round = status.currentRound,
                 finishButtonLabel = buttonLabel,
+                currentStreak = userDocument.stats.currentStreak,
                 onFinish = { xp, score, _, _ ->
                     if (score >= 70) {
                         val (goalDoc, completedGoals) = GoalManager.applyQuizResult(userDocument, xp, score.toFloat())
