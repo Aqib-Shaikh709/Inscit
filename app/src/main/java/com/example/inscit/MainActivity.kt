@@ -43,7 +43,6 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -114,6 +113,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -1262,13 +1263,14 @@ fun FeedbackScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit)
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     var feedbackText by remember { mutableStateOf("") }
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val maxH = maxHeight
-        val maxW = maxWidth
-        val hPad = if (maxW > 600.dp) 48.dp else 24.dp
-        Column(
-            modifier = Modifier.fillMaxSize().imePadding().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState())
-        ) {
+    val config = LocalConfiguration.current
+    val maxH = config.screenHeightDp.dp
+    val maxW = config.screenWidthDp.dp
+    val hPad = if (maxW > 600.dp) 48.dp else 24.dp
+    // rewritten without BoxWithConstraints: screen size via LocalConfiguration (no recomposition loop)
+    Column(
+        modifier = Modifier.fillMaxSize().imePadding().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState())
+    ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) { BackIcon(txtCol) }
                 Text(if (lang == Lang.EN) "FEEDBACK" else "फीडबैक", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
@@ -1311,7 +1313,6 @@ fun FeedbackScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit)
                 Text("SUBMIT FEEDBACK", fontWeight = FontWeight.ExtraBold)
             }
         }
-    }
 }
 
 @Composable
@@ -1571,9 +1572,10 @@ fun DailyChallengeCalendar(completedDates: Set<String>, accent: Color) {
 
 @Composable
 fun NewsUpdatesScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val hPad = if (maxWidth > 600.dp) 48.dp else 24.dp
-        Column(modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState())) {
+    // rewritten without BoxWithConstraints: tablet breakpoint via LocalConfiguration
+    val screenW = LocalConfiguration.current.screenWidthDp.dp
+    val hPad = if (screenW > 600.dp) 48.dp else 24.dp
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState())) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) { BackIcon(txtCol) }
                 Text(if (lang == Lang.EN) "LAB UPDATES" else "लैब अपडेट", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
@@ -1592,7 +1594,6 @@ fun NewsUpdatesScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Un
                 }
             }
         }
-    }
 }
 
 @Composable
@@ -1802,11 +1803,12 @@ fun ContactItem(
 @Composable
 fun DonateScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
     val context = LocalContext.current
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val maxH = maxHeight
-        val maxW = maxWidth
-        val hPad = if (maxW > 600.dp) 48.dp else 24.dp
-        Column(
+    // rewritten without BoxWithConstraints: screen fractions via LocalConfiguration
+    val config = LocalConfiguration.current
+    val maxH = config.screenHeightDp.dp
+    val maxW = config.screenWidthDp.dp
+    val hPad = if (maxW > 600.dp) 48.dp else 24.dp
+    Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -1834,7 +1836,6 @@ fun DonateScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
                 Text(if (lang == Lang.EN) "DONATE NOW" else "अभी दान करें", fontWeight = FontWeight.ExtraBold)
             }
         }
-    }
 }
 
 @Composable
@@ -1845,9 +1846,10 @@ fun NotesFolderScreen(
     onBack: () -> Unit,
     onOpenNote: (Branch, Lang) -> Unit
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val hPad = if (maxWidth > 600.dp) 48.dp else 24.dp
-        Column(
+    // rewritten without BoxWithConstraints: tablet breakpoint via LocalConfiguration
+    val screenW = LocalConfiguration.current.screenWidthDp.dp
+    val hPad = if (screenW > 600.dp) 48.dp else 24.dp
+    Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -1892,7 +1894,6 @@ fun NotesFolderScreen(
                 }
             }
         }
-    }
 }
 
 @Composable
@@ -1910,11 +1911,12 @@ fun LabScreen(
         Branch.CHEMISTRY -> "रसायन विज्ञान"
         Branch.BIOLOGY -> "जीव विज्ञान"
     }
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val maxH = maxHeight
-        val maxW = maxWidth
-        val hPad = if (maxW > 600.dp) 48.dp else 24.dp
-        Column(
+    // rewritten without BoxWithConstraints: screen fractions via LocalConfiguration
+    val config = LocalConfiguration.current
+    val maxH = config.screenHeightDp.dp
+    val maxW = config.screenWidthDp.dp
+    val hPad = if (maxW > 600.dp) 48.dp else 24.dp
+    Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -1963,7 +1965,6 @@ fun LabScreen(
             }
             Spacer(Modifier.height(16.dp))
         }
-    }
 }
 
 @Composable
@@ -2444,17 +2445,20 @@ fun IosSlider(
         label = "slider_return"
     )
 
-    BoxWithConstraints(
+    // rewritten without BoxWithConstraints: measure own width via onSizeChanged (no recomposition loop)
+    var containerWidthPx by remember { mutableIntStateOf(0) }
+    // Caller fixes height at 60.dp, so handle = 60.dp - 8.dp (was maxHeight - 8.dp)
+    val handleSize = 52.dp
+    val handleSizePx = with(density) { handleSize.toPx() }
+    val maxOffsetPx = (containerWidthPx.toFloat() - handleSizePx - with(density) { 8.dp.toPx() }).coerceAtLeast(0f)
+    Box(
         modifier = modifier
             .clip(RoundedCornerShape(40.dp))
             .background(Color.White.copy(alpha = 0.05f))
-            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(40.dp)),
+            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(40.dp))
+            .onSizeChanged { containerWidthPx = it.width },
         contentAlignment = Alignment.CenterStart
     ) {
-        val widthPx = with(density) { maxWidth.toPx() }
-        val handleSize = maxHeight - 8.dp
-        val handleSizePx = with(density) { handleSize.toPx() }
-        val maxOffsetPx = (widthPx - handleSizePx - with(density) { 8.dp.toPx() }).coerceAtLeast(0f)
 
         ShimmeringText(
             text = "SLIDE TO INITIALIZE",
@@ -2495,9 +2499,11 @@ fun IosSlider(
 
 @Composable
 fun FullSplashScreen(accent: Color, lang: Lang = Lang.EN, onExplore: () -> Unit) {
-    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        val maxH = maxHeight
-        val maxW = maxWidth
+    // rewritten without BoxWithConstraints: screen fractions via LocalConfiguration
+    val config = LocalConfiguration.current
+    val maxH = config.screenHeightDp.dp
+    val maxW = config.screenWidthDp.dp
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         HexagonGrid(accent.copy(alpha = 0.08f))
         
         Text(
@@ -2595,8 +2601,10 @@ fun ModernHome(
     onXpClick: () -> Unit,
     onMenuClick: () -> Unit
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val hPad = if (maxWidth > 600.dp) 48.dp else 24.dp
+    // rewritten without BoxWithConstraints: tablet breakpoint via LocalConfiguration
+    val screenW = LocalConfiguration.current.screenWidthDp.dp
+    val hPad = if (screenW > 600.dp) 48.dp else 24.dp
+    Box(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp)
                 .verticalScroll(rememberScrollState()),
