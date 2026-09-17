@@ -161,7 +161,7 @@ fun TransferSendScreen(
                 }
             }
             TransferStage.SUCCESS -> {
-                Text("âœ“ Transfer Complete!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("✓ Transfer Complete!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(12.dp))
                 Button(onClick = {
                     manager.disconnect()
@@ -270,7 +270,7 @@ fun TransferReceiveScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace),
                 modifier = Modifier.fillMaxWidth().height(60.dp)
             ) {
-                Text("ðŸ” DISCOVER DEVICES", fontWeight = FontWeight.Black)
+                Text("🔍 DISCOVER DEVICES", fontWeight = FontWeight.Black)
             }
             Spacer(Modifier.height(16.dp))
             OutlinedTextField(
@@ -320,7 +320,7 @@ fun TransferReceiveScreen(
                                 ) {
                                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Box(Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(accent.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
-                                            Text("ðŸ“±", fontSize = 20.sp)
+                                            Text("📱", fontSize = 20.sp)
                                         }
                                         Spacer(Modifier.width(12.dp))
                                         Column(Modifier.weight(1f)) {
@@ -359,7 +359,7 @@ fun TransferReceiveScreen(
                     }
                 }
                 TransferStage.SUCCESS -> {
-                    Text("âœ“ Profile Imported!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("✓ Profile Imported!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
                     Text("Your data has been restored. Welcome!", color = GhostWhite.copy(alpha = 0.7f), fontSize = 14.sp)
                 }

@@ -13,18 +13,35 @@ object StreakTracker {
     private const val KEY_HIGHEST_STREAK = "highest_streak"
     private const val KEY_LAST_QUALIFYING_DATE = "last_qualifying_date"
     private const val KEY_LAST_NOTIFIED_DATE = "last_notified_date"
+    private const val KEY_FREEZE_WEEK = "freeze_week_id"
     private const val WORK_NAME = "streak_daily_check"
 
     private fun getToday(): String = com.example.inscit.utils.DateUtils.today()
 
+    private fun weekId(today: String): String {
+        return try {
+            val d = com.example.inscit.utils.DateUtils.parse(today) ?: return today
+            val cal = java.util.Calendar.getInstance().apply { time = d }
+            "${cal.get(java.util.Calendar.YEAR)}-W${cal.get(java.util.Calendar.WEEK_OF_YEAR)}"
+        } catch (_: Exception) { today }
+    }
+
     fun recordQuiz(context: Context, score: Float) {
-        if (score < 80f) return
+        // Align with StreakManager: <60 ignored, 60-79 maintain, 80+ extend
+        if (score < 60f) return
 
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val today = getToday()
         val lastDate = prefs.getString(KEY_LAST_QUALIFYING_DATE, "") ?: ""
 
         if (lastDate == today) return
+
+        if (score < 80f) {
+            // Maintain without increment: mark activity so reset logic doesn't break streak
+            prefs.edit().putString(KEY_LAST_QUALIFYING_DATE, today).apply()
+            scheduleDailyCheck(context)
+            return
+        }
 
         val currentStreak = prefs.getInt(KEY_CURRENT_STREAK, 0)
         val newStreak = currentStreak + 1
@@ -51,6 +68,19 @@ object StreakTracker {
         val last = com.example.inscit.utils.DateUtils.parse(lastDate) ?: return
         val now = com.example.inscit.utils.DateUtils.parse(today) ?: return
         val diffDays = TimeUnit.MILLISECONDS.toDays(now.time - last.time)
+
+        // Freeze 1/week: consume freeze for exactly one missed day instead of resetting
+        if (diffDays == 2L) {
+            val wid = weekId(today)
+            if (prefs.getString(KEY_FREEZE_WEEK, "") != wid) {
+                prefs.edit()
+                    .putString(KEY_FREEZE_WEEK, wid)
+                    .putString(KEY_LAST_QUALIFYING_DATE, today)
+                    .putString(KEY_LAST_NOTIFIED_DATE, today)
+                    .apply()
+                return
+            }
+        }
 
         if (diffDays >= 2) {
             val currentStreak = prefs.getInt(KEY_CURRENT_STREAK, 0)
@@ -87,13 +117,42 @@ object StreakTracker {
         }
     }
 
-    fun getCurrentStreak(context: Context): Int =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getInt(KEY_CURRENT_STREAK, 0)
+    fun getCurrentStreak(context: Context): Int {
+        val tracker = try {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getInt(KEY_CURRENT_STREAK, 0)
+        } catch (_: Exception) { 0 }
+        // Single-source fallback: if tracker empty but UserStats has streak, use it (removes duplicate drift)
+        if (tracker != 0) return tracker
+        return try {
+            val data = context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
+                .getString("user_data_json", null)
+                ?: context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
+                    .getString("user_data", null)
+                ?: return 0
+            com.example.inscit.parseUserDocumentJson(data)?.stats?.currentStreak
+                ?: com.example.inscit.UserDocumentSaver.restore(data)?.stats?.currentStreak
+                ?: 0
+        } catch (_: Exception) { 0 }
+    }
 
-    fun getHighestStreak(context: Context): Int =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getInt(KEY_HIGHEST_STREAK, 0)
+    fun getHighestStreak(context: Context): Int {
+        val tracker = try {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .getInt(KEY_HIGHEST_STREAK, 0)
+        } catch (_: Exception) { 0 }
+        if (tracker != 0) return tracker
+        return try {
+            val data = context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
+                .getString("user_data_json", null)
+                ?: context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
+                    .getString("user_data", null)
+                ?: return 0
+            com.example.inscit.parseUserDocumentJson(data)?.stats?.longestStreak
+                ?: com.example.inscit.UserDocumentSaver.restore(data)?.stats?.longestStreak
+                ?: 0
+        } catch (_: Exception) { 0 }
+    }
 
     private fun scheduleDailyCheck(context: Context) {
         val constraints = androidx.work.Constraints.Builder()

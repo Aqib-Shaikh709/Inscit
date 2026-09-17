@@ -8,49 +8,50 @@ object StreakManager {
     
     private fun getYesterdayDate(): String = com.example.inscit.utils.DateUtils.yesterday()
     
+    // Single source thresholds: >=80 extend+bonus, >=60 maintain, <60 break.
+    // Freeze 1/week is handled in StreakTracker.checkAndResetIfMissed (needs Context).
     fun updateStreak(stats: UserStats, scoreObtained: Float): UserStats {
         val currentDate = getCurrentDate()
         val yesterday = getYesterdayDate()
-        
-        return if (scoreObtained >= 80f) {
-            // Score is 80 or above
-            when {
-                stats.lastActivityDate == currentDate -> {
-                    // Already scored 80+ today, no change
-                    stats
-                }
-                stats.lastActivityDate == yesterday -> {
-                    // Streak continues - scored yesterday and today
-                    val newStreak = stats.currentStreak + 1
-                    val newLongest = maxOf(newStreak, stats.longestStreak)
-                    stats.copy(
-                        currentStreak = newStreak,
-                        longestStreak = newLongest,
-                        lastActivityDate = currentDate
-                    )
-                }
-                else -> {
-                    // New streak or gap - start fresh
-                    stats.copy(
-                        currentStreak = 1,
-                        lastActivityDate = currentDate
-                    )
+
+        return when {
+            scoreObtained >= 80f -> {
+                when {
+                    stats.lastActivityDate == currentDate -> stats
+                    stats.lastActivityDate == yesterday -> {
+                        val newStreak = stats.currentStreak + 1
+                        val newLongest = maxOf(newStreak, stats.longestStreak)
+                        stats.copy(
+                            currentStreak = newStreak,
+                            longestStreak = newLongest,
+                            lastActivityDate = currentDate
+                        )
+                    }
+                    else -> {
+                        stats.copy(
+                            currentStreak = 1,
+                            longestStreak = maxOf(1, stats.longestStreak),
+                            lastActivityDate = currentDate
+                        )
+                    }
                 }
             }
-        } else {
-            // Score is below 80
-            if (stats.lastActivityDate == currentDate) {
-                // Already reset today or haven't attempted yet today
-                stats
-            } else if (stats.lastActivityDate == yesterday) {
-                // Miss a day - streak breaks
-                stats.copy(
-                    currentStreak = 0,
-                    lastActivityDate = currentDate
-                )
-            } else {
-                // Already broken or no activity
-                stats
+            scoreObtained >= 60f -> {
+                // Maintain: keep streak count, just mark activity today so it doesn't break
+                if (stats.lastActivityDate == currentDate) stats
+                else stats.copy(lastActivityDate = currentDate)
+            }
+            else -> {
+                if (stats.lastActivityDate == currentDate) {
+                    stats
+                } else if (stats.lastActivityDate == yesterday) {
+                    stats.copy(
+                        currentStreak = 0,
+                        lastActivityDate = currentDate
+                    )
+                } else {
+                    stats
+                }
             }
         }
     }

@@ -187,6 +187,8 @@ import com.example.inscit.ui.TransferSendScreen
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -253,15 +255,33 @@ fun triggerVibration(context: Context, type: String) {
 
 private const val PREFS_NAME = "inscit_prefs"
 private const val KEY_USER_DATA = "user_data"
+private const val KEY_USER_DATA_JSON = "user_data_json"
 private const val BACKUP_FILE_NAME = "inscit_backup.dat"
+
+private val userDocJson = Json { ignoreUnknownKeys = true; encodeDefaults = true; explicitNulls = true }
+
+fun serializeUserDocumentJson(doc: UserDocument): String = userDocJson.encodeToString(doc)
+
+fun parseUserDocumentJson(data: String): UserDocument? {
+    return try {
+        userDocJson.decodeFromString<UserDocument>(data)
+    } catch (_: Exception) { null }
+}
 
 fun saveUserDocument(context: Context, userDoc: UserDocument) {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    val data = serializeUserDocument(userDoc)
-    prefs.edit().putString(KEY_USER_DATA, data).apply()
+    // JSON primary (safe, versioned via kotlinx-serialization), pipe kept for backward compat
+    val jsonData = try { serializeUserDocumentJson(userDoc) } catch (_: Exception) { null }
+    val legacyData = try { serializeUserDocument(userDoc) } catch (_: Exception) { null }
+    prefs.edit().apply {
+        if (jsonData != null) putString(KEY_USER_DATA_JSON, jsonData)
+        if (legacyData != null) putString(KEY_USER_DATA, legacyData)
+    }.apply()
 
     try {
-        context.openFileOutput(BACKUP_FILE_NAME, Context.MODE_PRIVATE).use { it.write(data.toByteArray()) }
+        // Backup prefers JSON, falls back to legacy pipe
+        val backup = jsonData ?: legacyData ?: return
+        context.openFileOutput(BACKUP_FILE_NAME, Context.MODE_PRIVATE).use { it.write(backup.toByteArray()) }
     } catch (_: Exception) {}
 
     // NOTE: Auto-export to Downloads removed to avoid storage pollution (was creating a new file every 1s).
@@ -302,16 +322,32 @@ fun saveProfileImageLocally(context: Context, uri: Uri): String? {
 
 fun loadUserDocument(context: Context): UserDocument {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    var data = prefs.getString(KEY_USER_DATA, null)
-    if (data == null) {
-        data = try { context.openFileInput(BACKUP_FILE_NAME).use { it.readBytes().decodeToString() } } catch (_: Exception) { null }
+    // 1. Try JSON primary
+    prefs.getString(KEY_USER_DATA_JSON, null)?.let { jsonData ->
+        parseUserDocumentJson(jsonData)?.let { return it }
     }
-    if (data == null) return UserDocument(profile = UserProfile(name = "Core Explorer"))
-    return try {
-        UserDocumentSaver.restore(data) ?: UserDocument(profile = UserProfile(name = "Core Explorer"))
-    } catch (e: Exception) {
-        UserDocument(profile = UserProfile(name = "Core Explorer"))
+    // 2. Try backup file (maybe JSON or legacy pipe)
+    try {
+        context.openFileInput(BACKUP_FILE_NAME).use { it.readBytes().decodeToString() }.let { backup ->
+            parseUserDocumentJson(backup)?.let { return it }
+            // backup could be legacy pipe - try legacy restore below via prefs fallback
+            UserDocumentSaver.restore(backup)?.let { doc ->
+                // migrate backup to JSON on successful legacy read
+                try { saveUserDocument(context, doc) } catch (_: Exception) {}
+                return doc
+            }
+        }
+    } catch (_: Exception) {}
+    // 3. Legacy pipe importer (kept for backward compat)
+    prefs.getString(KEY_USER_DATA, null)?.let { legacy ->
+        try {
+            UserDocumentSaver.restore(legacy)?.let { doc ->
+                try { saveUserDocument(context, doc) } catch (_: Exception) {}
+                return doc
+            }
+        } catch (_: Exception) {}
     }
+    return UserDocument(profile = UserProfile(name = "Core Explorer"))
 }
 
 class TTSManager(context: Context) : TextToSpeech.OnInitListener {
@@ -569,56 +605,64 @@ fun serializeUserDocument(doc: UserDocument): String {
 }
 
 // Custom Saver for UserDocument to ensure perfect persistence
+// Legacy pipe importer kept for backward compat - JSON is now primary (see save/loadUserDocument)
 val UserDocumentSaver = Saver<UserDocument, String>(
     save = { doc -> serializeUserDocument(doc) },
     restore = { data ->
-        val parts = splitEscapedPipe(data)
-        try {
+        // Guard corrupt/truncated pipe data instead of crashing on parts[2..5]
+        val parts = try { splitEscapedPipe(data) } catch (_: Exception) { emptyList<String>() }
+        if (parts.size < 6) {
+            // Try JSON fallback (backup file may contain JSON)
+            parseUserDocumentJson(data) ?: UserDocument(profile = UserProfile(name = "Core Explorer"))
+        } else try {
             val notesStr = if (parts.size > 8) parts[8] else ""
             val notes = if (notesStr.isEmpty()) emptyMap() else {
-                notesStr.split("|||").associate {
+                notesStr.split("|||").mapNotNull {
                     val noteParts = it.split("~~~")
+                    if (noteParts.isEmpty() || noteParts[0].isEmpty()) return@mapNotNull null
                     val k = noteParts[0]
                     val content = if (noteParts.size > 1) noteParts[1].replace("\\:", ":").replace("\\;", ";").replace("\\~", "~").replace("\\|", "|") else ""
                     val drawing = if (noteParts.size > 2) noteParts[2].replace("\\:", ":").replace("\\;", ";").replace("\\~", "~").replace("\\|", "|") else ""
                     k to UserNote(content, drawing)
-                }
+                }.toMap()
             }
             val challengeDates = if (parts.size > 9) parts[9].split(",").filter { it.isNotEmpty() }.toSet() else emptySet()
             val challengeStatusParts = if (parts.size > 10) unescapePipe(parts[10]).split(",") else emptyList()
             val challengeStatus = if (challengeStatusParts.size >= 3) {
                 com.example.inscit.models.DailyChallengeStatus(
                     lastCompletionDate = challengeStatusParts[0],
-                    currentRound = challengeStatusParts[1].toInt(),
-                    isCompletedToday = challengeStatusParts[2].toBoolean()
+                    currentRound = challengeStatusParts[1].toIntOrNull() ?: 1,
+                    isCompletedToday = challengeStatusParts[2].toBooleanStrictOrNull() ?: false
                 )
             } else com.example.inscit.models.DailyChallengeStatus()
 
+            val lang = if (parts.size > 6) try { Lang.valueOf(parts[6]) } catch (_: Exception) { Lang.EN } else Lang.EN
+            val theme = if (parts.size > 7) try { ThemeMode.valueOf(parts[7]) } catch (_: Exception) { ThemeMode.NEON } else ThemeMode.NEON
             UserDocument(
                 profile = UserProfile(name = unescapePipe(s = parts[0]), photoUrl = unescapePipe(s = parts[1]).takeIf { it.isNotEmpty() }),
                 stats = UserStats(
-                    xp = parts[2].toInt(),
-                    level = parts[3].toInt(),
-                    quizzesTaken = parts[4].toInt(),
+                    xp = parts[2].toIntOrNull() ?: 0,
+                    level = parts[3].toIntOrNull() ?: 1,
+                    quizzesTaken = parts[4].toIntOrNull() ?: 0,
                     completedChallengeDates = challengeDates,
-                    totalUsageTime = if (parts.size > 12) parts[12].toLong() else 0L,
-                    currentStreak = if (parts.size > 13) parts[13].toInt() else 0,
-                    longestStreak = if (parts.size > 14) parts[14].toInt() else 0,
+                    totalUsageTime = if (parts.size > 12) parts[12].toLongOrNull() ?: 0L else 0L,
+                    currentStreak = if (parts.size > 13) parts[13].toIntOrNull() ?: 0 else 0,
+                    longestStreak = if (parts.size > 14) parts[14].toIntOrNull() ?: 0 else 0,
                     lastActivityDate = if (parts.size > 15) unescapePipe(parts[15]) else ""
                 ),
-                quizProgress = QuizProgress(lastScore = parts[5].toFloat()),
+                quizProgress = QuizProgress(lastScore = parts[5].toFloatOrNull() ?: 0f),
                 settings = UserSettings(
-                    language = if (parts.size > 6) Lang.valueOf(parts[6]) else Lang.EN,
-                    theme = if (parts.size > 7) ThemeMode.valueOf(parts[7]) else ThemeMode.NEON,
-                    lastReportDate = if (parts.size > 11) parts[11].toLong() else 0L
+                    language = lang,
+                    theme = theme,
+                    lastReportDate = if (parts.size > 11) parts[11].toLongOrNull() ?: 0L else 0L
                 ),
                 userNotes = notes,
                 dailyChallengeStatus = challengeStatus,
-                goals = if (parts.size > 16) GoalManager.parseGoalsFromData(data) else emptyList(),
-                dailyXp = if (parts.size > 17) GoalManager.parseDailyXpFromData(data) else emptyMap()
+                goals = if (parts.size > 16) try { GoalManager.parseGoalsFromData(data) } catch (_: Exception) { emptyList() } else emptyList(),
+                dailyXp = if (parts.size > 17) try { GoalManager.parseDailyXpFromData(data) } catch (_: Exception) { emptyMap() } else emptyMap()
             )
         } catch (e: Exception) {
-            UserDocument(profile = UserProfile(name = "Core Explorer"))
+            parseUserDocumentJson(data) ?: UserDocument(profile = UserProfile(name = "Core Explorer"))
         }
     }
 )
@@ -1196,16 +1240,16 @@ fun DrawerContent(
                 trailingIcon = { com.example.inscit.ui.ParentalIcon(accent, Modifier.size(18.dp)) }
             )
 
-            DrawerItem(if (lang == Lang.EN) "FEEDBACK" else "फीडबैक", Screen.FEEDBACK, currentScreen, onNavigate, accent)
-            DrawerItem(if (lang == Lang.EN) "APP REVIEWS" else "ऐप समीक्षाएं", Screen.REVIEWS, currentScreen, onNavigate, accent)
-            DrawerItem(if (lang == Lang.EN) "HELP CENTER" else "सहायता केंद्र", Screen.HELP_CENTER, currentScreen, onNavigate, accent)
+            DrawerItem(label = if (lang == Lang.EN) "FEEDBACK" else "फीडबैक", Screen.FEEDBACK, currentScreen, onNavigate, accent)
+            DrawerItem(label = if (lang == Lang.EN) "APP REVIEWS" else "ऐप समीक्षाएं", Screen.REVIEWS, currentScreen, onNavigate, accent)
+            DrawerItem(label = if (lang == Lang.EN) "HELP CENTER" else "सहायता केंद्र", Screen.HELP_CENTER, currentScreen, onNavigate, accent)
 
             Spacer(Modifier.weight(1f))
             Spacer(Modifier.height(spacing.large))
 
-            DrawerItem(if (lang == Lang.EN) "ABOUT US" else "हमारे बारे में", Screen.ABOUT_US, currentScreen, onNavigate, accent)
-            DrawerItem(if (lang == Lang.EN) "CONTACT US" else "संपर्क करें", Screen.CONTACT_US, currentScreen, onNavigate, accent)
-            DrawerItem(if (lang == Lang.EN) "DONATE" else "दान करें", Screen.DONATE, currentScreen, onNavigate, accent)
+            DrawerItem(label = if (lang == Lang.EN) "ABOUT US" else "हमारे बारे में", Screen.ABOUT_US, currentScreen, onNavigate, accent)
+            DrawerItem(label = if (lang == Lang.EN) "CONTACT US" else "संपर्क करें", Screen.CONTACT_US, currentScreen, onNavigate, accent)
+            DrawerItem(label = if (lang == Lang.EN) "DONATE" else "दान करें", Screen.DONATE, currentScreen, onNavigate, accent)
 
             Spacer(Modifier.height(spacing.medium))
             Text("v9.0.4", color = GhostWhite.copy(alpha = 0.3f), style = MaterialTheme.typography.labelSmall)
