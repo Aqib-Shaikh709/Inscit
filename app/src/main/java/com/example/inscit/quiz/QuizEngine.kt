@@ -87,6 +87,22 @@ class QuizEngine {
         questions: List<ScienceQuestion>,
         userAnswers: Map<String, QuizOption>
     ): ScienceAnalytics {
+        // Never crash the finish path: empty bank yields a zeroed report, result screen always appears
+        if (questions.isEmpty()) {
+            return ScienceAnalytics(
+                overallScore = 0,
+                scienceTypeEn = determineScienceTypeEn(0),
+                scienceTypeHi = determineScienceTypeHi(0),
+                radarData = emptyList(),
+                strengthsEn = emptyList(),
+                strengthsHi = emptyList(),
+                weaknessesEn = emptyList(),
+                weaknessesHi = emptyList(),
+                averageEn = emptyList(),
+                averageHi = emptyList(),
+                explanations = emptyList()
+            )
+        }
         val totalQuestions = questions.size
         val correctCount = userAnswers.values.count { it.isCorrect }
         val overallScore = ((correctCount.toFloat() / totalQuestions) * 100).toInt()

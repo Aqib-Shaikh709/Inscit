@@ -3,9 +3,11 @@ package com.example.inscit.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -254,16 +256,58 @@ fun ScienceRadarChart(data: List<DomainScore>, accent: Color, modifier: Modifier
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+// Stable wrapping row built on Layout (stable API). Replaces experimental FlowRow,
+// whose version-skewed overload caused a NoSuchMethodError crash on the result screen.
+@Composable
+fun StableFlowRow(
+    modifier: Modifier = Modifier,
+    horizontalGap: Dp = 8.dp,
+    verticalGap: Dp = 8.dp,
+    content: @Composable () -> Unit
+) {
+    Layout(content, modifier) { measurables, constraints ->
+        val hGap = horizontalGap.roundToPx()
+        val vGap = verticalGap.roundToPx()
+        val rows = mutableListOf<MutableList<Placeable>>()
+        var currentRow = mutableListOf<Placeable>()
+        var currentWidth = 0
+        measurables.forEach { measurable ->
+            val placeable = measurable.measure(Constraints(maxWidth = constraints.maxWidth))
+            if (currentRow.isNotEmpty() && currentWidth + hGap + placeable.width > constraints.maxWidth) {
+                rows.add(currentRow)
+                currentRow = mutableListOf()
+                currentWidth = 0
+            }
+            if (currentRow.isNotEmpty()) currentWidth += hGap
+            currentRow.add(placeable)
+            currentWidth += placeable.width
+        }
+        if (currentRow.isNotEmpty()) rows.add(currentRow)
+        val totalHeight = if (rows.isEmpty()) 0 else rows.sumOf { row -> row.maxOf { it.height } + vGap } - vGap
+        layout(constraints.maxWidth, totalHeight) {
+            var y = 0
+            rows.forEach { row ->
+                val rowHeight = row.maxOf { it.height }
+                var x = 0
+                row.forEach { placeable ->
+                    placeable.placeRelative(x, y)
+                    x += placeable.width + hGap
+                }
+                y += rowHeight + vGap
+            }
+        }
+    }
+}
+
 @Composable
 fun ResultTraitsSection(title: String, traits: List<String>, accent: Color, isPositive: Boolean, emptyText: String = if (isPositive) "Analyzing..." else "No major weaknesses") {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(title, color = accent, fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 2.sp)
         Spacer(Modifier.height(8.dp))
-        FlowRow(
+        StableFlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalGap = 8.dp,
+            verticalGap = 8.dp
         ) {
             if (traits.isEmpty()) {
                 Text(

@@ -106,7 +106,24 @@ class QuizViewModel(
                     totalQuestions = questions.size
                 )
             } else {
-                val analytics = engine.calculateAnalytics(questions, userAnswers)
+                // Crash-proof finish: any analytics failure still lands on the result screen
+                val analytics = try {
+                    engine.calculateAnalytics(questions, userAnswers)
+                } catch (_: Exception) {
+                    ScienceAnalytics(
+                        overallScore = 0,
+                        scienceTypeEn = "NOVICE",
+                        scienceTypeHi = "नौसिखिया",
+                        radarData = emptyList(),
+                        strengthsEn = emptyList(),
+                        strengthsHi = emptyList(),
+                        weaknessesEn = emptyList(),
+                        weaknessesHi = emptyList(),
+                        averageEn = emptyList(),
+                        averageHi = emptyList(),
+                        explanations = emptyList()
+                    )
+                }
                 _uiState.value = QuizUiState.Completed(analytics)
             }
         }

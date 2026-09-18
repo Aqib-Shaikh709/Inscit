@@ -52,8 +52,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -720,7 +718,6 @@ fun AppEngine(tts: TTSManager) {
 
     var currentScreen by rememberSaveable { mutableStateOf(Screen.SPLASH) }
     var selectedBranch by rememberSaveable { mutableStateOf(Branch.PHYSICS) }
-    var selectedDifficulty by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTopic by remember { mutableStateOf<TopicDetail?>(null) }
     var selectedExportFile by remember { mutableStateOf<File?>(null) }
     var transferManager by remember { mutableStateOf(NearbyTransferManager(context)) }
@@ -888,27 +885,6 @@ fun AppEngine(tts: TTSManager) {
                             currentScreen = Screen.HOME
                         }
                         Screen.HOME -> {
-                            Column(Modifier.fillMaxSize()) {
-                                // Difficulty filter chips -> passed to QuizEngine.getQuestions
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).horizontalScroll(rememberScrollState()),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Difficulty:", color = textColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                    val chips = listOf<Pair<String?, String>>(null to "ALL", "BASIC" to "BASIC", "INTERMEDIATE" to "INT", "ADVANCED" to "ADV")
-                                    for ((value, label) in chips) {
-                                        val isSel = selectedDifficulty == value
-                                        Button(
-                                            onClick = { selectedDifficulty = value; triggerVibration(context, "CLICK") },
-                                            colors = ButtonDefaults.buttonColors(containerColor = if (isSel) primaryAccent else CardBg, contentColor = if (isSel) DeepSpace else GhostWhite),
-                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                            modifier = Modifier.height(32.dp)
-                                        ) {
-                                            Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
                             ModernHome(
                                 lang = language,
                                 theme = themeMode,
@@ -952,7 +928,6 @@ fun AppEngine(tts: TTSManager) {
                                     scope.launch { drawerState.open() }
                                 }
                             )
-                            }
                         }
                         Screen.RANKINGS -> RankingsScreen(
                             totalXp = userDocument.stats.xp,
@@ -1092,7 +1067,6 @@ fun AppEngine(tts: TTSManager) {
                             ScienceQuizScreen(
                                 lang = language,
                                 accent = primaryAccent,
-                                difficultyFilter = selectedDifficulty,
                                 currentStreak = userDocument.stats.currentStreak,
                                 onFinish = { xpEarned, score, strengths, weaknesses ->
                                     tts.stop()
@@ -2918,31 +2892,53 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
 
             Spacer(Modifier.height(24.dp))
 
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = if (notificationsEnabled) accent.copy(alpha = 0.08f) else CardBg,
+                border = BorderStroke(1.dp, if (notificationsEnabled) accent.copy(alpha = 0.4f) else GhostWhite.copy(alpha = 0.1f))
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        if (lang == Lang.EN) "DAILY REMINDERS" else "दैनिक अनुस्मारक",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = accent,
-                        letterSpacing = 2.sp
+                Row(
+                    Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(
+                        modifier = Modifier.size(10.dp).background(
+                            if (notificationsEnabled) accent else GhostWhite.copy(alpha = 0.3f),
+                            CircleShape
+                        )
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        if (lang == Lang.EN) "Motivation + goal nudges, max 1/day" else "प्रेरणा संदेश, दिन में अधिकतम 1",
-                        fontSize = 11.sp,
-                        color = GhostWhite.copy(alpha = 0.5f)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            if (lang == Lang.EN) "DAILY REMINDERS" else "दैनिक अनुस्मारक",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (notificationsEnabled) accent else GhostWhite.copy(alpha = 0.6f),
+                            letterSpacing = 2.sp
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            if (notificationsEnabled) {
+                                if (lang == Lang.EN) "On - motivation + goal nudges, max 1/day" else "चालू - प्रेरणा संदेश, दिन में अधिकतम 1"
+                            } else {
+                                if (lang == Lang.EN) "Off - no reminders will fire" else "बंद - कोई अनुस्मारक नहीं आएगा"
+                            },
+                            fontSize = 11.sp,
+                            color = GhostWhite.copy(alpha = 0.5f)
+                        )
+                    }
+                    Switch(
+                        checked = notificationsEnabled,
+                        onCheckedChange = onNotificationsToggle,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = accent,
+                            checkedTrackColor = accent.copy(alpha = 0.3f),
+                            uncheckedThumbColor = GhostWhite.copy(alpha = 0.6f)
+                        )
                     )
                 }
-                Switch(
-                    checked = notificationsEnabled,
-                    onCheckedChange = onNotificationsToggle,
-                    colors = SwitchDefaults.colors(checkedThumbColor = accent)
-                )
             }
 
             Spacer(Modifier.height(32.dp))
