@@ -38,6 +38,7 @@ object GoalScheduler {
 class GoalReminderWorker(context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
 
     override fun doWork(): Result {
+        if (!NotificationHelper.isEnabled(applicationContext)) return Result.success()
         return try {
             val context = applicationContext
             val goals = GoalManager.loadGoalsFromPrefs(context)

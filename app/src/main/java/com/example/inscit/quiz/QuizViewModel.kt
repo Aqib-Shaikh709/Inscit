@@ -33,7 +33,7 @@ class QuizViewModel(
     private var lastDifficulty: String? = null
     private var lastRound: Int? = null
 
-    fun startQuiz(lang: Lang, count: Int = 10, difficulty: String? = null) {
+    fun startQuiz(lang: Lang, count: Int = 10, difficulty: String? = null, context: android.content.Context? = null) {
         if (_uiState.value is QuizUiState.QuizInProgress) return
         currentLang = lang
         lastCount = count
@@ -43,7 +43,8 @@ class QuizViewModel(
         userAnswers.clear()
         viewModelScope.launch {
             _uiState.value = QuizUiState.Loading
-            questions = engine.getQuestions(lang, count, difficulty)
+            // assets/questions.json first (EN), hardcoded fallback - no Context stored, no leak
+            questions = engine.getQuestions(lang, count, difficulty, emptySet(), context)
             if (questions.isNotEmpty()) {
                 _uiState.value = QuizUiState.QuizInProgress(
                     currentQuestion = questions.first(),
@@ -121,14 +122,14 @@ class QuizViewModel(
         return maxOf(0, xp)
     }
 
-    fun startQuizWithWeakDomains(lang: Lang, weakDomains: Set<ScienceDomain>) {
+    fun startQuizWithWeakDomains(lang: Lang, weakDomains: Set<ScienceDomain>, context: android.content.Context? = null) {
         if (_uiState.value is QuizUiState.QuizInProgress) return
         currentLang = lang
         xpBuffer.clear()
         userAnswers.clear()
         viewModelScope.launch {
             _uiState.value = QuizUiState.Loading
-            questions = engine.getQuestions(lang, 10, lastDifficulty, weakDomains)
+            questions = engine.getQuestions(lang, 10, lastDifficulty, weakDomains, context)
             if (questions.isNotEmpty()) {
                 _uiState.value = QuizUiState.QuizInProgress(questions.first(), 0, questions.size)
             } else {
@@ -138,9 +139,16 @@ class QuizViewModel(
     }
 
     fun retry() {
-        _uiState.value = QuizUiState.Loading
+        // Reuse the already-loaded bank (assets or hardcoded) - no reshuffle surprise, no Context needed
         if (lastRound != null) {
+            _uiState.value = QuizUiState.Loading
             startRoundQuiz(currentLang, lastRound!!)
+            return
+        }
+        if (questions.isNotEmpty()) {
+            xpBuffer.clear()
+            userAnswers.clear()
+            _uiState.value = QuizUiState.QuizInProgress(questions.first(), 0, questions.size)
         } else {
             startQuiz(currentLang, lastCount, lastDifficulty)
         }

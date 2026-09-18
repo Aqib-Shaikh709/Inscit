@@ -54,7 +54,7 @@ fun ScienceQuizScreen(
         if (round != null) {
             viewModel.startRoundQuiz(lang, round)
         } else if (viewModel.uiState.value is QuizUiState.Loading) {
-            viewModel.startQuiz(lang, customQuestionCount, difficultyFilter)
+            viewModel.startQuiz(lang, customQuestionCount, difficultyFilter, context)
         }
         viewModel.events.collectLatest { event ->
             when (event) {
@@ -104,7 +104,7 @@ fun ScienceQuizScreen(
                     finishButtonLabel = finishButtonLabel,
                     onRetry = viewModel::retry,
                     onPracticeWeakness = if (weakDomains.isEmpty()) null else ({
-                        viewModel.startQuizWithWeakDomains(lang, weakDomains)
+                        viewModel.startQuizWithWeakDomains(lang, weakDomains, context)
                     }),
                     onFinish = {
                         onFinish(

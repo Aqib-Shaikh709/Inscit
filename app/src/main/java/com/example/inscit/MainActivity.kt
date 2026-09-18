@@ -80,6 +80,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -307,16 +309,44 @@ fun exportBackupToPublic(context: Context, data: String) {
     } catch (_: Exception) {}
 }
 
+// Downsamples to max 512px + JPEG quality 70, plus a 128px thumbnail.
+// Previously copied the raw file (multi-MB from camera), risking OOM on load/P2P.
 fun saveProfileImageLocally(context: Context, uri: Uri): String? {
     return try {
-        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
-        val file = File(context.filesDir, "profile_pic.jpg")
-        inputStream.use { input ->
-            FileOutputStream(file).use { output ->
-                input.copyTo(output)
-            }
+        val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        context.contentResolver.openInputStream(uri)?.use {
+            android.graphics.BitmapFactory.decodeStream(it, null, bounds)
         }
-        Uri.fromFile(file).toString()
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+        var sample = 1
+        while (bounds.outWidth / sample > 512 || bounds.outHeight / sample > 512) sample *= 2
+        val opts = android.graphics.BitmapFactory.Options().apply { inSampleSize = sample }
+        val decoded = context.contentResolver.openInputStream(uri)?.use {
+            android.graphics.BitmapFactory.decodeStream(it, null, opts)
+        } ?: return null
+        val scale = minOf(512f / decoded.width, 512f / decoded.height, 1f)
+        val sized = if (scale < 1f) {
+            android.graphics.Bitmap.createScaledBitmap(
+                decoded, (decoded.width * scale).toInt(), (decoded.height * scale).toInt(), true
+            ).also { if (it != decoded) decoded.recycle() }
+        } else decoded
+        FileOutputStream(File(context.filesDir, "profile_pic.jpg")).use {
+            sized.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, it)
+        }
+        val thumbScale = minOf(128f / sized.width, 128f / sized.height, 1f)
+        val thumb = if (thumbScale < 1f) {
+            android.graphics.Bitmap.createScaledBitmap(
+                sized, (sized.width * thumbScale).toInt(), (sized.height * thumbScale).toInt(), true
+            )
+        } else sized
+        try {
+            FileOutputStream(File(context.filesDir, "profile_pic_thumb.jpg")).use {
+                thumb.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, it)
+            }
+        } catch (_: Exception) {}
+        if (thumb != sized) thumb.recycle()
+        sized.recycle()
+        Uri.fromFile(File(context.filesDir, "profile_pic.jpg")).toString()
     } catch (e: Exception) {
         e.printStackTrace()
         null
@@ -531,7 +561,8 @@ class MainActivity : ComponentActivity() {
         checkNotificationPermission()
         NotificationScheduler.scheduleInactivityNotification(this)
         GoalScheduler.scheduleDailyGoalReminder(this)
-        
+        com.example.inscit.ui.LeaderboardCache.scheduleRefresh(this)
+
         setContent { AppEngine(ttsManager) }
     }
 
@@ -997,6 +1028,14 @@ fun AppEngine(tts: TTSManager) {
                             onAddCustom = { showColorPicker = true },
                             onLangToggle = { newLang ->
                                 userDocument = userDocument.copy(settings = userDocument.settings.copy(language = newLang))
+                            },
+                            notificationsEnabled = userDocument.settings.notificationsEnabled,
+                            onNotificationsToggle = { enabled ->
+                                val updated = userDocument.copy(settings = userDocument.settings.copy(notificationsEnabled = enabled))
+                                userDocument = updated
+                                saveUserDocument(context, updated)
+                                if (enabled) NotificationScheduler.scheduleInactivityNotification(context)
+                                else NotificationScheduler.cancelAll(context)
                             },
                             onOpenFolder = { currentScreen = Screen.NOTES_FOLDER },
                             onViewNote = { branch ->
@@ -2843,6 +2882,8 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
         onDeleteCustom: (String) -> Unit = {},
         onAddCustom: () -> Unit = {},
         onLangToggle: (Lang) -> Unit,
+        notificationsEnabled: Boolean = true,
+        onNotificationsToggle: (Boolean) -> Unit = {},
         onOpenFolder: () -> Unit,
         onViewNote: (Branch) -> Unit,
         onBack: () -> Unit
@@ -2874,6 +2915,35 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
             )
             Spacer(Modifier.height(16.dp))
             LanguageSlider(lang, accent, onLangToggle)
+
+            Spacer(Modifier.height(24.dp))
+
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        if (lang == Lang.EN) "DAILY REMINDERS" else "दैनिक अनुस्मारक",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = accent,
+                        letterSpacing = 2.sp
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        if (lang == Lang.EN) "Motivation + goal nudges, max 1/day" else "प्रेरणा संदेश, दिन में अधिकतम 1",
+                        fontSize = 11.sp,
+                        color = GhostWhite.copy(alpha = 0.5f)
+                    )
+                }
+                Switch(
+                    checked = notificationsEnabled,
+                    onCheckedChange = onNotificationsToggle,
+                    colors = SwitchDefaults.colors(checkedThumbColor = accent)
+                )
+            }
 
             Spacer(Modifier.height(32.dp))
 

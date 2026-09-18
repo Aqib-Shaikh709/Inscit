@@ -11,7 +11,8 @@ enum class ThemeMode { NEON, NOBLE, CUSTOM }
 data class UserSettings(
     val language: Lang = Lang.EN,
     val theme: ThemeMode = ThemeMode.NEON,
-    val lastReportDate: Long = 0
+    val lastReportDate: Long = 0,
+    val notificationsEnabled: Boolean = true
 )
 
 @Serializable

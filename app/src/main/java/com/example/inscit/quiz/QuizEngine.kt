@@ -1,16 +1,60 @@
 package com.example.inscit.quiz
 
+import android.content.Context
 import com.example.inscit.models.Lang
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 class QuizEngine {
+
+    private val assetJson = Json { ignoreUnknownKeys = true; isLenient = true }
+
+    @Serializable
+    private data class OptionDto(val id: Int, val text: String, val isCorrect: Boolean)
+
+    @Serializable
+    private data class QuestionDto(
+        val id: String,
+        val domain: String,
+        val text: String,
+        val options: List<OptionDto>,
+        val explanation: String,
+        val difficulty: String = "BASIC"
+    )
+
+    // Primary bank lives in assets/questions.json (4-option MCQ, all 5 domains).
+    // EN only for now; Hindi keeps the hardcoded bank. Any failure falls back to hardcoded.
+    fun loadFromAssets(context: Context): List<ScienceQuestion>? {
+        return try {
+            val raw = context.assets.open("questions.json").bufferedReader().use { it.readText() }
+            val dtos = assetJson.decodeFromString<List<QuestionDto>>(raw)
+            if (dtos.isEmpty()) return null
+            dtos.mapNotNull { dto ->
+                try {
+                    val domain = ScienceDomain.valueOf(dto.domain)
+                    if (dto.options.count { it.isCorrect } != 1) return@mapNotNull null
+                    ScienceQuestion(
+                        id = dto.id,
+                        domain = domain,
+                        text = dto.text,
+                        options = dto.options.map { QuizOption(it.id, it.text, it.isCorrect) },
+                        explanation = dto.explanation,
+                        difficulty = dto.difficulty
+                    )
+                } catch (_: Exception) { null }
+            }.takeIf { it.isNotEmpty() }
+        } catch (_: Exception) { null }
+    }
 
     fun getQuestions(
         lang: Lang,
         count: Int = 10,
         difficulty: String? = null,
-        weakDomains: Set<ScienceDomain> = emptySet()
+        weakDomains: Set<ScienceDomain> = emptySet(),
+        context: Context? = null
     ): List<ScienceQuestion> {
-        val all = when (lang) {
+        val assetBank = if (context != null && lang == Lang.EN) loadFromAssets(context) else null
+        val all = if (!assetBank.isNullOrEmpty()) assetBank else when (lang) {
             Lang.HI -> getHindiQuestions()
             else -> getEnglishQuestions()
         }
@@ -255,6 +299,32 @@ class QuizEngine {
             options = listOf(QuizOption(1, "True", true), QuizOption(2, "False", false)),
             explanation = "Plants (producers) capture sunlight energy that animals (consumers) then use.",
             difficulty = "INTERMEDIATE"
+        ),
+        // ASTRONOMY/GEOLOGY were empty domains - populated with 4-option MCQ so analytics never divide by zero-domain
+        ScienceQuestion(
+            id = "reg_a1", domain = ScienceDomain.ASTRONOMY,
+            text = "Sunlight takes about 8 minutes to reach Earth?",
+            options = listOf(QuizOption(1, "8 minutes", true), QuizOption(2, "Instant", false), QuizOption(3, "24 hours", false), QuizOption(4, "1 year", false)),
+            explanation = "1 AU at light speed takes ~8 minutes."
+        ),
+        ScienceQuestion(
+            id = "reg_a2", domain = ScienceDomain.ASTRONOMY,
+            text = "Black holes have gravity so strong that not even light escapes?",
+            options = listOf(QuizOption(1, "True - inside the event horizon", true), QuizOption(2, "False - light always escapes", false), QuizOption(3, "Only radio escapes", false), QuizOption(4, "Only X-rays escape", false)),
+            explanation = "The event horizon is the point of no return.",
+            difficulty = "INTERMEDIATE"
+        ),
+        ScienceQuestion(
+            id = "reg_g1", domain = ScienceDomain.GEOLOGY,
+            text = "Earth's crust is divided into moving tectonic plates?",
+            options = listOf(QuizOption(1, "True - drift causes quakes", true), QuizOption(2, "False - single shell", false), QuizOption(3, "Only mantle", false), QuizOption(4, "Fixed forever", false)),
+            explanation = "Plate tectonics explains earthquakes and mountains."
+        ),
+        ScienceQuestion(
+            id = "reg_g2", domain = ScienceDomain.GEOLOGY,
+            text = "Igneous rocks form from cooling magma or lava?",
+            options = listOf(QuizOption(1, "True - granite and basalt", true), QuizOption(2, "False - compressed sediment", false), QuizOption(3, "Chemical precipitation", false), QuizOption(4, "Metamorphic pressure", false)),
+            explanation = "Igneous rock is cooled molten rock."
         )
     )
 
@@ -414,6 +484,31 @@ class QuizEngine {
             options = listOf(QuizOption(1, "सही", true), QuizOption(2, "गलत", false)),
             explanation = "पौधे (उत्पादक) सूर्यप्रकाश की ऊर्जा पकड़ते हैं जिसका उपयोग जानवर (उपभोक्ता) करते हैं।",
             difficulty = "INTERMEDIATE"
+        ),
+        ScienceQuestion(
+            id = "reg_a1", domain = ScienceDomain.ASTRONOMY,
+            text = "सूर्य का प्रकाश पृथ्वी तक लगभग 8 मिनट में पहुँचता है?",
+            options = listOf(QuizOption(1, "8 मिनट", true), QuizOption(2, "तुरंत", false), QuizOption(3, "24 घंटे", false), QuizOption(4, "1 वर्ष", false)),
+            explanation = "प्रकाश गति से 1 AU की दूरी ~8 मिनट।"
+        ),
+        ScienceQuestion(
+            id = "reg_a2", domain = ScienceDomain.ASTRONOMY,
+            text = "ब्लैक होल का गुरुत्व इतना प्रबल है कि प्रकाश भी नहीं बचता?",
+            options = listOf(QuizOption(1, "सही - घटना क्षितिज के अंदर", true), QuizOption(2, "गलत", false), QuizOption(3, "केवल रेडियो बचता है", false), QuizOption(4, "केवल एक्स-रे बचती है", false)),
+            explanation = "घटना क्षितिज वापसी का बिंदु नहीं है।",
+            difficulty = "INTERMEDIATE"
+        ),
+        ScienceQuestion(
+            id = "reg_g1", domain = ScienceDomain.GEOLOGY,
+            text = "पृथ्वी की पपड़ी गतिशील टेक्टोनिक प्लेटों में बँटी है?",
+            options = listOf(QuizOption(1, "सही - विस्थापन से भूकंप", true), QuizOption(2, "गलत - एक खोल", false), QuizOption(3, "केवल मेंटल", false), QuizOption(4, "स्थिर", false)),
+            explanation = "प्लेट टेक्टोनिक्स भूकंप समझाता है।"
+        ),
+        ScienceQuestion(
+            id = "reg_g2", domain = ScienceDomain.GEOLOGY,
+            text = "आग्नेय चट्टानें ठंडे मैग्मा या लावा से बनती हैं?",
+            options = listOf(QuizOption(1, "सही - ग्रेनाइट", true), QuizOption(2, "गलत - अवसाद", false), QuizOption(3, "रासायनिक अवक्षेपण", false), QuizOption(4, "कायांतरित दाब", false)),
+            explanation = "आग्नेय चट्टान ठंडा पिघला पदार्थ है।"
         )
     )
 

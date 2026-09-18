@@ -15,6 +15,28 @@ object NotificationHelper {
     private const val CHANNEL_NAME = "Daily Motivation"
     private const val CHANNEL_DESC = "Notifications to keep you motivated and learning!"
 
+    // Single gate for the Settings toggle (default ON). Reads JSON primary, tolerates legacy.
+    fun isEnabled(context: Context): Boolean {
+        return try {
+            val prefs = context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
+            val json = prefs.getString("user_data_json", null)
+            if (json != null) {
+                com.example.inscit.parseUserDocumentJson(json)?.settings?.notificationsEnabled ?: true
+            } else true
+        } catch (_: Exception) { true }
+    }
+
+    fun userLanguage(context: Context): com.example.inscit.models.Lang {
+        return try {
+            val prefs = context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
+            val json = prefs.getString("user_data_json", null)
+            if (json != null) {
+                com.example.inscit.parseUserDocumentJson(json)?.settings?.language
+                    ?: com.example.inscit.models.Lang.EN
+            } else com.example.inscit.models.Lang.EN
+        } catch (_: Exception) { com.example.inscit.models.Lang.EN }
+    }
+
     fun showNotification(context: Context, title: String, message: String) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
