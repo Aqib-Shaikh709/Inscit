@@ -1,6 +1,8 @@
 package com.example.inscit.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -150,11 +152,17 @@ private fun QuizContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             val progress = (state.currentIndex + 1).toFloat() / state.totalQuestions
-            
+            // Animated bar glide instead of a hard jump each question
+            val animatedProgress by animateFloatAsState(
+                targetValue = progress,
+                animationSpec = tween(400),
+                label = "quizProgress"
+            )
+
             Spacer(Modifier.height(spacing.medium))
 
             LinearProgressIndicator(
-                progress = { progress },
+                progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(12.dp)
@@ -202,14 +210,24 @@ private fun QuizContent(
                         .verticalScroll(rememberScrollState()),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = state.currentQuestion.text,
-                        style = if (screenWidth > 600.dp) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineMedium,
-                        color = GhostWhite,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 42.sp,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    // Smooth slide+fade on every question change (keyed on the question itself)
+                    AnimatedContent(
+                        targetState = state.currentQuestion,
+                        transitionSpec = {
+                            (slideInHorizontally(tween(300)) { it / 4 } + fadeIn(tween(300))) togetherWith
+                                (slideOutHorizontally(tween(200)) { -it / 4 } + fadeOut(tween(200)))
+                        },
+                        label = "questionSlide"
+                    ) { question ->
+                        Text(
+                            text = question.text,
+                            style = if (screenWidth > 600.dp) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineMedium,
+                            color = GhostWhite,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 42.sp,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(spacing.extraLarge))
@@ -221,18 +239,27 @@ private fun QuizContent(
                     state.currentQuestion.options.forEach { option ->
                         val isSelected = state.selectedOptionId == option.id
                         val isCorrect = option.isCorrect
-                        
-                        val backgroundColor = when {
-                            isSelected && isCorrect -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-                            isSelected && !isCorrect -> Color(0xFFF44336).copy(alpha = 0.2f)
-                            else -> CardBg
-                        }
-                        
-                        val borderColor = when {
-                            isSelected && isCorrect -> Color(0xFF4CAF50)
-                            isSelected && !isCorrect -> Color(0xFFF44336)
-                            else -> GhostWhite.copy(alpha = 0.1f)
-                        }
+
+                        // Animated press feedback: green/red melts in instead of hard cut
+                        val backgroundColor by animateColorAsState(
+                            targetValue = when {
+                                isSelected && isCorrect -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                                isSelected && !isCorrect -> Color(0xFFF44336).copy(alpha = 0.2f)
+                                else -> CardBg
+                            },
+                            animationSpec = tween(250),
+                            label = "optBg"
+                        )
+
+                        val borderColor by animateColorAsState(
+                            targetValue = when {
+                                isSelected && isCorrect -> Color(0xFF4CAF50)
+                                isSelected && !isCorrect -> Color(0xFFF44336)
+                                else -> GhostWhite.copy(alpha = 0.1f)
+                            },
+                            animationSpec = tween(250),
+                            label = "optBorder"
+                        )
 
                         Surface(
                             onClick = { viewModel.answerQuestion(option.id) },
@@ -308,14 +335,23 @@ private fun QuizContent(
                                 .verticalScroll(rememberScrollState()),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = state.currentQuestion.text,
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = GhostWhite,
-                                textAlign = TextAlign.Center,
-                                lineHeight = 36.sp,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                            AnimatedContent(
+                                targetState = state.currentQuestion,
+                                transitionSpec = {
+                                    (slideInHorizontally(tween(300)) { it / 4 } + fadeIn(tween(300))) togetherWith
+                                        (slideOutHorizontally(tween(200)) { -it / 4 } + fadeOut(tween(200)))
+                                },
+                                label = "questionSlideLand"
+                            ) { question ->
+                                Text(
+                                    text = question.text,
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = GhostWhite,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 36.sp,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                         }
                     }
 
@@ -330,18 +366,26 @@ private fun QuizContent(
                         state.currentQuestion.options.forEach { option ->
                             val isSelected = state.selectedOptionId == option.id
                             val isCorrect = option.isCorrect
-                            
-                            val backgroundColor = when {
-                                isSelected && isCorrect -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-                                isSelected && !isCorrect -> Color(0xFFF44336).copy(alpha = 0.2f)
-                                else -> CardBg
-                            }
-                            
-                            val borderColor = when {
-                                isSelected && isCorrect -> Color(0xFF4CAF50)
-                                isSelected && !isCorrect -> Color(0xFFF44336)
-                                else -> GhostWhite.copy(alpha = 0.1f)
-                            }
+
+                            val backgroundColor by animateColorAsState(
+                                targetValue = when {
+                                    isSelected && isCorrect -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                                    isSelected && !isCorrect -> Color(0xFFF44336).copy(alpha = 0.2f)
+                                    else -> CardBg
+                                },
+                                animationSpec = tween(250),
+                                label = "optBgLand"
+                            )
+
+                            val borderColor by animateColorAsState(
+                                targetValue = when {
+                                    isSelected && isCorrect -> Color(0xFF4CAF50)
+                                    isSelected && !isCorrect -> Color(0xFFF44336)
+                                    else -> GhostWhite.copy(alpha = 0.1f)
+                                },
+                                animationSpec = tween(250),
+                                label = "optBorderLand"
+                            )
 
                             Surface(
                                 onClick = { viewModel.answerQuestion(option.id) },

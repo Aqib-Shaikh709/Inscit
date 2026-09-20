@@ -63,4 +63,24 @@ class QuizEngineTest {
         val qs = engine.getQuestions(Lang.EN, 10, "ADVANCED")
         assertEquals(10, qs.size)
     }
+
+    @Test
+    fun correctAnswer_positionVariesAcrossQuizzes() {
+        // Regression: banks store the correct option first - getQuestions must shuffle
+        // so users can't game the quiz by always tapping option 1.
+        val positions = (1..20).map {
+            engine.getQuestions(Lang.EN, 10, null).first()
+                .let { q -> q.options.indexOfFirst { it.isCorrect } }
+        }
+        assertTrue("correct answer stuck at one position", positions.toSet().size > 1)
+    }
+
+    @Test
+    fun dailyRounds_optionsShuffled() {
+        val seen = (1..20).flatMap { engine.getDailyRoundQuestions(1, Lang.EN) }
+            .filter { it.id == "r1_1" }
+            .map { q -> q.options.indexOfFirst { it.isCorrect } }
+            .toSet()
+        assertTrue("daily correct answer stuck at one position", seen.size > 1)
+    }
 }

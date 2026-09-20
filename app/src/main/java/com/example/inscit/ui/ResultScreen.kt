@@ -3,6 +3,8 @@ package com.example.inscit.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
@@ -12,7 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.example.inscit.*
 import com.example.inscit.models.Lang
 import com.example.inscit.quiz.*
+import kotlinx.coroutines.delay
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -46,6 +49,17 @@ fun ScienceResultScreen(
     onFinish: () -> Unit
 ) {
     val spacing = MaterialTheme.spacing
+    // Score counts up from 0 on entry instead of popping in statically
+    var scoreShown by remember { mutableIntStateOf(0) }
+    LaunchedEffect(analytics.overallScore) {
+        val target = analytics.overallScore
+        val steps = 20
+        repeat(steps) { i ->
+            delay(40)
+            scoreShown = (target * (i + 1) / steps)
+        }
+        scoreShown = target
+    }
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenWidth = maxWidth
         val horizontalPadding = if (screenWidth > 600.dp) spacing.huge else spacing.large
@@ -64,7 +78,7 @@ fun ScienceResultScreen(
                     letterSpacing = 2.sp
                 )
                 Text(
-                    text = "${analytics.overallScore}%",
+                    text = "$scoreShown%",
                     style = MaterialTheme.typography.headlineLarge.copy(fontSize = if (screenWidth > 600.dp) 120.sp else 80.sp),
                     color = GhostWhite
                 )
@@ -190,7 +204,17 @@ fun ScienceRadarChart(data: List<DomainScore>, accent: Color, modifier: Modifier
 
     val textMeasurer = rememberTextMeasurer()
 
+    // Sweep-in on entry: data polygon grows from center instead of popping
+    var animateIn by remember { mutableStateOf(false) }
+    val sweep by animateFloatAsState(
+        targetValue = if (animateIn) 1f else 0f,
+        animationSpec = tween(900),
+        label = "radarSweep"
+    )
+    LaunchedEffect(data) { animateIn = true }
+
     Canvas(modifier = modifier) {
+        if (data.isEmpty()) return@Canvas
         val center = Offset(size.width / 2, size.height / 2)
         val radius = size.minDimension / 2.2f
         val sides = data.size
@@ -224,11 +248,11 @@ fun ScienceRadarChart(data: List<DomainScore>, accent: Color, modifier: Modifier
             )
         }
 
-        // Draw actual data
+        // Draw actual data (scaled by sweep so it grows out of the center)
         val dataPath = Path()
         data.forEachIndexed { index, score ->
             val angle = index * angleStep - Math.PI / 2
-            val r = radius * score.score.coerceIn(0.15f, 1f)
+            val r = radius * score.score.coerceIn(0.15f, 1f) * sweep
             val x = center.x + r * cos(angle).toFloat()
             val y = center.y + r * sin(angle).toFloat()
             if (index == 0) dataPath.moveTo(x, y) else dataPath.lineTo(x, y)

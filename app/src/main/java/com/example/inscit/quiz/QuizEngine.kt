@@ -71,16 +71,23 @@ class QuizEngine {
             }
         } else weighted
 
-        return filtered.shuffled().take(count)
+        // Shuffle option order per quiz: banks store the correct answer first, so without
+        // this every correct answer sits on option 1 and users game it by position.
+        return filtered.shuffled().take(count).map { q -> q.copy(options = q.options.shuffled()) }
     }
 
+    // Shared shuffler so daily rounds get the same fix (their banks are also True-first).
+    private fun withShuffledOptions(questions: List<ScienceQuestion>): List<ScienceQuestion> =
+        questions.map { q -> q.copy(options = q.options.shuffled()) }
+
     fun getDailyRoundQuestions(round: Int, lang: Lang): List<ScienceQuestion> {
-        return when (round) {
+        val base = when (round) {
             1 -> if (lang == Lang.HI) getRoundOneHindi() else getRoundOneEnglish()
             2 -> if (lang == Lang.HI) getRoundTwoHindi() else getRoundTwoEnglish()
             3 -> if (lang == Lang.HI) getRoundThreeHindi() else getRoundThreeEnglish()
             else -> emptyList()
         }
+        return withShuffledOptions(base)
     }
 
     fun calculateAnalytics(
