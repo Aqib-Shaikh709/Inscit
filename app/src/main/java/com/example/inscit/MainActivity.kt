@@ -167,6 +167,7 @@ import com.example.inscit.ui.PlusIcon
 import com.example.inscit.ui.ProfileImage
 import com.example.inscit.ui.SaveIcon
 import com.example.inscit.ui.ScienceQuizScreen
+import com.example.inscit.ui.ScreenEnter
 import com.example.inscit.ui.ShareIcon
 import com.example.inscit.ui.StarIcon
 import com.example.inscit.ui.TopicDetailScreen
@@ -879,6 +880,10 @@ fun AppEngine(tts: TTSManager) {
         ) {
             Surface(modifier = Modifier.fillMaxSize(), color = appBg) {
                 Crossfade(targetState = currentScreen, animationSpec = tween(600), label = "screen_crossfade") { target ->
+                    // App-wide motion: every screen rises + fades in over the crossfade.
+                    // key(target) restarts the entrance on each navigation.
+                    key(target) {
+                    ScreenEnter {
                     when (target) {
                         Screen.SPLASH -> FullSplashScreen(primaryAccent, language) {
                             triggerVibration(context, "CLICK")
@@ -1212,6 +1217,8 @@ fun AppEngine(tts: TTSManager) {
                                 currentScreen = Screen.PROFILE
                             }
                         )
+                    }
+                    }
                     }
                 }
             }

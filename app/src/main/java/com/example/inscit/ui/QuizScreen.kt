@@ -232,8 +232,10 @@ private fun QuizContent(
 
                 Spacer(Modifier.height(spacing.extraLarge))
 
+                // Equal-size options: weight shares the column equally (fixed dp heights
+                // overflowed on small screens, making lower buttons shrink/clip).
                 Column(
-                    modifier = Modifier.weight(2f),
+                    modifier = Modifier.weight(2f).fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(spacing.medium)
                 ) {
                     state.currentQuestion.options.forEach { option ->
@@ -265,8 +267,9 @@ private fun QuizContent(
                             onClick = { viewModel.answerQuestion(option.id) },
                             enabled = !state.isTransitioning,
                             modifier = Modifier
+                                .weight(1f)
                                 .fillMaxWidth()
-                                .height(84.dp)
+                                .heightIn(min = 64.dp)
                                 .semantics {
                                     contentDescription = "Answer option: ${option.text}"
                                     role = Role.Button
@@ -275,7 +278,10 @@ private fun QuizContent(
                             color = backgroundColor,
                             border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor)
                         ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = spacing.large)) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize().padding(horizontal = spacing.large)
+                            ) {
                                 Text(
                                     text = option.text.uppercase(),
                                     style = MaterialTheme.typography.titleMedium,
@@ -355,12 +361,12 @@ private fun QuizContent(
                         }
                     }
 
-                    // Right Side: Options / Buttons
+                    // Right Side: Options / Buttons (equal shares via weight)
                     Column(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight(),
-                        verticalArrangement = Arrangement.Center,
+                        verticalArrangement = Arrangement.spacedBy(spacing.small),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         state.currentQuestion.options.forEach { option ->
@@ -391,9 +397,9 @@ private fun QuizContent(
                                 onClick = { viewModel.answerQuestion(option.id) },
                                 enabled = !state.isTransitioning,
                                 modifier = Modifier
+                                    .weight(1f)
                                     .fillMaxWidth()
-                                    .padding(vertical = spacing.small)
-                                    .height(72.dp)
+                                    .heightIn(min = 56.dp)
                                     .semantics {
                                         contentDescription = "Answer option: ${option.text}"
                                         role = Role.Button
@@ -402,7 +408,10 @@ private fun QuizContent(
                                 color = backgroundColor,
                                 border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor)
                             ) {
-                                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = spacing.large)) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize().padding(horizontal = spacing.large)
+                                ) {
                                     Text(
                                         text = option.text.uppercase(),
                                         style = MaterialTheme.typography.titleMedium,
