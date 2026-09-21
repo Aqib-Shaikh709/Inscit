@@ -2,6 +2,7 @@ package com.example.inscit.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -369,8 +370,8 @@ private fun androidx.compose.foundation.layout.ColumnScope.QuizOptionButton(
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val pressScale by animateFloatAsState(
-        targetValue = if (pressed) 0.97f else 1f,
-        animationSpec = tween(MotionKit.PRESS_MS),
+        targetValue = if (pressed) 0.94f else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = 500f),
         label = "optPress"
     )
     val backgroundColor by animateColorAsState(

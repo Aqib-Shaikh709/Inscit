@@ -1,7 +1,8 @@
 package com.example.inscit.ui
 
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -24,17 +25,18 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 
-// Micro-interaction language, matched to MotionKit: every pressable shrinks a touch
-// while held and springs back on release. Drop-in replacements that forward their own
-// press InteractionSource, so ripples keep working and clicks are untouched.
-private enum class PressDepth(val scale: Float) { BUTTON(0.96f), ICON(0.88f), CARD(0.98f) }
+// Micro-interaction language, matched to MotionKit: an obvious-but-minimal dip on
+// press with a soft spring back (gentle overshoot = bounce feel, no slideshow).
+// Drop-in replacements forward their own press InteractionSource, so ripples keep
+// working and clicks are untouched.
+private enum class PressDepth(val scale: Float) { BUTTON(0.93f), ICON(0.85f), CARD(0.95f) }
 
 @Composable
 private fun pressScale(source: MutableInteractionSource, depth: PressDepth): Modifier {
     val pressed by source.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) depth.scale else 1f,
-        animationSpec = tween(MotionKit.PRESS_MS),
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = 500f),
         label = "pressScale"
     )
     return Modifier.graphicsLayer(scaleX = scale, scaleY = scale)
