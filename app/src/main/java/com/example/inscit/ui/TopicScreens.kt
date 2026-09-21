@@ -98,6 +98,8 @@ fun TopicSelectionScreen(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(bottom = spacing.large)
             ) {
+                // NOTE: no per-item enter animation here - LazyColumn composes items on
+                // scroll, so entrance wrappers re-fire and new rows visibly lag behind.
                 itemsIndexed(topics) { index, topic ->
                     PressableCard(
                         onClick = { onTopicClick(topic) },
