@@ -157,7 +157,6 @@ import com.example.inscit.ui.EmailIcon
 import com.example.inscit.ui.GoalsScreen
 import com.example.inscit.ui.ExportIcon
 import com.example.inscit.ui.FlaskIcon
-import com.example.inscit.ui.LeaderboardScreen
 import com.example.inscit.ui.LockIcon
 import com.example.inscit.ui.MenuIcon
 import com.example.inscit.ui.NoteIcon
@@ -208,7 +207,7 @@ import java.util.Calendar
 
 
 enum class Screen {
- SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, LEADERBOARD, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS, STREAK_DETAILS, GOALS, TRANSFER_SEND, TRANSFER_RECEIVE }
+ SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS, STREAK_DETAILS, GOALS, TRANSFER_SEND, TRANSFER_RECEIVE }
 enum class Branch { PHYSICS, CHEMISTRY, BIOLOGY }
 
 
@@ -564,7 +563,6 @@ class MainActivity : ComponentActivity() {
         checkNotificationPermission()
         NotificationScheduler.scheduleInactivityNotification(this)
         GoalScheduler.scheduleDailyGoalReminder(this)
-        com.example.inscit.ui.LeaderboardCache.scheduleRefresh(this)
 
         setContent { AppEngine(ttsManager) }
     }
@@ -1152,7 +1150,6 @@ fun AppEngine(tts: TTSManager) {
                                 )
                             }
                         }
-                        Screen.LEADERBOARD -> LeaderboardScreen(onBack = { currentScreen = Screen.HOME })
                         Screen.FEEDBACK -> FeedbackScreen(primaryAccent, textColor, language) { currentScreen = Screen.HOME }
                         Screen.ACHIEVEMENTS -> AchievementsScreen(primaryAccent, textColor, language, userDocument.stats.xp) { currentScreen = Screen.HOME }
                         Screen.DAILY_QUIZ -> DailyQuizScreen(
@@ -1259,7 +1256,6 @@ fun DrawerContent(
             Spacer(Modifier.height(spacing.huge))
 
             DrawerItem("MENU", Screen.HOME, currentScreen, onNavigate, accent)
-            DrawerItem(if (lang == Lang.EN) "LEADERBOARD" else "लीडरबोर्ड", Screen.LEADERBOARD, currentScreen, onNavigate, accent)
             DrawerItem(if (lang == Lang.EN) "MY RANKS" else "मेरी रैंक", Screen.RANKINGS, currentScreen, onNavigate, accent)
             DrawerItem(if (lang == Lang.EN) "ACCOUNT" else "खाता", Screen.PROFILE, currentScreen, onNavigate, accent)
             DrawerItem(if (lang == Lang.EN) "ACHIEVEMENTS" else "उपलब्धियां", Screen.ACHIEVEMENTS, currentScreen, onNavigate, accent)
