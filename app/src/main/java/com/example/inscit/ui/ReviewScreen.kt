@@ -48,7 +48,7 @@ fun ReviewScreen(
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(txtCol) }
+            PressableIconButton(onClick = onBack) { BackIcon(txtCol) }
             Text(
                 if (lang == Lang.EN) "APP REVIEWS" else "ऐप समीक्षाएं",
                 fontSize = 20.sp,
@@ -79,7 +79,7 @@ fun ReviewScreen(
                 ) {
                     repeat(5) { index ->
                         val isSelected = index < rating
-                        IconButton(onClick = { rating = index + 1 }) {
+                        PressableIconButton(onClick = { rating = index + 1 }) {
                             StarIcon(
                                 color = if (isSelected) accent else GhostWhite.copy(alpha = 0.2f),
                                 modifier = Modifier.size(32.dp)
@@ -110,7 +110,7 @@ fun ReviewScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                Button(
+                PressableButton(
                     onClick = {
                         if (reviewText.isNotBlank()) {
                             val (mild, masked, wasModified) = ProfanityFilter.processReview(reviewText)
@@ -185,7 +185,7 @@ fun ReviewScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showProfanityAlert = false }) {
+                PressableTextButton(onClick = { showProfanityAlert = false }) {
                     Text("OK", color = accent, fontWeight = FontWeight.Bold)
                 }
             },

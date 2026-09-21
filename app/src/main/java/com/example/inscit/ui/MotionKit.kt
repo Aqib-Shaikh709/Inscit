@@ -19,7 +19,7 @@ object MotionKit {
     const val ENTER_MS = 350
     const val EXIT_MS = 200
     const val STAGGER_STEP_MS = 60
-    const val PRESS_MS = 250
+    const val PRESS_MS = 120
 
     fun enterSpec(): androidx.compose.animation.EnterTransition =
         fadeIn(tween(ENTER_MS)) + slideInVertically(tween(ENTER_MS)) { it / 8 }

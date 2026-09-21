@@ -164,6 +164,10 @@ import com.example.inscit.ui.NoteIcon
 import com.example.inscit.ui.PencilIcon
 import com.example.inscit.ui.PhoneIcon
 import com.example.inscit.ui.PlusIcon
+import com.example.inscit.ui.PressableButton
+import com.example.inscit.ui.PressableIconButton
+import com.example.inscit.ui.PressableOutlinedButton
+import com.example.inscit.ui.PressableTextButton
 import com.example.inscit.ui.ProfileImage
 import com.example.inscit.ui.SaveIcon
 import com.example.inscit.ui.ScienceQuizScreen
@@ -1334,7 +1338,7 @@ fun FeedbackScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit)
         modifier = Modifier.fillMaxSize().imePadding().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState())
     ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { BackIcon(txtCol) }
+                PressableIconButton(onClick = onBack) { BackIcon(txtCol) }
                 Text(if (lang == Lang.EN) "FEEDBACK" else "फीडबैक", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
             }
             Spacer(Modifier.height(32.dp))
@@ -1348,12 +1352,12 @@ fun FeedbackScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit)
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accent, unfocusedBorderColor = GhostWhite.copy(alpha = 0.1f))
             )
             Spacer(Modifier.height(24.dp))
-            Button(
+            PressableButton(
                 onClick = {
                     focusManager.clearFocus()
                     if (feedbackText.isBlank()) {
                         Toast.makeText(context, if (lang == Lang.EN) "Please write your feedback first." else "कृपया पहले अपनी प्रतिक्रिया लिखें।", Toast.LENGTH_SHORT).show()
-                        return@Button
+                        return@PressableButton
                     }
                     try {
                         val intent = Intent(Intent.ACTION_SENDTO).apply {
@@ -1389,7 +1393,7 @@ fun AchievementsScreen(accent: Color, txtCol: Color, lang: Lang, xp: Int, onBack
     )
     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(txtCol) }
+            PressableIconButton(onClick = onBack) { BackIcon(txtCol) }
             Text(if (lang == Lang.EN) "ACHIEVEMENTS" else "उपलब्धियां", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
         }
         Spacer(Modifier.height(32.dp))
@@ -1443,7 +1447,7 @@ fun DailyQuizScreen(
 
     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(txtCol) }
+            PressableIconButton(onClick = onBack) { BackIcon(txtCol) }
             Text(if (lang == Lang.EN) "DAILY CHALLENGE" else "दैनिक चुनौती", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
         }
 
@@ -1465,7 +1469,7 @@ fun DailyQuizScreen(
 
             Spacer(Modifier.height(32.dp))
 
-            Button(
+            PressableButton(
                 onClick = { isQuizActive = true },
                 modifier = Modifier.fillMaxWidth().height(60.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace)
@@ -1578,7 +1582,7 @@ fun DailyChallengeCalendar(completedDates: Set<String>, accent: Color) {
 
     Column(Modifier.fillMaxWidth().background(CardBg, RoundedCornerShape(24.dp)).padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { monthOffset-- }, modifier = Modifier.size(32.dp)) {
+            PressableIconButton(onClick = { monthOffset-- }, modifier = Modifier.size(32.dp)) {
                 Text("<", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = accent)
             }
             
@@ -1587,7 +1591,7 @@ fun DailyChallengeCalendar(completedDates: Set<String>, accent: Color) {
                 displayYear), 
                 fontWeight = FontWeight.Black, fontSize = 12.sp, color = GhostWhite)
             
-            IconButton(onClick = { monthOffset++ }, modifier = Modifier.size(32.dp)) {
+            PressableIconButton(onClick = { monthOffset++ }, modifier = Modifier.size(32.dp)) {
                 Text(">", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = accent)
             }
         }
@@ -1640,7 +1644,7 @@ fun NewsUpdatesScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Un
     val hPad = if (screenW > 600.dp) 48.dp else 24.dp
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp).verticalScroll(rememberScrollState())) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { BackIcon(txtCol) }
+                PressableIconButton(onClick = onBack) { BackIcon(txtCol) }
                 Text(if (lang == Lang.EN) "LAB UPDATES" else "लैब अपडेट", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
             }
             Spacer(Modifier.height(32.dp))
@@ -1663,7 +1667,7 @@ fun NewsUpdatesScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Un
 fun HelpCenterScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(txtCol) }
+            PressableIconButton(onClick = onBack) { BackIcon(txtCol) }
             Text(if (lang == Lang.EN) "HELP CENTER" else "सहायता केंद्र", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
         }
         Spacer(Modifier.height(32.dp))
@@ -1710,7 +1714,7 @@ fun DrawerItem(
 fun AboutUsScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(txtCol) }
+            PressableIconButton(onClick = onBack) { BackIcon(txtCol) }
             Text(if (lang == Lang.EN) "ABOUT US" else "हमारे बारे में", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
         }
         Spacer(Modifier.height(32.dp))
@@ -1736,7 +1740,7 @@ fun ContactUsScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit
     val context = LocalContext.current
     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(txtCol) }
+            PressableIconButton(onClick = onBack) { BackIcon(txtCol) }
             Text(if (lang == Lang.EN) "CONTACT US" else "संपर्क करें", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
         }
         Spacer(Modifier.height(32.dp))
@@ -1876,7 +1880,7 @@ fun DonateScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { BackIcon(txtCol) }
+                PressableIconButton(onClick = onBack) { BackIcon(txtCol) }
                 Text(if (lang == Lang.EN) "SUPPORT US" else "हमारा समर्थन करें", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol)
             }
             Spacer(Modifier.height(maxH * 0.06f))
@@ -1888,7 +1892,7 @@ fun DonateScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit) {
                 textAlign = TextAlign.Center, color = GhostWhite.copy(alpha = 0.8f)
             )
             Spacer(Modifier.height(maxH * 0.04f))
-            Button(
+            PressableButton(
                 onClick = {
                     Toast.makeText(context, if (lang == Lang.EN) "Coming soon!" else "जल्द आ रहा है!", Toast.LENGTH_SHORT).show()
                 },
@@ -1920,7 +1924,7 @@ fun NotesFolderScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                PressableIconButton(onClick = onBack) { BackIcon(color = txtCol) }
                 Text(if (lang == Lang.EN) "KNOWLEDGE HUB" else "नॉलेज हब", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 2.sp)
             }
 
@@ -1984,7 +1988,7 @@ fun LabScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                PressableIconButton(onClick = onBack) { BackIcon(color = txtCol) }
                 Text("$branchName LAB", fontSize = 20.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 2.sp)
             }
 
@@ -2018,7 +2022,7 @@ fun LabScreen(
 
             Spacer(Modifier.height(40.dp))
 
-            Button(
+            PressableButton(
                 onClick = onNotes,
                 modifier = Modifier.fillMaxWidth().height(60.dp),
                 shape = RoundedCornerShape(16.dp),
@@ -2241,16 +2245,16 @@ fun NotesScreen(
         modifier = Modifier.fillMaxSize().padding(24.dp)
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+            PressableIconButton(onClick = onBack) { BackIcon(color = txtCol) }
             Text(
                 if (showObservations) (if (lang == Lang.EN) "$branchName DECK" else "$branchName डेक") else (if (lang == Lang.EN) "$branchName NOTES" else "$branchName नोट्स"),
                 fontSize = 18.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 1.sp
             )
             Spacer(Modifier.weight(1f))
-            IconButton(onClick = { showObservations = !showObservations }) {
+            PressableIconButton(onClick = { showObservations = !showObservations }) {
                 DrawingIcon(color = if (showObservations) accent else txtCol.copy(alpha = 0.5f))
             }
-            IconButton(onClick = onSave) { SaveIcon(color = accent) }
+            PressableIconButton(onClick = onSave) { SaveIcon(color = accent) }
         }
 
         Spacer(Modifier.height(32.dp))
@@ -2328,7 +2332,7 @@ fun LocalProfileView(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { BackIcon(color = GhostWhite) }
+            PressableIconButton(onClick = onBack) { BackIcon(color = GhostWhite) }
             Text(if (lang == Lang.EN) "USER CORE" else "यूज़र कोर", fontSize = 20.sp, fontWeight = FontWeight.Black, color = GhostWhite, letterSpacing = 2.sp)
         }
 
@@ -2395,7 +2399,7 @@ fun LocalProfileView(
 
         Spacer(Modifier.height(48.dp))
 
-        Button(
+        PressableButton(
             onClick = onSaveProgress,
             modifier = Modifier.fillMaxWidth().height(60.dp),
             shape = RoundedCornerShape(16.dp),
@@ -2406,7 +2410,7 @@ fun LocalProfileView(
 
         Spacer(Modifier.height(16.dp))
 
-        Button(
+        PressableButton(
             onClick = onViewExports,
             modifier = Modifier.fillMaxWidth().height(60.dp),
             shape = RoundedCornerShape(16.dp),
@@ -2418,7 +2422,7 @@ fun LocalProfileView(
 
         Spacer(Modifier.height(16.dp))
 
-        Button(
+        PressableButton(
             onClick = onTransferSend,
             modifier = Modifier.fillMaxWidth().height(60.dp),
             shape = RoundedCornerShape(16.dp),
@@ -2430,7 +2434,7 @@ fun LocalProfileView(
 
         Spacer(Modifier.height(12.dp))
 
-        Button(
+        PressableButton(
             onClick = onTransferReceive,
             modifier = Modifier.fillMaxWidth().height(60.dp),
             shape = RoundedCornerShape(16.dp),
@@ -2678,7 +2682,7 @@ fun ModernHome(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onMenuClick) {
+                PressableIconButton(onClick = onMenuClick) {
                     MenuIcon(color = txtCol)
                 }
                 Surface(
@@ -2874,7 +2878,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                PressableIconButton(onClick = onBack) { BackIcon(color = txtCol) }
                 Text(
                     if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स",
                     fontSize = 20.sp,
@@ -2962,7 +2966,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                     color = accent,
                     letterSpacing = 2.sp
                 )
-                IconButton(onClick = onAddCustom) {
+                PressableIconButton(onClick = onAddCustom) {
                     PencilIcon(
                         color = accent,
                         modifier = Modifier.size(20.dp)
@@ -3180,7 +3184,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                 }
                 if (onDelete != null) {
                     Spacer(Modifier.width(16.dp))
-                    IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                    PressableIconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
                         Text(
                             "×",
                             color = PowerRed,
@@ -3225,7 +3229,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                 )
                 Spacer(Modifier.weight(1f))
                 if (fullSpace) {
-                    IconButton(onClick = {
+                    PressableIconButton(onClick = {
                         val shareIntent = Intent().apply {
                             action = Intent.ACTION_SEND
                             putExtra(
@@ -3242,7 +3246,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                         )
                     }, modifier = Modifier.size(24.dp)) { ShareIcon(accent) }
                     Spacer(Modifier.width(8.dp))
-                    IconButton(onClick = {
+                    PressableIconButton(onClick = {
                         try {
                             val folder = getExportFolder(context)
                             val fileName = "inscit_note_${branch}_${System.currentTimeMillis()}.txt"
@@ -3298,7 +3302,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                 )
                 Spacer(Modifier.weight(1f))
                 if (userNote.drawingData.isNotEmpty()) {
-                    TextButton(onClick = { onNoteChange(userNote.copy(drawingData = "")) }) {
+                    PressableTextButton(onClick = { onNoteChange(userNote.copy(drawingData = "")) }) {
                         Text(
                             if (lang == Lang.EN) "CLEAR" else "साफ करें",
                             color = PowerRed,
@@ -3321,7 +3325,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                 Spacer(Modifier.height(16.dp))
 
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    IconButton(onClick = {
+                    PressableIconButton(onClick = {
                         val shareIntent = Intent().apply {
                             action = Intent.ACTION_SEND
                             putExtra(
@@ -3338,7 +3342,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                         )
                     }) { ShareIcon(accent) }
 
-                    IconButton(onClick = {
+                    PressableIconButton(onClick = {
                         try {
                             val folder = getExportFolder(context)
                             val fileName = "inscit_note_${branch}_${System.currentTimeMillis()}.txt"
@@ -3435,7 +3439,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
             modifier = Modifier.fillMaxSize().padding(24.dp)
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                PressableIconButton(onClick = onBack) { BackIcon(color = txtCol) }
                 Text(
                     if (lang == Lang.EN) "EXPORTED DATA" else "एक्सपोर्ट किया गया डेटा",
                     fontSize = 20.sp,
@@ -3492,7 +3496,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                                         fontSize = 10.sp
                                     )
                                 }
-                                IconButton(onClick = {
+                                PressableIconButton(onClick = {
                                     file.delete()
                                     files = exportFolder.listFiles()?.filter { it.isFile }
                                         ?.sortedByDescending { it.lastModified() } ?: emptyList()
@@ -3533,7 +3537,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
             modifier = Modifier.fillMaxSize().padding(24.dp)
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                PressableIconButton(onClick = onBack) { BackIcon(color = txtCol) }
                 Text(
                     file.name,
                     fontSize = 16.sp,
@@ -3541,7 +3545,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                     color = txtCol,
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = { shareFile(context, file) }) { ShareIcon(accent) }
+                PressableIconButton(onClick = { shareFile(context, file) }) { ShareIcon(accent) }
             }
 
             Spacer(Modifier.height(24.dp))
@@ -3565,7 +3569,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
 
             Spacer(Modifier.height(24.dp))
 
-            Button(
+            PressableButton(
                 onClick = { shareFile(context, file) },
                 modifier = Modifier.fillMaxWidth().height(60.dp),
                 shape = RoundedCornerShape(16.dp),
@@ -3598,7 +3602,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
             modifier = Modifier.fillMaxSize().padding(24.dp)
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                PressableIconButton(onClick = onBack) { BackIcon(color = txtCol) }
                 Text(
                     if (lang == Lang.EN) "RANKING PROTOCOL" else "रैंकिंग प्रोटोकॉल",
                     fontSize = 20.sp,
@@ -3747,7 +3751,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                PressableIconButton(onClick = onBack) { BackIcon(color = txtCol) }
                 Text(
                     if (lang == Lang.EN) "STREAK TRACKER" else "स्ट्रीक ट्रैकर",
                     fontSize = 20.sp,

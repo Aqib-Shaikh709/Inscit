@@ -46,7 +46,7 @@ fun TtsController(
     iconSize: androidx.compose.ui.unit.Dp = 24.dp
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = {
+        PressableIconButton(onClick = {
             if (tts.isSpeaking) tts.stop() else tts.speak(text)
         }, modifier = Modifier.size(iconSize + 8.dp)) {
             if (tts.isSpeaking) {
@@ -361,7 +361,7 @@ fun NuclearPhysicsInteraction(accent: Color) {
             "Byproducts:" to if(isFission) "Ba + Kr" else "None"
         ),
         controls = {
-            Button(
+            PressableButton(
                 onClick = { isFission = !isFission },
                 modifier = Modifier.fillMaxWidth().height(44.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -460,7 +460,7 @@ fun ChemicalBondingInteraction(accent: Color) {
             "Force:" to if(isIonic) "Electrostatic" else "Sharing"
         ),
         controls = {
-            Button(
+            PressableButton(
                 onClick = { isIonic = !isIonic },
                 modifier = Modifier.fillMaxWidth().height(44.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -550,7 +550,7 @@ fun NervousSystemInteraction(accent: Color) {
             "Speed:" to "120 m/s"
         ),
         controls = {
-            Button(
+            PressableButton(
                 onClick = { triggerAction++ },
                 modifier = Modifier.fillMaxWidth().height(44.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -1380,14 +1380,14 @@ fun PlantTissueInteraction(accent: Color) {
         ),
         controls = {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                Button(
+                PressableButton(
                     onClick = { mode = "Xylem" }, 
                     modifier = Modifier.weight(1f).height(44.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = if(mode == "Xylem") accent else CardBg)
                 ) { Text("XYLEM", fontSize = 12.sp, fontWeight = FontWeight.Black) }
                 Spacer(Modifier.width(12.dp))
-                Button(
+                PressableButton(
                     onClick = { mode = "Phloem" }, 
                     modifier = Modifier.weight(1f).height(44.dp),
                     shape = RoundedCornerShape(12.dp),

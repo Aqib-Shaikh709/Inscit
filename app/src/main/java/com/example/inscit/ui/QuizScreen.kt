@@ -7,6 +7,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
@@ -20,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -27,6 +30,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inscit.*
@@ -239,57 +243,16 @@ private fun QuizContent(
                     verticalArrangement = Arrangement.spacedBy(spacing.medium)
                 ) {
                     state.currentQuestion.options.forEach { option ->
-                        val isSelected = state.selectedOptionId == option.id
-                        val isCorrect = option.isCorrect
-
-                        // Animated press feedback: green/red melts in instead of hard cut
-                        val backgroundColor by animateColorAsState(
-                            targetValue = when {
-                                isSelected && isCorrect -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-                                isSelected && !isCorrect -> Color(0xFFF44336).copy(alpha = 0.2f)
-                                else -> CardBg
-                            },
-                            animationSpec = tween(250),
-                            label = "optBg"
-                        )
-
-                        val borderColor by animateColorAsState(
-                            targetValue = when {
-                                isSelected && isCorrect -> Color(0xFF4CAF50)
-                                isSelected && !isCorrect -> Color(0xFFF44336)
-                                else -> GhostWhite.copy(alpha = 0.1f)
-                            },
-                            animationSpec = tween(250),
-                            label = "optBorder"
-                        )
-
-                        Surface(
-                            onClick = { viewModel.answerQuestion(option.id) },
-                            enabled = !state.isTransitioning,
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                                .heightIn(min = 64.dp)
-                                .semantics {
-                                    contentDescription = "Answer option: ${option.text}"
-                                    role = Role.Button
-                                },
-                            shape = RoundedCornerShape(24.dp),
-                            color = backgroundColor,
-                            border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor)
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.fillMaxSize().padding(horizontal = spacing.large)
-                            ) {
-                                Text(
-                                    text = option.text.uppercase(),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = GhostWhite,
-                                    textAlign = TextAlign.Center,
-                                    letterSpacing = 1.sp
-                                )
-                            }
+                        key(option.id) {
+                            QuizOptionButton(
+                                option = option,
+                                isSelected = state.selectedOptionId == option.id,
+                                enabled = !state.isTransitioning,
+                                minHeight = 64.dp,
+                                corner = 24.dp,
+                                horizontalPadding = spacing.large,
+                                onAnswer = viewModel::answerQuestion
+                            )
                         }
                     }
                 }
@@ -370,56 +333,16 @@ private fun QuizContent(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         state.currentQuestion.options.forEach { option ->
-                            val isSelected = state.selectedOptionId == option.id
-                            val isCorrect = option.isCorrect
-
-                            val backgroundColor by animateColorAsState(
-                                targetValue = when {
-                                    isSelected && isCorrect -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-                                    isSelected && !isCorrect -> Color(0xFFF44336).copy(alpha = 0.2f)
-                                    else -> CardBg
-                                },
-                                animationSpec = tween(250),
-                                label = "optBgLand"
-                            )
-
-                            val borderColor by animateColorAsState(
-                                targetValue = when {
-                                    isSelected && isCorrect -> Color(0xFF4CAF50)
-                                    isSelected && !isCorrect -> Color(0xFFF44336)
-                                    else -> GhostWhite.copy(alpha = 0.1f)
-                                },
-                                animationSpec = tween(250),
-                                label = "optBorderLand"
-                            )
-
-                            Surface(
-                                onClick = { viewModel.answerQuestion(option.id) },
-                                enabled = !state.isTransitioning,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
-                                    .heightIn(min = 56.dp)
-                                    .semantics {
-                                        contentDescription = "Answer option: ${option.text}"
-                                        role = Role.Button
-                                    },
-                                shape = RoundedCornerShape(20.dp),
-                                color = backgroundColor,
-                                border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor)
-                            ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize().padding(horizontal = spacing.large)
-                                ) {
-                                    Text(
-                                        text = option.text.uppercase(),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = GhostWhite,
-                                        textAlign = TextAlign.Center,
-                                        letterSpacing = 1.sp
-                                    )
-                                }
+                            key(option.id) {
+                                QuizOptionButton(
+                                    option = option,
+                                    isSelected = state.selectedOptionId == option.id,
+                                    enabled = !state.isTransitioning,
+                                    minHeight = 56.dp,
+                                    corner = 20.dp,
+                                    horizontalPadding = spacing.large,
+                                    onAnswer = viewModel::answerQuestion
+                                )
                             }
                         }
                     }
@@ -427,6 +350,78 @@ private fun QuizContent(
             }
             
             Spacer(Modifier.height(spacing.large))
+        }
+    }
+}
+
+// Shared answer button (portrait + landscape): equal weight share, animated
+// green/red verdict, press-scale dip, and TalkBack label in one place.
+@Composable
+private fun androidx.compose.foundation.layout.ColumnScope.QuizOptionButton(
+    option: QuizOption,
+    isSelected: Boolean,
+    enabled: Boolean,
+    minHeight: Dp,
+    corner: Dp,
+    horizontalPadding: Dp,
+    onAnswer: (Int) -> Unit
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed) 0.97f else 1f,
+        animationSpec = tween(MotionKit.PRESS_MS),
+        label = "optPress"
+    )
+    val backgroundColor by animateColorAsState(
+        targetValue = when {
+            isSelected && option.isCorrect -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+            isSelected && !option.isCorrect -> Color(0xFFF44336).copy(alpha = 0.2f)
+            else -> CardBg
+        },
+        animationSpec = tween(250),
+        label = "optBg"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = when {
+            isSelected && option.isCorrect -> Color(0xFF4CAF50)
+            isSelected && !option.isCorrect -> Color(0xFFF44336)
+            else -> GhostWhite.copy(alpha = 0.1f)
+        },
+        animationSpec = tween(250),
+        label = "optBorder"
+    )
+    Surface(
+        onClick = { onAnswer(option.id) },
+        enabled = enabled,
+        interactionSource = interaction,
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .heightIn(min = minHeight)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
+            .semantics {
+                contentDescription = "Answer option: ${option.text}"
+                role = Role.Button
+            },
+        shape = RoundedCornerShape(corner),
+        color = backgroundColor,
+        border = BorderStroke(if (isSelected) 2.dp else 1.dp, borderColor)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize().padding(horizontal = horizontalPadding)
+        ) {
+            Text(
+                text = option.text.uppercase(),
+                style = MaterialTheme.typography.titleMedium,
+                color = GhostWhite,
+                textAlign = TextAlign.Center,
+                letterSpacing = 1.sp
+            )
         }
     }
 }

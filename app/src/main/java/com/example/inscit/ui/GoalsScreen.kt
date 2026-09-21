@@ -86,7 +86,7 @@ fun GoalsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = "Back" }) { BackIcon(txtCol) }
+                PressableIconButton(onClick = onBack, modifier = Modifier.semantics { contentDescription = "Back" }) { BackIcon(txtCol) }
                 Text(
                     if (lang == Lang.EN) "GOAL MAKER" else "लक्ष्य निर्माता",
                     fontSize = 20.sp,
@@ -141,7 +141,7 @@ fun GoalsScreen(
             Spacer(Modifier.height(24.dp))
 
             // ===== Create new goal =====
-            Surface(
+            PressableCard(
                 onClick = { showForm = !showForm },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -177,7 +177,7 @@ fun GoalsScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                Button(
+                PressableButton(
                     onClick = {
                         focusManager.clearFocus()
                         val target = targetText.toIntOrNull() ?: 0
@@ -187,7 +187,7 @@ fun GoalsScreen(
                                 "GOAL MAKER",
                                 if (lang == Lang.EN) "Enter a valid target value first." else "पहले एक मान्य लक्ष्य मान दर्ज करें।"
                             )
-                            return@Button
+                            return@PressableButton
                         }
                         val extra = extraText.toIntOrNull() ?: 0
                         val updated = when (goalType) {
@@ -410,7 +410,7 @@ private fun GoalTypeChip(
     onSelect: (GoalType) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    PressableCard(
         onClick = { onSelect(type) },
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
@@ -471,7 +471,7 @@ private fun GoalCard(
                     fontSize = 13.sp
                 )
                 Spacer(Modifier.width(8.dp))
-                Surface(
+                PressableCard(
                     onClick = onDelete,
                     shape = CircleShape,
                     color = Color.Transparent

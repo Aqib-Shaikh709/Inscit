@@ -89,14 +89,14 @@ fun TransferSendScreen(
             title = { Text("Transfer Request", color = accent, fontWeight = FontWeight.Bold) },
             text = { Text("$endpointName wants to import your profile (XP ${userDoc.stats.xp}, Level ${userDoc.stats.level})", color = GhostWhite) },
             confirmButton = {
-                TextButton(onClick = {
+                PressableTextButton(onClick = {
                     manager.acceptConnection(endpointId)
                     showDialog = null
                     viewModel.setStage(TransferStage.TRANSFERRING)
                 }) { Text("Accept", color = accent) }
             },
             dismissButton = {
-                TextButton(onClick = {
+                PressableTextButton(onClick = {
                     manager.rejectConnection(endpointId)
                     showDialog = null
                     viewModel.setStage(TransferStage.DENIED)
@@ -121,7 +121,7 @@ fun TransferSendScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = {
+            PressableIconButton(onClick = {
                 manager.stopAdvertising()
                 onBack()
             }) { BackIcon(color = txtCol) }
@@ -163,7 +163,7 @@ fun TransferSendScreen(
             TransferStage.SUCCESS -> {
                 Text("✓ Transfer Complete!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = {
+                PressableButton(onClick = {
                     manager.disconnect()
                     onBack()
                 }, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace), modifier = Modifier.fillMaxWidth().height(56.dp)) {
@@ -173,7 +173,7 @@ fun TransferSendScreen(
             TransferStage.DENIED -> {
                 Text("Connection denied or timed out (30s)", color = PowerRed, fontSize = 14.sp)
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = {
+                PressableButton(onClick = {
                     manager.disconnect()
                     onBack()
                 }, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = GhostWhite.copy(alpha = 0.1f), contentColor = GhostWhite), modifier = Modifier.fillMaxWidth().height(56.dp)) {
@@ -183,7 +183,7 @@ fun TransferSendScreen(
             else -> {}
         }
         Spacer(Modifier.height(24.dp))
-        OutlinedButton(
+        PressableOutlinedButton(
             onClick = {
                 manager.stopAdvertising()
                 manager.disconnect()
@@ -233,7 +233,7 @@ fun TransferReceiveScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = {
+            PressableIconButton(onClick = {
                 manager.stopDiscovery()
                 manager.disconnect()
                 onBack()
@@ -245,7 +245,7 @@ fun TransferReceiveScreen(
         if (!isDiscovering) {
             Text("Discover nearby devices with code", color = GhostWhite.copy(alpha = 0.7f), fontSize = 14.sp, textAlign = TextAlign.Center)
             Spacer(Modifier.height(24.dp))
-            Button(
+            PressableButton(
                 onClick = {
                     isDiscovering = true
                     viewModel.setStage(TransferStage.DISCOVERING)
@@ -284,7 +284,7 @@ fun TransferReceiveScreen(
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accent, unfocusedBorderColor = GhostWhite.copy(alpha = 0.2f), focusedTextColor = GhostWhite, unfocusedTextColor = GhostWhite, cursorColor = accent)
             )
             Spacer(Modifier.height(16.dp))
-            Button(
+            PressableButton(
                 onClick = onGuest,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = GhostWhite.copy(alpha = 0.05f), contentColor = GhostWhite),
@@ -307,7 +307,7 @@ fun TransferReceiveScreen(
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(discoveredEndpoints.entries.toList()) { (id, name) ->
-                                Surface(
+                                PressableCard(
                                     onClick = {
                                         viewModel.setEndpoint(id, name)
                                         viewModel.setStage(TransferStage.CONNECTING)
@@ -334,7 +334,7 @@ fun TransferReceiveScreen(
                         }
                     }
                     Spacer(Modifier.height(16.dp))
-                    OutlinedButton(
+                    PressableOutlinedButton(
                         onClick = {
                             isDiscovering = false
                             manager.stopDiscovery()
@@ -366,7 +366,7 @@ fun TransferReceiveScreen(
                 TransferStage.DENIED -> {
                     Text("Connection denied or timed out", color = PowerRed, fontSize = 14.sp)
                     Spacer(Modifier.height(12.dp))
-                    Button(onClick = {
+                    PressableButton(onClick = {
                         isDiscovering = false
                         viewModel.reset()
                         manager.disconnect()

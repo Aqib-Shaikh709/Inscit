@@ -141,7 +141,7 @@ fun LeaderboardScreen(onBack: () -> Unit) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text("Leaderboard", style = MaterialTheme.typography.headlineMedium, color = NeonCyan, modifier = Modifier.weight(1f))
-                IconButton(onClick = onBack, modifier = Modifier.background(GhostWhite.copy(alpha = 0.05f), CircleShape).semantics { contentDescription = "Close" }) {
+                PressableIconButton(onClick = onBack, modifier = Modifier.background(GhostWhite.copy(alpha = 0.05f), CircleShape).semantics { contentDescription = "Close" }) {
                     Text("✕", color = GhostWhite, style = MaterialTheme.typography.titleMedium)
                 }
             }

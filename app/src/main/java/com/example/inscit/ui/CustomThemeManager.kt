@@ -198,7 +198,7 @@ fun ColorPickerOverlay(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("PREVIEW / पूर्वावलोकन", color = currentTxt, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             Spacer(Modifier.height(8.dp))
-                            Button(
+                            PressableButton(
                                 onClick = {},
                                 colors = ButtonDefaults.buttonColors(containerColor = currentAccent),
                                 shape = RoundedCornerShape(8.dp)
@@ -238,7 +238,7 @@ fun ColorPickerOverlay(
                 Spacer(Modifier.height(40.dp))
 
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(
+                    PressableOutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f).height(56.dp),
                         shape = RoundedCornerShape(12.dp),
@@ -246,7 +246,7 @@ fun ColorPickerOverlay(
                     ) {
                         Text(if (lang == Lang.EN) "CANCEL" else "रद्द करें", color = Color.White)
                     }
-                    Button(
+                    PressableButton(
                         onClick = {
                             if (themeName.isNotBlank()) {
                                 val existingThemes = CustomThemeManager.loadThemes(context)
@@ -279,7 +279,7 @@ fun ColorPickerOverlay(
             title = { Text(if (lang == Lang.EN) "Theme Exists" else "थीम पहले से मौजूद है") },
             text = { Text(if (lang == Lang.EN) "A theme with this name already exists. Do you want to replace it?" else "इस नाम की थीम पहले से मौजूद है। क्या आप इसे बदलना चाहते हैं?") },
             confirmButton = {
-                TextButton(onClick = {
+                PressableTextButton(onClick = {
                     showOverwriteDialog = false
                     onApply(CustomTheme(themeName, currentAccent.toArgb(), currentBg.toArgb(), currentTxt.toArgb()))
                 }) {
@@ -287,7 +287,7 @@ fun ColorPickerOverlay(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showOverwriteDialog = false }) {
+                PressableTextButton(onClick = { showOverwriteDialog = false }) {
                     Text(if (lang == Lang.EN) "CANCEL" else "रद्द करें")
                 }
             }

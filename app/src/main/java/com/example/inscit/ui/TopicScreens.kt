@@ -59,7 +59,7 @@ fun TopicSelectionScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { BackIcon(color = txtCol) }
+                PressableIconButton(onClick = onBack) { BackIcon(color = txtCol) }
                 Text("$branchName TOPICS", style = MaterialTheme.typography.headlineSmall, color = txtCol, letterSpacing = 2.sp)
             }
 
@@ -99,7 +99,7 @@ fun TopicSelectionScreen(
                 contentPadding = PaddingValues(bottom = spacing.large)
             ) {
                 itemsIndexed(topics) { index, topic ->
-                    Surface(
+                    PressableCard(
                         onClick = { onTopicClick(topic) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
@@ -167,7 +167,7 @@ fun TopicDetailScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = {
+                PressableIconButton(onClick = {
                     if (showNotes) showNotes = false else onBack()
                 }) { BackIcon(color = txtCol) }
                 Text(
@@ -177,7 +177,7 @@ fun TopicDetailScreen(
                 )
                 LangToggleButton(currentLang = lang, accent = accent, onToggle = onLangChange)
                 Spacer(Modifier.width(4.dp))
-                IconButton(onClick = { showNotes = !showNotes }) {
+                PressableIconButton(onClick = { showNotes = !showNotes }) {
                     DrawingIcon(color = if (showNotes) accent else txtCol.copy(alpha = 0.5f))
                 }
             }
@@ -272,7 +272,7 @@ fun TopicDetailScreen(
                 }
             }
             Spacer(Modifier.height(spacing.extraLarge))
-            Button(
+            PressableButton(
                 onClick = onLabClick,
                 modifier = Modifier.fillMaxWidth().height(60.dp),
                 shape = RoundedCornerShape(16.dp),
@@ -290,7 +290,7 @@ fun TopicDetailScreen(
 fun LangToggleButton(currentLang: Lang, accent: Color, modifier: Modifier = Modifier, onToggle: (Lang) -> Unit) {
     val nextLang = if (currentLang == Lang.EN) Lang.HI else Lang.EN
     val label = if (currentLang == Lang.EN) "HI" else "EN"
-    Surface(
+    PressableCard(
         onClick = { onToggle(nextLang) },
         modifier = modifier.size(36.dp),
         shape = RoundedCornerShape(8.dp),

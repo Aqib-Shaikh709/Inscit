@@ -22,6 +22,9 @@ import com.example.inscit.DeepSpace
 import com.example.inscit.GhostWhite
 import com.example.inscit.models.UserDocument
 import com.example.inscit.ui.BackIcon
+import com.example.inscit.ui.PressableButton
+import com.example.inscit.ui.PressableIconButton
+import com.example.inscit.ui.PressableOutlinedButton
 
 @Composable
 fun ProgressReportScreen(
@@ -44,7 +47,7 @@ fun ProgressReportScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) {
+            PressableIconButton(onClick = onBack) {
                 BackIcon(color = GhostWhite)
             }
             Text(
@@ -68,7 +71,7 @@ fun ProgressReportScreen(
 
             Spacer(Modifier.height(48.dp))
 
-            Button(
+            PressableButton(
                 onClick = { viewModel.generateReport(userDocument) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -117,7 +120,7 @@ fun ProgressReportScreen(
             Spacer(Modifier.height(24.dp))
 
             Row(modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
+                PressableOutlinedButton(
                     onClick = { viewModel.clearReport() },
                     modifier = Modifier.weight(1f).height(60.dp),
                     shape = RoundedCornerShape(16.dp),
@@ -129,7 +132,7 @@ fun ProgressReportScreen(
                 
                 Spacer(Modifier.width(16.dp))
 
-                Button(
+                PressableButton(
                     onClick = {
                         val sendIntent: Intent = Intent().apply {
                             action = Intent.ACTION_SEND

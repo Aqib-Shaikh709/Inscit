@@ -152,7 +152,7 @@ fun ScienceResultScreen(
 
             item {
                 Spacer(Modifier.height(spacing.huge))
-                Button(
+                PressableButton(
                     onClick = onRetry,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -166,7 +166,7 @@ fun ScienceResultScreen(
                 // Practice Weakness (10 Q): relaunch filtered on weak domains weighted 2x
                 val weakList = if (lang == Lang.EN) analytics.weaknessesEn else analytics.weaknessesHi
                 if (onPracticeWeakness != null && weakList.isNotEmpty()) {
-                    Button(
+                    PressableButton(
                         onClick = onPracticeWeakness,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -178,7 +178,7 @@ fun ScienceResultScreen(
                     }
                     Spacer(Modifier.height(spacing.medium))
                 }
-                OutlinedButton(
+                PressableOutlinedButton(
                     onClick = onFinish,
                     modifier = Modifier
                         .fillMaxWidth()
