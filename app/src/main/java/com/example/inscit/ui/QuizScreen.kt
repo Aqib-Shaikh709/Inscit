@@ -358,7 +358,7 @@ private fun QuizContent(
 // Shared answer button (portrait + landscape): equal weight share, animated
 // green/red verdict, press-scale dip, and TalkBack label in one place.
 @Composable
-private fun androidx.compose.foundation.layout.ColumnScope.QuizOptionButton(
+internal fun androidx.compose.foundation.layout.ColumnScope.QuizOptionButton(
     option: QuizOption,
     isSelected: Boolean,
     enabled: Boolean,

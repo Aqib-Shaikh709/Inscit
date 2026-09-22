@@ -171,9 +171,12 @@ import com.example.inscit.ui.PressableTextButton
 import com.example.inscit.ui.ProfileImage
 import com.example.inscit.ui.rememberPressScale
 import com.example.inscit.ui.SaveIcon
+import com.example.inscit.ui.QuizModeScreen
 import com.example.inscit.ui.ScienceQuizScreen
 import com.example.inscit.ui.ScreenEnter
 import com.example.inscit.ui.ShareIcon
+import com.example.inscit.ui.SprintDurationScreen
+import com.example.inscit.ui.SprintQuizScreen
 import com.example.inscit.ui.StarIcon
 import com.example.inscit.ui.TopicDetailScreen
 import com.example.inscit.ui.TopicSelectionScreen
@@ -209,7 +212,7 @@ import java.util.Calendar
 
 
 enum class Screen {
- SPLASH, HOME, LAB, QUIZ, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS, STREAK_DETAILS, GOALS, TRANSFER_SEND, TRANSFER_RECEIVE }
+ SPLASH, HOME, LAB, QUIZ, QUIZ_MODE, SPRINT_DURATION, SPRINT_ROUND, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS, STREAK_DETAILS, GOALS, TRANSFER_SEND, TRANSFER_RECEIVE }
 enum class Branch { PHYSICS, CHEMISTRY, BIOLOGY }
 
 
@@ -723,6 +726,7 @@ fun AppEngine(tts: TTSManager) {
 
     var currentScreen by rememberSaveable { mutableStateOf(Screen.SPLASH) }
     var selectedBranch by rememberSaveable { mutableStateOf(Branch.PHYSICS) }
+    var sprintDuration by remember { mutableStateOf(com.example.inscit.quiz.SprintDuration.SEC_30) }
     var selectedTopic by remember { mutableStateOf<TopicDetail?>(null) }
     var selectedExportFile by remember { mutableStateOf<File?>(null) }
     var transferManager by remember { mutableStateOf(NearbyTransferManager(context)) }
@@ -815,6 +819,9 @@ fun AppEngine(tts: TTSManager) {
                     tts.stop()
                     currentScreen = Screen.HOME
                 }
+                Screen.QUIZ_MODE -> currentScreen = Screen.HOME
+                Screen.SPRINT_DURATION -> currentScreen = Screen.QUIZ_MODE
+                Screen.SPRINT_ROUND -> currentScreen = Screen.QUIZ_MODE
                 Screen.PROFILE -> currentScreen = Screen.HOME
                 Screen.EXPORTS_LIST -> currentScreen = Screen.PROFILE
                 Screen.EXPORT_DETAIL -> currentScreen = Screen.EXPORTS_LIST
@@ -919,7 +926,7 @@ fun AppEngine(tts: TTSManager) {
                                 },
                                 onQuiz = {
                                     triggerVibration(context, "SUCCESS")
-                                    currentScreen = Screen.QUIZ
+                                    currentScreen = Screen.QUIZ_MODE
                                 },
                                 onTheme = {
                                     triggerVibration(context, "CLICK")
@@ -1072,6 +1079,78 @@ fun AppEngine(tts: TTSManager) {
                                 Toast.makeText(context, "Note Saved", Toast.LENGTH_SHORT).show()
                             }
                         )
+                        Screen.QUIZ_MODE -> QuizModeScreen(
+                            lang = language,
+                            accent = primaryAccent,
+                            txtCol = textColor,
+                            onNormal = {
+                                triggerVibration(context, "CLICK")
+                                currentScreen = Screen.QUIZ
+                            },
+                            onSprint = {
+                                triggerVibration(context, "SUCCESS")
+                                currentScreen = Screen.SPRINT_DURATION
+                            },
+                            onBack = { currentScreen = Screen.HOME }
+                        )
+                        Screen.SPRINT_DURATION -> SprintDurationScreen(
+                            lang = language,
+                            accent = primaryAccent,
+                            txtCol = textColor,
+                            onPick = { duration ->
+                                sprintDuration = duration
+                                triggerVibration(context, "SUCCESS")
+                                currentScreen = Screen.SPRINT_ROUND
+                            },
+                            onBack = { currentScreen = Screen.QUIZ_MODE }
+                        )
+                        Screen.SPRINT_ROUND -> {
+                            val sprintVm: com.example.inscit.quiz.SprintViewModel =
+                                androidx.lifecycle.viewmodel.compose.viewModel()
+                            SprintQuizScreen(
+                                lang = language,
+                                accent = primaryAccent,
+                                duration = sprintDuration,
+                                currentStreak = userDocument.stats.currentStreak,
+                                viewModel = sprintVm,
+                                onFinish = { xpEarned, analytics ->
+                                    tts.stop()
+                                    val newXp = userDocument.stats.xp + xpEarned
+                                    val updatedStats = StreakManager.updateStreak(
+                                        userDocument.stats.copy(
+                                            xp = newXp,
+                                            level = XpManager.calculateLevel(newXp),
+                                            quizzesTaken = userDocument.stats.quizzesTaken + 1
+                                        ),
+                                        analytics.overallScore.toFloat()
+                                    )
+                                    val newProgress = userDocument.quizProgress.copy(
+                                        lastScore = analytics.overallScore.toFloat(),
+                                        strengths = analytics.strengthsEn,
+                                        weaknesses = analytics.weaknessesEn
+                                    )
+                                    val (goalDoc, completedGoals) = GoalManager.applyQuizResult(
+                                        userDocument, xpEarned, analytics.overallScore.toFloat()
+                                    )
+                                    userDocument = goalDoc.copy(stats = updatedStats, quizProgress = newProgress)
+                                    completedGoals.forEach { goal ->
+                                        NotificationHelper.showNotification(
+                                            context,
+                                            "🎯 GOAL ACHIEVED!",
+                                            "You completed your goal: ${goal.title}!"
+                                        )
+                                    }
+                                    StreakTracker.recordQuiz(context, analytics.overallScore.toFloat())
+                                    NotificationScheduler.scheduleInactivityNotification(context)
+                                    GoalScheduler.scheduleDailyGoalReminder(context)
+                                    currentScreen = Screen.HOME
+                                },
+                                onExit = {
+                                    sprintVm.reset()
+                                    currentScreen = Screen.QUIZ_MODE
+                                }
+                            )
+                        }
                         Screen.QUIZ -> {
                             ScienceQuizScreen(
                                 lang = language,
