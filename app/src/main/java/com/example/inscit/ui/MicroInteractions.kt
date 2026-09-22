@@ -148,3 +148,17 @@ fun PressableCard(
         content = content
     )
 }
+
+// For raw Modifier.clickable sites (profile photo, text links, custom pills):
+// observes the same press source the clickable reports to, so scale and ripple stay in sync.
+@Composable
+fun rememberPressScale(depth: Float = 0.95f): Pair<Modifier, MutableInteractionSource> {
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) depth else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = 500f),
+        label = "pressScaleExt"
+    )
+    return Modifier.graphicsLayer(scaleX = scale, scaleY = scale) to source
+}

@@ -38,6 +38,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -168,6 +169,7 @@ import com.example.inscit.ui.PressableIconButton
 import com.example.inscit.ui.PressableOutlinedButton
 import com.example.inscit.ui.PressableTextButton
 import com.example.inscit.ui.ProfileImage
+import com.example.inscit.ui.rememberPressScale
 import com.example.inscit.ui.SaveIcon
 import com.example.inscit.ui.ScienceQuizScreen
 import com.example.inscit.ui.ScreenEnter
@@ -2311,6 +2313,7 @@ fun LocalProfileView(
     val context = LocalContext.current
     val lang = userDoc.settings.language
     var editedName by remember { mutableStateOf(userDoc.profile.name) }
+    val (photoPressMod, photoPressSrc) = rememberPressScale(depth = 0.93f)
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -2339,7 +2342,11 @@ fun LocalProfileView(
                 .size(140.dp)
                 .clip(CircleShape)
                 .background(accent.copy(alpha = 0.1f))
-                .clickable { imagePickerLauncher.launch("image/*") }
+                .then(photoPressMod)
+                .clickable(
+                    interactionSource = photoPressSrc,
+                    indication = LocalIndication.current
+                ) { imagePickerLauncher.launch("image/*") }
                 .padding(4.dp),
             contentAlignment = Alignment.Center
         ) {
