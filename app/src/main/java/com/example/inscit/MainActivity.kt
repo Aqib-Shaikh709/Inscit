@@ -565,11 +565,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         ttsManager = TTSManager(this)
 
+        runOnceCleanup(this)
         checkNotificationPermission()
         NotificationScheduler.scheduleInactivityNotification(this)
         GoalScheduler.scheduleDailyGoalReminder(this)
 
         setContent { AppEngine(ttsManager) }
+    }
+
+    // Drops prefs files left behind by removed features (leaderboard_cache from the
+    // deleted offline leaderboard). Runs once ever; live keys (caps, history) untouched.
+    private fun runOnceCleanup(context: Context) {
+        try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            if (prefs.getBoolean("cleanup_v1_done", false)) return
+            try { context.deleteSharedPreferences("leaderboard_cache") } catch (_: Exception) {}
+            prefs.edit().putBoolean("cleanup_v1_done", true).apply()
+        } catch (_: Exception) {}
     }
 
     private fun checkNotificationPermission() {
@@ -730,6 +742,10 @@ fun AppEngine(tts: TTSManager) {
     var selectedTopic by remember { mutableStateOf<TopicDetail?>(null) }
     var selectedExportFile by remember { mutableStateOf<File?>(null) }
     var transferManager by remember { mutableStateOf(NearbyTransferManager(context)) }
+    // Hoisted so BackHandler can cancel the sprint timer: the VM is activity-scoped,
+    // so a timer started in SPRINT_ROUND would otherwise keep ticking after navigating away.
+    val sprintVm: com.example.inscit.quiz.SprintViewModel =
+        androidx.lifecycle.viewmodel.compose.viewModel()
 
     val customThemes = remember { CustomThemeManager.loadThemes(context) }
     var savedCustomThemes by remember { mutableStateOf(customThemes) }
@@ -821,7 +837,10 @@ fun AppEngine(tts: TTSManager) {
                 }
                 Screen.QUIZ_MODE -> currentScreen = Screen.HOME
                 Screen.SPRINT_DURATION -> currentScreen = Screen.QUIZ_MODE
-                Screen.SPRINT_ROUND -> currentScreen = Screen.QUIZ_MODE
+                Screen.SPRINT_ROUND -> {
+                    sprintVm.cancel()
+                    currentScreen = Screen.QUIZ_MODE
+                }
                 Screen.PROFILE -> currentScreen = Screen.HOME
                 Screen.EXPORTS_LIST -> currentScreen = Screen.PROFILE
                 Screen.EXPORT_DETAIL -> currentScreen = Screen.EXPORTS_LIST
@@ -1105,8 +1124,6 @@ fun AppEngine(tts: TTSManager) {
                             onBack = { currentScreen = Screen.QUIZ_MODE }
                         )
                         Screen.SPRINT_ROUND -> {
-                            val sprintVm: com.example.inscit.quiz.SprintViewModel =
-                                androidx.lifecycle.viewmodel.compose.viewModel()
                             SprintQuizScreen(
                                 lang = language,
                                 accent = primaryAccent,
