@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.collectLatest
 
 import com.example.inscit.ui.theme.spacing
 
-// Flowchart: initiate quiz button -> normal | sprint mode.
+// Flowchart: initiate quiz button -> normal | sprint | versus mode.
 @Composable
 fun QuizModeScreen(
     lang: Lang,
@@ -37,6 +37,7 @@ fun QuizModeScreen(
     txtCol: Color,
     onNormal: () -> Unit,
     onSprint: () -> Unit,
+    onVersus: () -> Unit = {},
     onBack: () -> Unit
 ) {
     val spacing = MaterialTheme.spacing
@@ -66,6 +67,14 @@ fun QuizModeScreen(
             icon = "⚡",
             accent = PowerRed,
             onClick = onSprint
+        )
+        Spacer(Modifier.height(16.dp))
+        ModeCard(
+            title = if (lang == Lang.EN) "VERSUS MODE" else "वर्सेस मोड",
+            subtitle = if (lang == Lang.EN) "Offline PvP - duel a nearby friend" else "ऑफलाइन PvP - पास के दोस्त से मुकाबला",
+            icon = "🤝",
+            accent = BioLime,
+            onClick = onVersus
         )
     }
 }

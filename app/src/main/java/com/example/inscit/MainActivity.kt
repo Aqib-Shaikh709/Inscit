@@ -194,8 +194,21 @@ import com.example.inscit.xp.StreakTracker
 import com.example.inscit.xp.XpManager
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.inscit.transfer.NearbyTransferManager
+import com.example.inscit.transfer.VersusManager
+import com.example.inscit.transfer.VersusMatchPayload
+import com.example.inscit.transfer.VersusResult
+import com.example.inscit.transfer.VersusScorePayload
+import com.example.inscit.transfer.buildScorePayload
+import com.example.inscit.ui.versusWinnerFor
+import com.example.inscit.ui.versusPeerVerified
+import com.example.inscit.quiz.VersusMatchViewModel
 import com.example.inscit.ui.TransferReceiveScreen
 import com.example.inscit.ui.TransferSendScreen
+import com.example.inscit.ui.VersusRoleScreen
+import com.example.inscit.ui.VersusHostScreen
+import com.example.inscit.ui.VersusJoinScreen
+import com.example.inscit.ui.VersusRoundScreen
+import com.example.inscit.ui.VersusResultScreen
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -212,7 +225,7 @@ import java.util.Calendar
 
 
 enum class Screen {
- SPLASH, HOME, LAB, QUIZ, QUIZ_MODE, SPRINT_DURATION, SPRINT_ROUND, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS, STREAK_DETAILS, GOALS, TRANSFER_SEND, TRANSFER_RECEIVE }
+ SPLASH, HOME, LAB, QUIZ, QUIZ_MODE, SPRINT_DURATION, SPRINT_ROUND, VERSUS_ROLE, VERSUS_HOST, VERSUS_JOIN, VERSUS_ROUND, VERSUS_RESULT, NOTES, THEME_CONFIG, NOTES_FOLDER, PROFILE, TOPIC_SELECTION, TOPIC_DETAIL, EXPORTS_LIST, EXPORT_DETAIL, RANKINGS, ABOUT_US, CONTACT_US, DONATE, FEEDBACK, ACHIEVEMENTS, DAILY_QUIZ, NEWS_UPDATES, HELP_CENTER, PROGRESS_REPORT, REVIEWS, STREAK_DETAILS, GOALS, TRANSFER_SEND, TRANSFER_RECEIVE }
 enum class Branch { PHYSICS, CHEMISTRY, BIOLOGY }
 
 
@@ -742,9 +755,27 @@ fun AppEngine(tts: TTSManager) {
     var selectedTopic by remember { mutableStateOf<TopicDetail?>(null) }
     var selectedExportFile by remember { mutableStateOf<File?>(null) }
     var transferManager by remember { mutableStateOf(NearbyTransferManager(context)) }
+    // Offline Versus (PvP) session: transport + round state hoisted so lobby -> round ->
+    // result screens share one match without re-handshaking.
+    var versusManager by remember { mutableStateOf(VersusManager(context)) }
+    var versusMatch by remember { mutableStateOf<VersusMatchPayload?>(null) }
+    var versusEndpointId by remember { mutableStateOf<String?>(null) }
+    var versusIsHost by remember { mutableStateOf(true) }
+    var versusMyName by remember { mutableStateOf("") }
+    var versusPeerName by remember { mutableStateOf("") }
+    var versusPeerScore by remember { mutableStateOf<VersusScorePayload?>(null) }
+    var versusMyDone by remember { mutableStateOf(false) }
+    var versusMyAttempted by remember { mutableStateOf(0) }
+    var versusMyCorrect by remember { mutableStateOf(0) }
+    var versusMyScore by remember { mutableStateOf(0) }
+    var versusXpEarned by remember { mutableStateOf(0) }
+    var versusRewardedFor by remember { mutableStateOf<String?>(null) }
     // Hoisted so BackHandler can cancel the sprint timer: the VM is activity-scoped,
     // so a timer started in SPRINT_ROUND would otherwise keep ticking after navigating away.
     val sprintVm: com.example.inscit.quiz.SprintViewModel =
+        androidx.lifecycle.viewmodel.compose.viewModel()
+    // Activity-scoped so the versus countdown/timer survives lobby -> round navigation.
+    val versusVm: VersusMatchViewModel =
         androidx.lifecycle.viewmodel.compose.viewModel()
 
     val customThemes = remember { CustomThemeManager.loadThemes(context) }
@@ -791,7 +822,7 @@ fun AppEngine(tts: TTSManager) {
     }
 
     DisposableEffect(Unit) {
-        onDispose { transferManager.disconnect() }
+        onDispose { transferManager.disconnect(); versusManager.disconnect() }
     }
 
     LaunchedEffect(isForeground) {
@@ -839,6 +870,19 @@ fun AppEngine(tts: TTSManager) {
                 Screen.SPRINT_DURATION -> currentScreen = Screen.QUIZ_MODE
                 Screen.SPRINT_ROUND -> {
                     sprintVm.cancel()
+                    currentScreen = Screen.QUIZ_MODE
+                }
+                Screen.VERSUS_ROLE -> currentScreen = Screen.QUIZ_MODE
+                Screen.VERSUS_HOST, Screen.VERSUS_JOIN -> {
+                    versusManager.disconnect()
+                    currentScreen = Screen.VERSUS_ROLE
+                }
+                Screen.VERSUS_ROUND -> {
+                    versusVm.cancel()
+                    currentScreen = Screen.VERSUS_ROLE
+                }
+                Screen.VERSUS_RESULT -> {
+                    versusManager.disconnect()
                     currentScreen = Screen.QUIZ_MODE
                 }
                 Screen.PROFILE -> currentScreen = Screen.HOME
@@ -1110,6 +1154,22 @@ fun AppEngine(tts: TTSManager) {
                                 triggerVibration(context, "SUCCESS")
                                 currentScreen = Screen.SPRINT_DURATION
                             },
+                            onVersus = {
+                                triggerVibration(context, "SUCCESS")
+                                versusManager.disconnect()
+                                versusVm.reset()
+                                versusMatch = null
+                                versusEndpointId = null
+                                versusPeerScore = null
+                                versusPeerName = ""
+                                versusMyDone = false
+                                versusMyAttempted = 0
+                                versusMyCorrect = 0
+                                versusMyScore = 0
+                                versusXpEarned = 0
+                                versusRewardedFor = null
+                                currentScreen = Screen.VERSUS_ROLE
+                            },
                             onBack = { currentScreen = Screen.HOME }
                         )
                         Screen.SPRINT_DURATION -> SprintDurationScreen(
@@ -1314,6 +1374,178 @@ fun AppEngine(tts: TTSManager) {
                             onBack = {
                                 transferManager.disconnect()
                                 currentScreen = Screen.PROFILE
+                            }
+                        )
+                        // ---- Local Versus (offline PvP): handshake -> pack -> together -> hash -> winner ----
+                        Screen.VERSUS_ROLE -> VersusRoleScreen(
+                            lang = language,
+                            accent = primaryAccent,
+                            txtCol = textColor,
+                            onHost = {
+                                triggerVibration(context, "CLICK")
+                                versusIsHost = true
+                                versusManager.disconnect()
+                                versusVm.reset()
+                                versusMatch = null
+                                versusEndpointId = null
+                                versusPeerScore = null
+                                versusPeerName = ""
+                                versusMyDone = false
+                                versusXpEarned = 0
+                                versusRewardedFor = null
+                                currentScreen = Screen.VERSUS_HOST
+                            },
+                            onJoin = {
+                                triggerVibration(context, "CLICK")
+                                versusIsHost = false
+                                versusManager.disconnect()
+                                versusVm.reset()
+                                versusMatch = null
+                                versusEndpointId = null
+                                versusPeerScore = null
+                                versusPeerName = ""
+                                versusMyDone = false
+                                versusXpEarned = 0
+                                versusRewardedFor = null
+                                currentScreen = Screen.VERSUS_JOIN
+                            },
+                            onBack = { currentScreen = Screen.QUIZ_MODE }
+                        )
+                        Screen.VERSUS_HOST -> VersusHostScreen(
+                            manager = versusManager,
+                            matchVm = versusVm,
+                            lang = language,
+                            accent = primaryAccent,
+                            txtCol = textColor,
+                            myName = versusMyName,
+                            onMyNameChange = { versusMyName = it },
+                            onMatchSent = { ep, match ->
+                                versusEndpointId = ep
+                                versusMatch = match
+                            },
+                            onPeerScore = { versusPeerScore = it },
+                            onPeerName = { versusPeerName = it },
+                            onReadyToStart = { currentScreen = Screen.VERSUS_ROUND },
+                            onBack = {
+                                versusManager.disconnect()
+                                currentScreen = Screen.VERSUS_ROLE
+                            }
+                        )
+                        Screen.VERSUS_JOIN -> VersusJoinScreen(
+                            manager = versusManager,
+                            matchVm = versusVm,
+                            lang = language,
+                            accent = primaryAccent,
+                            txtCol = textColor,
+                            myName = versusMyName,
+                            onMyNameChange = { versusMyName = it },
+                            onMatchReceived = { match ->
+                                versusMatch = match
+                                versusPeerName = match.hostName
+                                versusEndpointId = versusManager.getConnectedEndpointId()
+                            },
+                            onPeerScore = { versusPeerScore = it },
+                            onStartReceived = { currentScreen = Screen.VERSUS_ROUND },
+                            onBack = {
+                                versusManager.disconnect()
+                                currentScreen = Screen.VERSUS_ROLE
+                            }
+                        )
+                        Screen.VERSUS_ROUND -> {
+                            VersusRoundScreen(
+                                manager = versusManager,
+                                matchVm = versusVm,
+                                lang = language,
+                                accent = primaryAccent,
+                                txtCol = textColor,
+                                peerArrived = versusPeerScore != null,
+                                onPeerScore = { versusPeerScore = it },
+                                onFinished = { attempted, correct, score ->
+                                    versusMyAttempted = attempted
+                                    versusMyCorrect = correct
+                                    versusMyScore = score
+                                    versusMyDone = true
+                                    val m = versusMatch
+                                    val ep = versusEndpointId ?: versusManager.getConnectedEndpointId()
+                                    if (m != null && ep != null) {
+                                        versusEndpointId = ep
+                                        versusManager.sendScore(
+                                            ep,
+                                            buildScorePayload(
+                                                m,
+                                                versusMyName.ifBlank { if (versusIsHost) "Device-A" else "Device-B" },
+                                                versusIsHost,
+                                                attempted,
+                                                correct
+                                            )
+                                        )
+                                    }
+                                },
+                                onExit = {
+                                    versusVm.cancel()
+                                    versusManager.disconnect()
+                                    currentScreen = Screen.VERSUS_ROLE
+                                }
+                            )
+                            // Both scores in -> one-time XP/streak/goals reward, then instant result.
+                            LaunchedEffect(versusMyDone, versusPeerScore) {
+                                val m = versusMatch
+                                val peer = versusPeerScore
+                                if (versusMyDone && peer != null && m != null && versusRewardedFor != m.matchId) {
+                                    versusRewardedFor = m.matchId
+                                    val winner = versusWinnerFor(versusMyAttempted, versusMyCorrect, versusIsHost, peer)
+                                    val won = (winner == VersusResult.HOST_WINS && versusIsHost) ||
+                                        (winner == VersusResult.GUEST_WINS && !versusIsHost)
+                                    val xp = versusVm.getFinalXp(userDocument.stats.currentStreak, versusMyScore, won)
+                                    versusXpEarned = xp
+                                    tts.stop()
+                                    val newXp = userDocument.stats.xp + xp
+                                    val updatedStats = StreakManager.updateStreak(
+                                        userDocument.stats.copy(
+                                            xp = newXp,
+                                            level = XpManager.calculateLevel(newXp),
+                                            quizzesTaken = userDocument.stats.quizzesTaken + 1
+                                        ),
+                                        versusMyScore.toFloat()
+                                    )
+                                    val newProgress = userDocument.quizProgress.copy(
+                                        lastScore = versusMyScore.toFloat()
+                                    )
+                                    val (goalDoc, completedGoals) = GoalManager.applyQuizResult(
+                                        userDocument, xp, versusMyScore.toFloat()
+                                    )
+                                    userDocument = goalDoc.copy(stats = updatedStats, quizProgress = newProgress)
+                                    completedGoals.forEach { goal ->
+                                        NotificationHelper.showNotification(
+                                            context,
+                                            "🎯 GOAL ACHIEVED!",
+                                            "You completed your goal: ${goal.title}!"
+                                        )
+                                    }
+                                    StreakTracker.recordQuiz(context, versusMyScore.toFloat())
+                                    NotificationScheduler.scheduleInactivityNotification(context)
+                                    GoalScheduler.scheduleDailyGoalReminder(context)
+                                    currentScreen = Screen.VERSUS_RESULT
+                                }
+                            }
+                        }
+                        Screen.VERSUS_RESULT -> VersusResultScreen(
+                            myName = versusMyName.ifBlank { if (versusIsHost) "Device-A" else "Device-B" },
+                            peerName = versusPeerScore?.deviceName ?: versusPeerName.ifBlank { "Opponent" },
+                            isHost = versusIsHost,
+                            myAttempted = versusMyAttempted,
+                            myCorrect = versusMyCorrect,
+                            myScore = versusMyScore,
+                            peer = versusPeerScore,
+                            peerVerified = versusPeerVerified(versusPeerScore, versusMatch),
+                            winner = versusWinnerFor(versusMyAttempted, versusMyCorrect, versusIsHost, versusPeerScore),
+                            xpEarned = versusXpEarned,
+                            accent = primaryAccent,
+                            txtCol = textColor,
+                            onDone = {
+                                versusManager.disconnect()
+                                versusVm.reset()
+                                currentScreen = Screen.QUIZ_MODE
                             }
                         )
                     }
