@@ -36,6 +36,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.inscit.transfer.NearbyPermissions
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -186,8 +189,17 @@ fun VersusHostScreen(
     var readyReceived by remember { mutableStateOf(false) }
     var matchSent by remember { mutableStateOf<VersusMatchPayload?>(null) }
     var showDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
+    // Same root cause as transfer: no runtime radio permissions => no advertising => Device B finds nothing.
+    var radioGranted by remember { mutableStateOf(NearbyPermissions.hasAll(context)) }
+    val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        radioGranted = NearbyPermissions.hasAll(context)
+    }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(radioGranted) {
+        if (!radioGranted) {
+            status = "Grant nearby access above to start advertising."
+            return@LaunchedEffect
+        }
         matchVm.reset()
         manager.startHosting(
             hostName = deviceName.ifBlank { "Device-A" },
@@ -215,6 +227,9 @@ fun VersusHostScreen(
                 // Peer finished fast while host still in lobby; forward to session state.
                 onPeerScore(score)
                 status = "Opponent finished early (${score.correct}/${score.attempted}). Start to see result."
+            },
+            onError = { e ->
+                status = "Nearby radio failed: ${e.message}. Grant access + turn BT/Wi-Fi/Location on."
             }
         )
     }
@@ -282,6 +297,10 @@ fun VersusHostScreen(
             Text("HOST - DEVICE A", fontSize = 18.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 1.sp)
         }
         Spacer(Modifier.height(16.dp))
+        if (!radioGranted) {
+            NearbyPermissionPrompt(accent = accent, onGrant = { permLauncher.launch(NearbyPermissions.required()) })
+            Spacer(Modifier.height(16.dp))
+        }
         OutlinedTextField(
             value = deviceName,
             onValueChange = { if (it.length <= 24) onMyNameChange(it) },
@@ -398,8 +417,13 @@ fun VersusJoinScreen(
     var connectedEndpoint by remember { mutableStateOf<String?>(null) }
     var match by remember { mutableStateOf<VersusMatchPayload?>(null) }
     var status by remember { mutableStateOf("Discover Device A, connect, and wait for the quiz pack.") }
+    var radioGranted by remember { mutableStateOf(NearbyPermissions.hasAll(context)) }
+    val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        radioGranted = NearbyPermissions.hasAll(context)
+    }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(radioGranted) {
+        if (!radioGranted) return@LaunchedEffect
         matchVm.reset()
         // 45s lobby timeout like transfer (30s) but roomier for discovery.
         delay(60_000)
@@ -413,6 +437,11 @@ fun VersusJoinScreen(
     }
 
     fun beginDiscovery() {
+        if (!radioGranted) {
+            status = "Grant nearby access first."
+            permLauncher.launch(NearbyPermissions.required())
+            return
+        }
         isDiscovering = true
         discovered = emptyMap()
         status = "Searching for Device A..."
@@ -441,7 +470,10 @@ fun VersusJoinScreen(
                     onStartReceived()
                 }
             },
-            onScore = { score -> onPeerScore(score) }
+            onScore = { score -> onPeerScore(score) },
+            onError = { e ->
+                status = "Nearby radio failed: ${e.message}. Grant access + turn BT/Wi-Fi/Location on."
+            }
         )
     }
 
@@ -474,6 +506,10 @@ fun VersusJoinScreen(
         )
         Spacer(Modifier.height(16.dp))
         if (!isDiscovering) {
+            if (!radioGranted) {
+                NearbyPermissionPrompt(accent = accent, onGrant = { permLauncher.launch(NearbyPermissions.required()) })
+                Spacer(Modifier.height(16.dp))
+            }
             PressableButton(
                 onClick = { beginDiscovery() },
                 shape = RoundedCornerShape(16.dp),

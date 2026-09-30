@@ -106,16 +106,22 @@ class VersusManager(private val context: Context) {
         onConnectionInitiated: (endpointId: String, endpointName: String) -> Unit,
         onConnected: (endpointId: String) -> Unit,
         onReady: (VersusReady) -> Unit,
-        onScore: (VersusScorePayload) -> Unit
+        onScore: (VersusScorePayload) -> Unit,
+        onError: (Exception) -> Unit = {}
     ) {
         onConnectionInitiatedCb = onConnectionInitiated
         onConnectedCb = onConnected
         onReadyCb = onReady
         onScoreCb = onScore
         val options = AdvertisingOptions.Builder().setStrategy(strategy).build()
-        client.startAdvertising(localName(hostName), SERVICE_ID, connectionLifecycleCallback, options)
-            .addOnSuccessListener { Log.d(TAG, "Hosting started as $hostName") }
-            .addOnFailureListener { e -> Log.e(TAG, "Hosting failed", e) }
+        try {
+            client.startAdvertising(localName(hostName), SERVICE_ID, connectionLifecycleCallback, options)
+                .addOnSuccessListener { Log.d(TAG, "Hosting started as $hostName") }
+                .addOnFailureListener { e -> Log.e(TAG, "Hosting failed", e); onError(e) }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Hosting blocked: missing runtime permission", e)
+            onError(e)
+        }
     }
 
     // ---- Guest (Device B): discovers, receives MATCH + START, sends READY, exchanges SCORE ----
@@ -124,7 +130,8 @@ class VersusManager(private val context: Context) {
         onConnectionInitiated: (endpointId: String, endpointName: String) -> Unit,
         onMatch: (VersusMatchPayload) -> Unit,
         onStart: (VersusStart) -> Unit,
-        onScore: (VersusScorePayload) -> Unit
+        onScore: (VersusScorePayload) -> Unit,
+        onError: (Exception) -> Unit = {}
     ) {
         onEndpointFoundCb = onEndpointFound
         discoveryInitiatedCb = onConnectionInitiated
@@ -132,9 +139,14 @@ class VersusManager(private val context: Context) {
         onStartCb = onStart
         onScoreCb = onScore
         val options = DiscoveryOptions.Builder().setStrategy(strategy).build()
-        client.startDiscovery(SERVICE_ID, endpointDiscoveryCallback, options)
-            .addOnSuccessListener { Log.d(TAG, "Discovery started") }
-            .addOnFailureListener { e -> Log.e(TAG, "Discovery failed", e) }
+        try {
+            client.startDiscovery(SERVICE_ID, endpointDiscoveryCallback, options)
+                .addOnSuccessListener { Log.d(TAG, "Discovery started") }
+                .addOnFailureListener { e -> Log.e(TAG, "Discovery failed", e); onError(e) }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Discovery blocked: missing runtime permission", e)
+            onError(e)
+        }
     }
 
     // Allow host to also listen for START echo / guest MATCH edge cases if needed.

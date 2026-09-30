@@ -17,6 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.inscit.transfer.NearbyPermissions
 import com.example.inscit.BioLime
 import com.example.inscit.CardBg
 import com.example.inscit.DeepSpace
@@ -46,8 +49,15 @@ fun TransferSendScreen(
     val pairCode = remember { (100000..999999).random().toString() }
     var showDialog by remember { mutableStateOf<Pair<String,String>?>(null) }
     var connectedEndpoint by remember { mutableStateOf<String?>(null) }
+    // Nearby radio needs runtime permissions (BT scan/advertise/connect, nearby-wifi/location).
+    // Without them advertising fails silently and no receiver ever appears.
+    var radioGranted by remember { mutableStateOf(NearbyPermissions.hasAll(context)) }
+    val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        radioGranted = NearbyPermissions.hasAll(context)
+    }
 
-    LaunchedEffect(pairCode) {
+    LaunchedEffect(pairCode, radioGranted) {
+        if (!radioGranted) return@LaunchedEffect
         viewModel.setPairCode(pairCode)
         viewModel.setStage(TransferStage.ADVERTISING)
         manager.startAdvertising(
@@ -64,7 +74,10 @@ fun TransferSendScreen(
                 manager.sendUserDocument(endpointId, userDoc)
                 // Simulate transferring progress
             },
-            onPayloadReceived = { _, _ -> }
+            onPayloadReceived = { _, _ -> },
+            onError = { e ->
+                viewModel.setError("Nearby radio failed: ${e.message}. Grant access + turn BT/Wi-Fi/Location on.")
+            }
         )
         // 30s timeout auto-deny
         delay(30000)
@@ -128,6 +141,14 @@ fun TransferSendScreen(
             Text("SEND TO NEW DEVICE", fontSize = 18.sp, fontWeight = FontWeight.Black, color = txtCol, letterSpacing = 1.sp)
         }
         Spacer(Modifier.height(32.dp))
+        if (!radioGranted) {
+            NearbyPermissionPrompt(accent = accent, onGrant = { permLauncher.launch(NearbyPermissions.required()) })
+            Spacer(Modifier.height(16.dp))
+        }
+        if (state.error != null) {
+            Text(state.error!!, color = PowerRed, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 8.dp))
+            Spacer(Modifier.height(12.dp))
+        }
         Text("Your Pair Code", color = accent, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
         Spacer(Modifier.height(12.dp))
         Surface(
@@ -214,8 +235,15 @@ fun TransferReceiveScreen(
     var discoveredEndpoints by remember { mutableStateOf(mapOf<String, String>()) }
     var isDiscovering by remember { mutableStateOf(false) }
     var pairCodeInput by remember { mutableStateOf("") }
+    var radioError by remember { mutableStateOf<String?>(null) }
+    // Same gate as the send screen: no runtime radio permissions => discovery finds nothing.
+    var radioGranted by remember { mutableStateOf(NearbyPermissions.hasAll(context)) }
+    val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        radioGranted = NearbyPermissions.hasAll(context)
+    }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(radioGranted) {
+        if (!radioGranted) return@LaunchedEffect
         // 30s timeout
         delay(30000)
         if (viewModel.state.value.stage == TransferStage.DISCOVERING || viewModel.state.value.stage == TransferStage.CONNECTING) {
@@ -245,11 +273,20 @@ fun TransferReceiveScreen(
         if (!isDiscovering) {
             Text("Discover nearby devices with code", color = GhostWhite.copy(alpha = 0.7f), fontSize = 14.sp, textAlign = TextAlign.Center)
             Spacer(Modifier.height(24.dp))
+            if (!radioGranted) {
+                NearbyPermissionPrompt(accent = accent, onGrant = { permLauncher.launch(NearbyPermissions.required()) })
+                Spacer(Modifier.height(16.dp))
+            }
             PressableButton(
                 onClick = {
+                    if (!radioGranted) {
+                        permLauncher.launch(NearbyPermissions.required())
+                        return@PressableButton
+                    }
                     isDiscovering = true
                     viewModel.setStage(TransferStage.DISCOVERING)
                     discoveredEndpoints = emptyMap()
+                    radioError = null
                     manager.startDiscovery(
                         onEndpointFound = { id, name ->
                             discoveredEndpoints = discoveredEndpoints + (id to name)
@@ -259,6 +296,9 @@ fun TransferReceiveScreen(
                             viewModel.setStage(TransferStage.CONNECTING)
                             // Auto accept for receiver - sender will handle auth dialog
                             manager.acceptConnection(endpointId)
+                        },
+                        onError = { e ->
+                            radioError = "Nearby radio failed: ${e.message}. Grant access + turn BT/Wi-Fi/Location on."
                         }
                     )
                     // Also set pairCode if entered? For decrypt, use entered code
@@ -299,6 +339,10 @@ fun TransferReceiveScreen(
             when (state.stage) {
                 TransferStage.DISCOVERING -> {
                     Text("Searching for nearby Inscit devices...", color = accent, fontSize = 14.sp)
+                    if (radioError != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(radioError!!, color = PowerRed, fontSize = 12.sp, textAlign = TextAlign.Center)
+                    }
                     Spacer(Modifier.height(12.dp))
                     CircularProgressIndicator(color = accent)
                     Spacer(Modifier.height(24.dp))

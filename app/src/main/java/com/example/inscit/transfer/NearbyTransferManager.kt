@@ -153,7 +153,8 @@ class NearbyTransferManager(private val context: Context) {
         pairCode: String,
         onConnectionInitiated: (endpointId: String, endpointName: String) -> Unit,
         onConnected: (endpointId: String) -> Unit,
-        onPayloadReceived: (UserDocument, File?) -> Unit
+        onPayloadReceived: (UserDocument, File?) -> Unit,
+        onError: (Exception) -> Unit = {}
     ) {
         currentPairCode = pairCode
         onConnectionInitiatedCallback = onConnectionInitiated
@@ -161,21 +162,32 @@ class NearbyTransferManager(private val context: Context) {
         onPayloadReceivedCallback = onPayloadReceived
         val options = AdvertisingOptions.Builder().setStrategy(strategy).build()
         val localName = "Inscit-$pairCode"
-        client.startAdvertising(localName, SERVICE_ID, connectionLifecycleCallback, options)
-            .addOnSuccessListener { Log.d(TAG, "Advertising started $pairCode") }
-            .addOnFailureListener { e -> Log.e(TAG, "Advertising failed", e) }
+        try {
+            client.startAdvertising(localName, SERVICE_ID, connectionLifecycleCallback, options)
+                .addOnSuccessListener { Log.d(TAG, "Advertising started $pairCode") }
+                .addOnFailureListener { e -> Log.e(TAG, "Advertising failed", e); onError(e) }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Advertising blocked: missing runtime permission", e)
+            onError(e)
+        }
     }
 
     fun startDiscovery(
         onEndpointFound: (endpointId: String, endpointName: String) -> Unit,
-        onConnectionInitiated: (endpointId: String, endpointName: String) -> Unit
+        onConnectionInitiated: (endpointId: String, endpointName: String) -> Unit,
+        onError: (Exception) -> Unit = {}
     ) {
         onEndpointFoundCallback = onEndpointFound
         discoveryConnectionInitiated = onConnectionInitiated
         val options = DiscoveryOptions.Builder().setStrategy(strategy).build()
-        client.startDiscovery(SERVICE_ID, endpointDiscoveryCallback, options)
-            .addOnSuccessListener { Log.d(TAG, "Discovery started") }
-            .addOnFailureListener { e -> Log.e(TAG, "Discovery failed", e) }
+        try {
+            client.startDiscovery(SERVICE_ID, endpointDiscoveryCallback, options)
+                .addOnSuccessListener { Log.d(TAG, "Discovery started") }
+                .addOnFailureListener { e -> Log.e(TAG, "Discovery failed", e); onError(e) }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Discovery blocked: missing runtime permission", e)
+            onError(e)
+        }
     }
 
     fun requestConnection(endpointId: String) {
