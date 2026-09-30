@@ -2102,11 +2102,11 @@ fun ContactUsScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit
         ContactItem(
             icon = { WebIcon(it) },
             label = if (lang == Lang.EN) "WEBSITE URL" else "वेबसाइट यूआरएल",
-            value = "www.inscit.com",
+            value = "inscit.netlify.app",
             accent = accent,
             onClick = {
                 val intent = Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse("https://www.inscit.com")
+                    data = Uri.parse("https://inscit.netlify.app")
                 }
                 context.startActivity(intent)
             }
