@@ -33,6 +33,7 @@ import com.example.inscit.transfer.TransferStage
 import com.example.inscit.transfer.TransferViewModel
 import com.example.inscit.triggerVibration
 import com.example.inscit.ui.BackIcon
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 
 @Composable
@@ -44,7 +45,7 @@ fun TransferSendScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val viewModel = remember { TransferViewModel() }
+    val viewModel: TransferViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     val pairCode = remember { (100000..999999).random().toString() }
     var showDialog by remember { mutableStateOf<Pair<String,String>?>(null) }
@@ -230,7 +231,7 @@ fun TransferReceiveScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val viewModel = remember { TransferViewModel() }
+    val viewModel: TransferViewModel = viewModel()
     val state by viewModel.state.collectAsState()
     var discoveredEndpoints by remember { mutableStateOf(mapOf<String, String>()) }
     var isDiscovering by remember { mutableStateOf(false) }
@@ -350,7 +351,7 @@ fun TransferReceiveScreen(
                         Text("No devices found yet. Make sure sender is on Send screen.", color = GhostWhite.copy(alpha = 0.5f), fontSize = 12.sp, textAlign = TextAlign.Center)
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(discoveredEndpoints.entries.toList()) { (id, name) ->
+                            items(discoveredEndpoints.entries.toList(), key = { it.key }) { (id, name) ->
                                 PressableCard(
                                     onClick = {
                                         viewModel.setEndpoint(id, name)

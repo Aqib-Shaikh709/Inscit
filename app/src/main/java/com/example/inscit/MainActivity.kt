@@ -737,15 +737,8 @@ fun AppEngine(tts: TTSManager) {
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
 
-    // Local user state with robust persistence and rememberSaveable
-    var userDocument by rememberSaveable(
-        saver = Saver<MutableState<UserDocument>, String>(
-            save = { state -> with(receiver = UserDocumentSaver) { save(state.value) } },
-            restore = { value -> UserDocumentSaver.restore(value)?.let { mutableStateOf(value = it) } }
-        )
-    ) {
-        mutableStateOf(loadUserDocument(context))
-    }
+    // Local user state persisted to SharedPreferences every second; reload on process death.
+    var userDocument by remember { mutableStateOf(loadUserDocument(context)) }
 
     var currentScreen by rememberSaveable { mutableStateOf(Screen.SPLASH) }
     var selectedBranch by rememberSaveable { mutableStateOf(Branch.PHYSICS) }

@@ -530,7 +530,7 @@ fun VersusJoinScreen(
                     modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(discovered.entries.toList()) { (id, name) ->
+                    items(discovered.entries.toList(), key = { it.key }) { (id, name) ->
                         PressableCard(
                             onClick = {
                                 status = "Requesting link with $name..."

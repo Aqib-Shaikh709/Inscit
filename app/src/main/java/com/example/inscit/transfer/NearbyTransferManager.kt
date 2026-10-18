@@ -30,6 +30,8 @@ class NearbyTransferManager(private val context: Context) {
     private var pendingDoc: UserDocument? = null
     private val incomingFilePayloads = mutableMapOf<Long, Payload>()
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val pendingPhotoHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var pendingPhotoRunnable: Runnable? = null
 
     fun setPairCode(code: String) {
         currentPairCode = code
@@ -62,12 +64,15 @@ class NearbyTransferManager(private val context: Context) {
                             onPayloadReceivedCallback?.invoke(doc, null)
                             pendingDoc = null
                         } else {
-                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                            val runnable = Runnable {
                                 if (pendingDoc == doc) {
                                     onPayloadReceivedCallback?.invoke(doc, null)
                                     pendingDoc = null
+                                    pendingPhotoRunnable = null
                                 }
-                            }, 3000)
+                            }
+                            pendingPhotoRunnable = runnable
+                            pendingPhotoHandler.postDelayed(runnable, 3000)
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "BYTES decrypt/decode failed", e)
@@ -273,6 +278,7 @@ class NearbyTransferManager(private val context: Context) {
         discoveryConnected = null
         incomingFilePayloads.clear()
         pendingDoc = null
+        pendingPhotoRunnable?.let { pendingPhotoHandler.removeCallbacks(it); pendingPhotoRunnable = null }
     }
 
     fun getConnectedEndpointId(): String? = connectedEndpointId
