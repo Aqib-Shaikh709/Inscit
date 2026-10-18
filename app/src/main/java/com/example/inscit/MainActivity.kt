@@ -162,7 +162,6 @@ import com.example.inscit.ui.LockIcon
 import com.example.inscit.ui.MenuIcon
 import com.example.inscit.ui.NoteIcon
 import com.example.inscit.ui.PencilIcon
-import com.example.inscit.ui.PhoneIcon
 import com.example.inscit.ui.PlusIcon
 import com.example.inscit.ui.PressableButton
 import com.example.inscit.ui.PressableIconButton
@@ -502,7 +501,6 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
 }
 
 private const val CONTACT_EMAIL = com.example.inscit.utils.AppConstants.CONTACT_EMAIL
-private const val CONTACT_PHONE = com.example.inscit.utils.AppConstants.CONTACT_PHONE
 
 fun getExportFolder(context: Context): File {
     val folder = File(context.getExternalFilesDir(null), "InscitExports")
@@ -2081,19 +2079,6 @@ fun ContactUsScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit
             onClick = {
                 val intent = Intent(Intent.ACTION_SENDTO).apply {
                     data = Uri.parse("mailto:$CONTACT_EMAIL")
-                }
-                context.startActivity(intent)
-            }
-        )
-
-        ContactItem(
-            icon = { PhoneIcon(it) },
-            label = if (lang == Lang.EN) "CONTACT NUMBER" else "संपर्क नंबर",
-            value = CONTACT_PHONE,
-            accent = accent,
-            onClick = {
-                val intent = Intent(Intent.ACTION_DIAL).apply {
-                    data = Uri.parse("tel:$CONTACT_PHONE")
                 }
                 context.startActivity(intent)
             }
