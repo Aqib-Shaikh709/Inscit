@@ -155,8 +155,9 @@ class QuizViewModel(
     fun retry() {
         // Reuse the already-loaded bank (assets or hardcoded) - no reshuffle surprise, no Context needed
         if (lastRound != null) {
+            val round = lastRound
             _uiState.value = QuizUiState.Loading
-            startRoundQuiz(currentLang, lastRound!!)
+            startRoundQuiz(currentLang, round)
             return
         }
         if (questions.isNotEmpty()) {

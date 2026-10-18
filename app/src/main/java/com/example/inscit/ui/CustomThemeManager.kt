@@ -146,16 +146,21 @@ fun ColorPickerOverlay(
 ) {
     val context = LocalContext.current
     var themeName by remember { mutableStateOf("") }
-    var accentHsv by remember { 
+    var accentH by remember { mutableStateOf(0f) }
+    var accentS by remember { mutableStateOf(0f) }
+    var accentV by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(initialAccent) {
         val hsv = FloatArray(3)
         android.graphics.Color.colorToHSV(initialAccent.toArgb(), hsv)
-        mutableStateOf(hsv)
+        accentH.value = hsv[0]
+        accentS.value = hsv[1]
+        accentV.value = hsv[2]
     }
-    
+
     // Simplified: Background is derived from accent (darker version) or kept static
-    // Based on "overwhelming" feedback, let's focus on the Accent and auto-generate BG/Text
-    val currentAccent = Color(android.graphics.Color.HSVToColor(accentHsv))
-    val currentBg = Color(android.graphics.Color.HSVToColor(floatArrayOf(accentHsv[0], accentHsv[1].coerceAtMost(0.3f), 0.15f)))
+    val currentAccent = Color(android.graphics.Color.HSVToColor(floatArrayOf(accentH.value, accentS.value, accentV.value)))
+    val currentBg = Color(android.graphics.Color.HSVToColor(floatArrayOf(accentH.value, accentS.value.coerceAtMost(0.3f), 0.15f)))
     val currentTxt = Color.White
 
     var showOverwriteDialog by remember { mutableStateOf(false) }
@@ -222,17 +227,17 @@ fun ColorPickerOverlay(
 
                 // Visual Color Picker
                 SaturationValueBox(
-                    hue = accentHsv[0],
-                    saturation = accentHsv[1],
-                    value = accentHsv[2],
-                    onSelection = { s, v -> accentHsv = floatArrayOf(accentHsv[0], s, v) }
+                    hue = accentH.value,
+                    saturation = accentS.value,
+                    value = accentV.value,
+                    onSelection = { s, v -> accentS.value = s; accentV.value = v }
                 )
                 
                 Spacer(Modifier.height(16.dp))
                 
                 HueBar(
-                    hue = accentHsv[0],
-                    onHueChange = { accentHsv = floatArrayOf(it, accentHsv[1], accentHsv[2]) }
+                    hue = accentH.value,
+                    onHueChange = { accentH.value = it }
                 )
 
                 Spacer(Modifier.height(40.dp))

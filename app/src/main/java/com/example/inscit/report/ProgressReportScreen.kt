@@ -96,7 +96,7 @@ fun ProgressReportScreen(
 
             val highestStreak = userDocument.stats.longestStreak
             val currentStreak = userDocument.stats.currentStreak
-            val reportText = generatedReport!! + "\n\n🔥 Current Streak: $currentStreak day${if (currentStreak != 1) "s" else ""}\n🏆 Best Streak: $highestStreak day${if (highestStreak != 1) "s" else ""}"
+            val reportText = generatedReport + "\n\n🔥 Current Streak: $currentStreak day${if (currentStreak != 1) "s" else ""}\n🏆 Best Streak: $highestStreak day${if (highestStreak != 1) "s" else ""}"
             
             // Preview (Non-editable)
             Box(

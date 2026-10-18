@@ -38,8 +38,19 @@ import com.example.inscit.*
 import com.example.inscit.models.Lang
 import com.example.inscit.quiz.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 import com.example.inscit.ui.theme.spacing
+
+@Serializable
+private data class QuizHistoryEntry(
+    val id: Long,
+    val score: Int,
+    val xp: Int,
+    val time: Long
+)
 
 @Composable
 fun ScienceQuizScreen(
@@ -86,18 +97,17 @@ fun ScienceQuizScreen(
                 androidx.compose.runtime.LaunchedEffect(currentState.analytics) {
                     try {
                         val prefs = context.getSharedPreferences("quiz_history", android.content.Context.MODE_PRIVATE)
+                        val json = Json { ignoreUnknownKeys = true }
                         val history = prefs.getString("attempts", "[]") ?: "[]"
-                        val entry = """{"id":"${System.currentTimeMillis()}","score":${currentState.analytics.overallScore},"xp":${viewModel.getFinalXp(currentStreak, currentState.analytics.overallScore)},"time":${System.currentTimeMillis()}}"""
-                        val updated = if (history == "[]") "[$entry]"
-                        else {
-                            val inner = history.removePrefix("[").removeSuffix("]")
-                            val parts = if (inner.isEmpty()) emptyList() else inner.split("},{").mapIndexed { i, p ->
-                                (if (!p.startsWith("{")) "{" else "") + p + (if (!p.endsWith("}")) "}" else "")
-                            }
-                            val kept = (parts + entry).takeLast(50)
-                            "[" + kept.joinToString(",") + "]"
-                        }
-                        prefs.edit().putString("attempts", updated).apply()
+                        val entries = json.decodeFromString<List<QuizHistoryEntry>>(history)
+                        val newEntry = QuizHistoryEntry(
+                            id = System.currentTimeMillis(),
+                            score = currentState.analytics.overallScore,
+                            xp = viewModel.getFinalXp(currentStreak, currentState.analytics.overallScore),
+                            time = System.currentTimeMillis()
+                        )
+                        val updated = (entries + newEntry).takeLast(50)
+                        prefs.edit().putString("attempts", json.encodeToString(updated)).apply()
                     } catch (_: Exception) {}
                 }
                 val weakDomains = remember(currentState.analytics) {

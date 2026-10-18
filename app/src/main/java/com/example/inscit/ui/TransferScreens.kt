@@ -93,7 +93,8 @@ fun TransferSendScreen(
     }
 
     if (showDialog != null) {
-        val (endpointId, endpointName) = showDialog!!
+        val dialog = showDialog!!
+        val (endpointId, endpointName) = dialog
         AlertDialog(
             onDismissRequest = {
                 manager.rejectConnection(endpointId)
@@ -147,7 +148,8 @@ fun TransferSendScreen(
             Spacer(Modifier.height(16.dp))
         }
         if (state.error != null) {
-            Text(state.error!!, color = PowerRed, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 8.dp))
+            val error = state.error!!
+            Text(error, color = PowerRed, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 8.dp))
             Spacer(Modifier.height(12.dp))
         }
         Text("Your Pair Code", color = accent, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
@@ -342,7 +344,8 @@ fun TransferReceiveScreen(
                     Text("Searching for nearby Inscit devices...", color = accent, fontSize = 14.sp)
                     if (radioError != null) {
                         Spacer(Modifier.height(8.dp))
-                        Text(radioError!!, color = PowerRed, fontSize = 12.sp, textAlign = TextAlign.Center)
+                        val error = radioError!!
+                        Text(error, color = PowerRed, fontSize = 12.sp, textAlign = TextAlign.Center)
                     }
                     Spacer(Modifier.height(12.dp))
                     CircularProgressIndicator(color = accent)

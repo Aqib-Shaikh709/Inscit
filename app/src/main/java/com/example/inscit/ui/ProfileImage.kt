@@ -55,12 +55,14 @@ fun ProfileImage(
         contentAlignment = Alignment.Center
     ) {
         if (profileBitmap != null) {
-            Image(
-                bitmap = profileBitmap!!,
-                contentDescription = "Profile Picture",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            profileBitmap?.let { bitmap ->
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
         } else {
             PersonIcon(color = placeholderColor, modifier = Modifier.fillMaxSize(0.6f))
         }

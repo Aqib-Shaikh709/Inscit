@@ -255,7 +255,8 @@ fun VersusHostScreen(
     }
 
     if (showDialog != null) {
-        val (endpointId, endpointName) = showDialog!!
+        val dialog = showDialog!!
+        val (endpointId, endpointName) = dialog
         AlertDialog(
             onDismissRequest = {
                 manager.rejectConnection(endpointId)
@@ -364,8 +365,9 @@ fun VersusHostScreen(
             Text("✓ Linked: ${guestName ?: connectedEndpoint?.take(8)}", color = BioLime, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             Spacer(Modifier.height(8.dp))
             if (matchSent == null) {
+                val ep = connectedEndpoint!!
                 PressableButton(
-                    onClick = { sendPack(connectedEndpoint!!) },
+                    onClick = { sendPack(ep) },
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace),
                     modifier = Modifier.fillMaxWidth().height(56.dp)
@@ -374,7 +376,7 @@ fun VersusHostScreen(
                 CircularProgressIndicator(color = accent)
                 Spacer(Modifier.height(8.dp))
                 PressableButton(
-                    onClick = { matchSent?.let { sendPack(connectedEndpoint!!) } },
+                    onClick = { connectedEndpoint?.let { ep -> matchSent?.let { sendPack(ep) } } },
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = GhostWhite.copy(alpha = 0.08f), contentColor = GhostWhite),
                     modifier = Modifier.fillMaxWidth().height(52.dp)

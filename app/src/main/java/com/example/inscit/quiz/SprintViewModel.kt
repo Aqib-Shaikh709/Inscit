@@ -52,7 +52,7 @@ class SprintViewModel(
         viewModelScope.launch {
             _uiState.value = SprintUiState.Running(
                 currentQuestion = bank.first(),
-                answered = 0,
+                 answered = 0,
                 correct = 0,
                 timeLeftMs = duration.seconds * 1000L,
                 totalMs = duration.seconds * 1000L
