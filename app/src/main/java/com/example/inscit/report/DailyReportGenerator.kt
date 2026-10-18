@@ -9,12 +9,12 @@ object DailyReportGenerator {
     private const val REPORT_FOOTER = "Keep encouraging the learning journey!"
     private const val REPORT_GENERATED_BY = "Generated via Inscit Omega"
 
-    private fun escapeHtml(s: String): String = s
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\"", "&quot;")
-        .replace("'", "&#39;")
+    private fun escapeHtml(s: String): String =
+        s.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;")
 
     fun generateSentiment(userDoc: UserDocument): String {
         val xp = userDoc.stats.xp

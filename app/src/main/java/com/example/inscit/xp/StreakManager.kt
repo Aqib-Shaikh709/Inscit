@@ -42,16 +42,13 @@ object StreakManager {
                 else stats.copy(lastActivityDate = currentDate)
             }
             else -> {
-                if (stats.lastActivityDate == currentDate) {
-                    stats
-                } else if (stats.lastActivityDate == yesterday) {
-                    stats.copy(
-                        currentStreak = 0,
-                        lastActivityDate = currentDate
-                    )
-                } else {
-                    stats
-                }
+                // < 60: break streak on a new day
+                if (stats.lastActivityDate == currentDate) stats
+                else stats.copy(
+                    currentStreak = 0,
+                    longestStreak = stats.longestStreak,
+                    lastActivityDate = currentDate
+                )
             }
         }
     }

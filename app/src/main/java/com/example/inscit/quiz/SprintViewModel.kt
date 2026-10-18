@@ -45,9 +45,10 @@ class SprintViewModel(
         userAnswers.clear()
         answeredQuestions.clear()
         cursor = 0
-        // Whole prime bank, reshuffled when exhausted = infinite questions.
-        bank = engine.getQuestions(lang, Int.MAX_VALUE, null, emptySet(), context)
-        if (bank.isEmpty()) bank = engine.getQuestions(lang, Int.MAX_VALUE, null)
+        // Cap question count to avoid loading the entire bank into memory;
+        // reshuffle-on-exhaust handles the "infinite" feel.
+        bank = engine.getQuestions(lang, 1000, null, emptySet(), context)
+        if (bank.isEmpty()) bank = engine.getQuestions(lang, 1000, null)
         viewModelScope.launch {
             _uiState.value = SprintUiState.Running(
                 currentQuestion = bank.first(),

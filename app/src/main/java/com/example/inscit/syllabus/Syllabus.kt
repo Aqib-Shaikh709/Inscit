@@ -51,10 +51,12 @@ object Syllabus {
             Branch.BIOLOGY -> BiologySyllabus.getExplanations(lang)
         }
 
-        // Guard length drift: zip() silently drops extras, so fall back to paired size
-        val size = minOf(titles.size, contents.size)
-        return titles.take(size).zip(contents.take(size)).map { (title, content) ->
-            NoteEntry(title, content, branch, lang)
+        // Guard length drift: pad the shorter list instead of silently dropping entries.
+        val size = maxOf(titles.size, contents.size)
+        val paddedTitles = titles + List(size - titles.size) { "" }
+        val paddedContents = contents + List(size - contents.size) { "" }
+        return paddedTitles.zip(paddedContents).map { pair ->
+            NoteEntry(pair.first, pair.second, branch, lang)
         }
     }
 }

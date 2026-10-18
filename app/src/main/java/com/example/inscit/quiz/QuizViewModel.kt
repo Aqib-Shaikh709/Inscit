@@ -129,10 +129,7 @@ class QuizViewModel(
         }
     }
 
-    fun getFinalXp() = maxOf(a = 0, b = xpBuffer.pendingXp)
-
-    // XP economy: +20 perfect bonus at 100%, 1.2x streak multiplier when streak>=3
-    fun getFinalXp(streak: Int, scorePercent: Int): Int {
+    fun getFinalXp(streak: Int = 0, scorePercent: Int = 0): Int {
         var xp = xpBuffer.pendingXp
         if (scorePercent >= 100) xp += 20
         if (streak >= 3) xp = (xp * 1.2f).toInt()

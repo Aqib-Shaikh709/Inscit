@@ -5,7 +5,7 @@ class PendingXpBuffer {
     val pendingXp: Int get() = _pendingXp
 
     fun add(amount: Int) {
-        _pendingXp = maxOf(0, _pendingXp + amount)
+        _pendingXp += amount
     }
 
     fun clear() {

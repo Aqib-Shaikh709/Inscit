@@ -795,41 +795,38 @@ fun AppEngine(tts: TTSManager) {
         }
     }
 
-    // Immediate persistence to SharedPreferences (debounced)
-    LaunchedEffect(userDocument) {
-        kotlinx.coroutines.delay(1000)
-        saveUserDocument(context, userDocument)
-    }
-
-    // Track app usage time (only while foreground)
+    // Combined: track usage time while foreground + debounced persistence.
+    // Single coroutine avoids read-modify-write races between two writers.
     var isForeground by remember { mutableStateOf(true) }
-    val appLifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(appLifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            isForeground = event == Lifecycle.Event.ON_START
-        }
-        appLifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { appLifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose { transferManager.disconnect(); versusManager.disconnect() }
-    }
-
-    LaunchedEffect(isForeground) {
-        if (isForeground) {
-            while (isActive) {
-                kotlinx.coroutines.delay(60000)
-                ensureActive()
-                if (currentScreen != Screen.SPLASH) {
+    var usageSeconds by remember { mutableIntStateOf(0) }
+    var lastSavedDocument by remember { mutableStateOf<UserDocument?>(null) }
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            kotlinx.coroutines.delay(1000)
+            var changed = false
+            if (isForeground && currentScreen != Screen.SPLASH) {
+                usageSeconds++
+                if (usageSeconds % 60 == 0) {
                     userDocument = userDocument.copy(
                         stats = userDocument.stats.copy(
                             totalUsageTime = userDocument.stats.totalUsageTime + 60000
                         )
                     )
+                    changed = true
                 }
             }
+            if (userDocument != lastSavedDocument) {
+                changed = true
+                lastSavedDocument = userDocument
+            }
+            if (changed) {
+                saveUserDocument(context, userDocument)
+            }
         }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { transferManager.disconnect(); versusManager.disconnect() }
     }
 
     val isDrawerOpen = drawerState.isOpen
@@ -4130,7 +4127,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
             InfoCard(
                 icon = "✨",
                 title = if (lang == Lang.EN) "REQUIREMENT" else "आवश्यकता",
-                description = if (lang == Lang.EN) "Score 80% or above in any quiz to maintain your streak" else "स्ट्रीक बनाए रखने के लिए किसी भी क्विज़ में 80% या उससे अधिक स्कोर करें",
+                description = if (lang == Lang.EN) "Score 60% or above in any quiz to maintain your streak" else "स्ट्रीक बनाए रखने के लिए किसी भी क्विज़ में 60% या उससे अधिक स्कोर करें",
                 accent = accent
             )
 
@@ -4139,7 +4136,7 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
             InfoCard(
                 icon = "📅",
                 title = if (lang == Lang.EN) "ONE PER DAY" else "प्रति दिन एक",
-                description = if (lang == Lang.EN) "Only one 80%+ score per day counts toward your streak" else "प्रति दिन केवल एक 80%+ स्कोर स्ट्रीक की ओर गिना जाता है",
+                description = if (lang == Lang.EN) "Only one 60%+ score per day counts toward your streak" else "प्रति दिन केवल एक 60%+ स्कोर स्ट्रीक की ओर गिना जाता है",
                 accent = accent
             )
 
