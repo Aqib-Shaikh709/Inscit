@@ -157,7 +157,7 @@ class QuizViewModel(
         if (lastRound != null) {
             val round = lastRound
             _uiState.value = QuizUiState.Loading
-            startRoundQuiz(currentLang, round)
+            startRoundQuiz(currentLang, round ?: 0)
             return
         }
         if (questions.isNotEmpty()) {

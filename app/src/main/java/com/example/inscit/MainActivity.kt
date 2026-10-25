@@ -14,6 +14,7 @@ import android.provider.MediaStore
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import com.example.inscit.widget.WidgetRefreshReceiver
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
@@ -580,6 +581,7 @@ class MainActivity : ComponentActivity() {
         checkNotificationPermission()
         NotificationScheduler.scheduleInactivityNotification(this)
         GoalScheduler.scheduleDailyGoalReminder(this)
+        WidgetRefreshReceiver.refreshOnAppOpen(this)
 
         setContent { AppEngine(ttsManager) }
     }
@@ -2419,7 +2421,7 @@ fun InteractiveDiagram(branch: Branch, accent: Color, modifier: Modifier = Modif
                         drawCircle(accent.copy(alpha = 0.05f), radius = baseRadius, center = center)
                         drawCircle(accent, radius = baseRadius, center = center, style = Stroke(width = 4f))
 
-                        // Cytoplasm streaming effect with ribosomes and mitochondria
+                        //  Trying to make: Cytoplasm streaming effect with ribosomes and mitochondria
                         val activity = scaleFactor
                         val organelleCount = (12 * activity).toInt()
                         for (i in 0 until organelleCount) {

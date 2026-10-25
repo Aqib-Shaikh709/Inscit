@@ -153,14 +153,14 @@ fun ColorPickerOverlay(
     LaunchedEffect(initialAccent) {
         val hsv = FloatArray(3)
         android.graphics.Color.colorToHSV(initialAccent.toArgb(), hsv)
-        accentH.value = hsv[0]
-        accentS.value = hsv[1]
-        accentV.value = hsv[2]
+        accentH = hsv[0]
+        accentS = hsv[1]
+        accentV = hsv[2]
     }
 
     // Simplified: Background is derived from accent (darker version) or kept static
-    val currentAccent = Color(android.graphics.Color.HSVToColor(floatArrayOf(accentH.value, accentS.value, accentV.value)))
-    val currentBg = Color(android.graphics.Color.HSVToColor(floatArrayOf(accentH.value, accentS.value.coerceAtMost(0.3f), 0.15f)))
+    val currentAccent = Color(android.graphics.Color.HSVToColor(floatArrayOf(accentH, accentS, accentV)))
+    val currentBg = Color(android.graphics.Color.HSVToColor(floatArrayOf(accentH, accentS.coerceAtMost(0.3f), 0.15f)))
     val currentTxt = Color.White
 
     var showOverwriteDialog by remember { mutableStateOf(false) }
@@ -227,17 +227,17 @@ fun ColorPickerOverlay(
 
                 // Visual Color Picker
                 SaturationValueBox(
-                    hue = accentH.value,
-                    saturation = accentS.value,
-                    value = accentV.value,
-                    onSelection = { s, v -> accentS.value = s; accentV.value = v }
+                    hue = accentH,
+                    saturation = accentS,
+                    value = accentV,
+                    onSelection = { s, v -> accentS = s; accentV = v }
                 )
                 
                 Spacer(Modifier.height(16.dp))
                 
                 HueBar(
-                    hue = accentH.value,
-                    onHueChange = { accentH.value = it }
+                    hue = accentH,
+                    onHueChange = { accentH = it }
                 )
 
                 Spacer(Modifier.height(40.dp))
