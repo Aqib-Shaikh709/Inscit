@@ -7,7 +7,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.widget.RemoteViews
-import com.example.inscit.MainActivity
 import com.example.inscit.R
 import com.example.inscit.xp.Rank
 import com.example.inscit.xp.XpManager
@@ -16,42 +15,55 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 class WidgetRefreshReceiver : android.content.BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: android.content.Intent?) {
+    override fun onReceive(context: Context, intent: Intent?) {
         val mgr = AppWidgetManager.getInstance(context)
+        Companion.maybeUpdateAll(context, mgr)
+    }
+
+    /** Central update: loads data once, only paints widgets when something changed. */
+    fun maybeUpdateAll(context: Context, mgr: AppWidgetManager) {
+        if (!WidgetData.shouldUpdate(context)) return
+        paintAllWidgets(context, mgr)
+    }
+
+    private fun paintAllWidgets(context: Context, mgr: AppWidgetManager) {
+        val doc = WidgetData.loadDoc(context) ?: return
+        val stats = doc.stats
+        val completedDates = stats.completedChallengeDates
+        val today = LocalDate.now()
+        var done = 0
+        for (i in 0..6) {
+            val date = today.minusDays((6 - i).toLong())
+            if (completedDates.contains(date.toString())) done++
+        }
+        val completedGoals = doc.goals.count { it.isCompleted }
+        val totalGoals = doc.goals.size
+        val rank = Rank.fromXp(stats.xp)
+        val level = XpManager.calculateLevel(stats.xp)
+        val lastScore = doc.quizProgress.lastScore.toInt()
+
         val specs = mapOf(
-            StreakWidgetProvider::class.java to "streak",
-            ChallengeWidgetProvider::class.java to "challenge",
-            GoalsWidgetProvider::class.java to "goals",
-            XpWidgetProvider::class.java to "xp"
+            StreakWidgetProvider::class.java to R.layout.widget_streak,
+            ChallengeWidgetProvider::class.java to R.layout.widget_challenge,
+            GoalsWidgetProvider::class.java to R.layout.widget_goals,
+            XpWidgetProvider::class.java to R.layout.widget_xp
         )
-        for ((clazz, section) in specs) {
+
+        for ((clazz, layoutId) in specs) {
             val cn = ComponentName(context, clazz)
             val ids = mgr.getAppWidgetIds(cn)
             if (ids.isEmpty()) continue
-            val doc = loadDoc(context)
-            val stats = doc?.stats
-            when (clazz) {
-                StreakWidgetProvider::class.java -> {
-                    for (id in ids) {
-                        val rv = RemoteViews(context.packageName, R.layout.widget_streak)
-                        rv.setTextViewText(R.id.streak_value, "🔥 ${stats?.currentStreak ?: 0}")
-                        rv.setOnClickPendingIntent(R.id.widget_root, mainIntent(context))
-                        rv.setOnClickPendingIntent(R.id.streak_value, sectionIntent(context, section))
-                        rv.setOnClickPendingIntent(R.id.streak_label, sectionIntent(context, section))
-                        mgr.updateAppWidget(id, rv)
+            for (id in ids) {
+                val rv = RemoteViews(context.packageName, layoutId)
+                when (clazz) {
+                    StreakWidgetProvider::class.java -> {
+                        rv.setTextViewText(R.id.streak_value, "🔥 ${stats.currentStreak}")
+                        rv.setTextViewText(R.id.streak_label, "STREAK")
+                        rv.setOnClickPendingIntent(R.id.widget_root, WidgetData.mainIntent(context))
+                        rv.setOnClickPendingIntent(R.id.streak_value, WidgetData.sectionIntent(context, "streak"))
+                        rv.setOnClickPendingIntent(R.id.streak_label, WidgetData.sectionIntent(context, "streak"))
                     }
-                }
-                ChallengeWidgetProvider::class.java -> {
-                    val completedDates = doc?.stats?.completedChallengeDates ?: emptySet()
-                    val today = LocalDate.now()
-                    var done = 0
-                    for (i in 0..6) {
-                        val date = today.minusDays((6 - i).toLong())
-                        val iso = date.toString()
-                        if (completedDates.contains(iso)) done++
-                    }
-                    for (id in ids) {
-                        val rv = RemoteViews(context.packageName, R.layout.widget_challenge)
+                    ChallengeWidgetProvider::class.java -> {
                         rv.setTextViewText(R.id.cal_title, "DAILY CHALLENGE")
                         rv.setTextViewText(R.id.cal_sub, "$done/7 days")
                         for (i in 0..6) {
@@ -59,45 +71,33 @@ class WidgetRefreshReceiver : android.content.BroadcastReceiver() {
                             val iso = date.toString()
                             val dotId = context.resources.getIdentifier("cd$i", "id", context.packageName)
                             val isDone = completedDates.contains(iso)
-                            val letter = date.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault()).take(1).uppercase()
+                            val letter = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(1).uppercase()
                             rv.setTextViewText(dotId, letter)
                             rv.setInt(dotId, "setBackgroundResource", if (isDone) R.drawable.day_done else R.drawable.day_pending)
-                            rv.setOnClickPendingIntent(dotId, sectionIntent(context, section))
+                            rv.setOnClickPendingIntent(dotId, WidgetData.sectionIntent(context, "challenge"))
                         }
-                        rv.setOnClickPendingIntent(R.id.widget_root, mainIntent(context))
-                        rv.setOnClickPendingIntent(R.id.cal_title, sectionIntent(context, section))
-                        rv.setOnClickPendingIntent(R.id.cal_sub, sectionIntent(context, section))
-                        mgr.updateAppWidget(id, rv)
+                        rv.setOnClickPendingIntent(R.id.widget_root, WidgetData.mainIntent(context))
+                        rv.setOnClickPendingIntent(R.id.cal_title, WidgetData.sectionIntent(context, "challenge"))
+                        rv.setOnClickPendingIntent(R.id.cal_sub, WidgetData.sectionIntent(context, "challenge"))
                     }
-                }
-                GoalsWidgetProvider::class.java -> {
-                    val completed = doc?.goals?.count { it.isCompleted } ?: 0
-                    val total = doc?.goals?.size ?: 0
-                    for (id in ids) {
-                        val rv = RemoteViews(context.packageName, R.layout.widget_goals)
+                    GoalsWidgetProvider::class.java -> {
                         rv.setTextViewText(R.id.goals_title, "GOALS")
-                        rv.setTextViewText(R.id.goals_value, "$completed/$total")
-                        rv.setOnClickPendingIntent(R.id.widget_root, mainIntent(context))
-                        rv.setOnClickPendingIntent(R.id.goals_value, sectionIntent(context, section))
-                        rv.setOnClickPendingIntent(R.id.goals_title, sectionIntent(context, section))
-                        mgr.updateAppWidget(id, rv)
+                        rv.setTextViewText(R.id.goals_value, "$completedGoals/$totalGoals")
+                        rv.setOnClickPendingIntent(R.id.widget_root, WidgetData.mainIntent(context))
+                        rv.setOnClickPendingIntent(R.id.goals_value, WidgetData.sectionIntent(context, "goals"))
+                        rv.setOnClickPendingIntent(R.id.goals_title, WidgetData.sectionIntent(context, "goals"))
                     }
-                }
-                XpWidgetProvider::class.java -> {
-                    val rank = com.example.inscit.xp.Rank.fromXp(stats?.xp ?: 0)
-                    val level = com.example.inscit.xp.XpManager.calculateLevel(stats?.xp ?: 0)
-                    for (id in ids) {
-                        val rv = RemoteViews(context.packageName, R.layout.widget_xp)
+                    XpWidgetProvider::class.java -> {
                         rv.setTextViewText(R.id.rank_value, "${rank.icon} ${rank.label}")
-                        rv.setTextViewText(R.id.xp_value, "XP ${stats?.xp ?: 0}  Lvl $level")
-                        rv.setTextViewText(R.id.last_value, "Last ${(doc?.quizProgress?.lastScore ?: 0f).toInt()}%")
-                        rv.setOnClickPendingIntent(R.id.widget_root, mainIntent(context))
-                        rv.setOnClickPendingIntent(R.id.rank_value, sectionIntent(context, section))
-                        rv.setOnClickPendingIntent(R.id.xp_value, sectionIntent(context, section))
-                        rv.setOnClickPendingIntent(R.id.last_value, sectionIntent(context, section))
-                        mgr.updateAppWidget(id, rv)
+                        rv.setTextViewText(R.id.xp_value, "XP ${stats.xp}  Lvl $level")
+                        rv.setTextViewText(R.id.last_value, "Last $lastScore%")
+                        rv.setOnClickPendingIntent(R.id.widget_root, WidgetData.mainIntent(context))
+                        rv.setOnClickPendingIntent(R.id.rank_value, WidgetData.sectionIntent(context, "xp"))
+                        rv.setOnClickPendingIntent(R.id.xp_value, WidgetData.sectionIntent(context, "xp"))
+                        rv.setOnClickPendingIntent(R.id.last_value, WidgetData.sectionIntent(context, "xp"))
                     }
                 }
+                mgr.updateAppWidget(id, rv)
             }
         }
     }
@@ -116,36 +116,16 @@ class WidgetRefreshReceiver : android.content.BroadcastReceiver() {
         alarm.cancel(pi)
     }
 
-    private fun loadDoc(context: Context): com.example.inscit.models.UserDocument? {
-        return try {
-            val prefs = context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
-            val json = prefs.getString("user_data_json", null) ?: return null
-            com.example.inscit.parseUserDocumentJson(json)
-        } catch (_: Exception) { null }
-    }
-
-    private fun sectionIntent(context: Context, section: String): PendingIntent {
-        val i = Intent(context, MainActivity::class.java).apply {
-            action = "com.example.inscit.WIDGET_SECTION"
-            putExtra("widget_section", section)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        return PendingIntent.getActivity(context, section.hashCode(), i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-    }
-
-    private fun mainIntent(context: Context): PendingIntent {
-        val i = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        return PendingIntent.getActivity(context, 2001, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-    }
-
     companion object {
         fun refreshOnAppOpen(context: Context) {
-            val receiver = WidgetRefreshReceiver()
-            val intent = android.content.Intent(context, WidgetRefreshReceiver::class.java)
-            receiver.onReceive(context, intent)
-            receiver.scheduleRefresh(context)
+            val mgr = AppWidgetManager.getInstance(context)
+            maybeUpdateAll(context, mgr)
+            WidgetRefreshReceiver().scheduleRefresh(context)
+        }
+
+        /** Static entry point used by each provider's onUpdate. */
+        fun maybeUpdateAll(context: Context, mgr: AppWidgetManager) {
+            WidgetRefreshReceiver().maybeUpdateAll(context, mgr)
         }
     }
 }
