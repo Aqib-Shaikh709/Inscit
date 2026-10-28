@@ -57,7 +57,8 @@ class WidgetRefreshReceiver : android.content.BroadcastReceiver() {
                 val rv = RemoteViews(context.packageName, layoutId)
                 when (clazz) {
                     StreakWidgetProvider::class.java -> {
-                        rv.setTextViewText(R.id.streak_value, "🔥 ${stats.currentStreak}")
+                        val streakIcon = if (stats.currentStreak == 0) "❄️" else "🔥"
+                        rv.setTextViewText(R.id.streak_value, "$streakIcon ${stats.currentStreak}")
                         rv.setTextViewText(R.id.streak_label, "STREAK")
                         rv.setOnClickPendingIntent(R.id.widget_root, WidgetData.mainIntent(context))
                         rv.setOnClickPendingIntent(R.id.streak_value, WidgetData.sectionIntent(context, "streak"))

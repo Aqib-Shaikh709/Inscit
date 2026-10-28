@@ -21,8 +21,8 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
             android:text="DAILY CHALLENGE"
-            android:textColor="#00F2FF"
-            android:textSize="18sp"
+            android:textColor="#FFF3E0"
+            android:textSize="16sp"
             android:textStyle="bold"
             android:gravity="center"
             android:contentDescription="Daily challenge heading" />

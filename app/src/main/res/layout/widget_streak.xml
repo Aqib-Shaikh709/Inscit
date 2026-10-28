@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
             android:text="🔥 0"
-            android:textColor="#FFB800"
+            android:textColor="#FFF3E0"
             android:textSize="58sp"
             android:textStyle="bold"
             android:contentDescription="Current streak" />
