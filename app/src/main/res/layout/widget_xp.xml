@@ -19,8 +19,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="🌱 Beginner"
-            android:textColor="#7000FF"
-            android:textSize="28sp"
+            android:textColor="#F8F9FA"
+            android:textSize="36sp"
             android:textStyle="bold"
             android:contentDescription="Current rank" />
 
@@ -31,7 +31,7 @@
             android:layout_marginTop="12dp"
             android:text="XP 0  Lvl 1"
             android:textColor="#F8F9FA"
-            android:textSize="18sp"
+            android:textSize="22sp"
             android:contentDescription="XP and level" />
 
         <TextView
@@ -40,8 +40,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Last 0%"
-            android:textColor="#00F2FF"
-            android:textSize="18sp"
+            android:textColor="#F8F9FA"
+            android:textSize="22sp"
             android:contentDescription="Last quiz score" />
     </LinearLayout>
 </FrameLayout>

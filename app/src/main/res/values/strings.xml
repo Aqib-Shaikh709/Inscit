@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Inscit</string>
-    <string name="widget_streak_label">Inscit Streak</string>
-    <string name="widget_challenge_label">Inscit Challenge</string>
-    <string name="widget_goals_label">Inscit Goals</string>
-    <string name="widget_xp_label">Inscit XP</string>
+    <string name="widget_streak_label">Streak</string>
+    <string name="widget_challenge_label">Challenge</string>
+    <string name="widget_goals_label">Goals</string>
+    <string name="widget_xp_label">XP</string>
 </resources>

@@ -19,8 +19,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="GOALS"
-            android:textColor="#7000FF"
-            android:textSize="20sp"
+            android:textColor="#F8F9FA"
+            android:textSize="24sp"
             android:textStyle="bold"
             android:contentDescription="Goals label" />
 
@@ -28,10 +28,10 @@
             android:id="@+id/goals_value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="16dp"
             android:text="0/0"
             android:textColor="#F8F9FA"
-            android:textSize="44sp"
+            android:textSize="56sp"
             android:textStyle="bold"
             android:contentDescription="Goals progress" />
     </LinearLayout>

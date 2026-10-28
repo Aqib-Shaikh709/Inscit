@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:text="STREAK"
             android:textColor="#F8F9FA"
-            android:textSize="20sp"
+            android:textSize="24sp"
             android:textStyle="bold"
             android:contentDescription="Streak label" />
 
@@ -28,10 +28,10 @@
             android:id="@+id/streak_value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="14dp"
             android:text="🔥 0"
             android:textColor="#39FF14"
-            android:textSize="56sp"
+            android:textSize="64sp"
             android:textStyle="bold"
             android:contentDescription="Current streak" />
     </LinearLayout>
