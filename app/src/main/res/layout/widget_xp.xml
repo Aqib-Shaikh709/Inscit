@@ -19,8 +19,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="🌱 Beginner"
-            android:textColor="#F8F9FA"
-            android:textSize="36sp"
+            android:textColor="#FFB800"
+            android:textSize="32sp"
             android:textStyle="bold"
             android:contentDescription="Current rank" />
 
@@ -28,20 +28,20 @@
             android:id="@+id/xp_value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="14dp"
             android:text="XP 0  Lvl 1"
             android:textColor="#F8F9FA"
-            android:textSize="22sp"
+            android:textSize="20sp"
             android:contentDescription="XP and level" />
 
         <TextView
             android:id="@+id/last_value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
             android:text="Last 0%"
             android:textColor="#F8F9FA"
-            android:textSize="22sp"
+            android:textSize="20sp"
             android:contentDescription="Last quiz score" />
     </LinearLayout>
 </FrameLayout>
