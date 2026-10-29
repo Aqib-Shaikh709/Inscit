@@ -4,22 +4,17 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import com.example.inscit.MainActivity
+import com.example.inscit.data.repository.UserRepository
+import com.example.inscit.data.repository.UserRepositoryImpl
 import com.example.inscit.models.UserDocument
-import com.example.inscit.parseUserDocumentJson
 
 object WidgetData {
     private const val PREFS = "widget_prefs"
     private const val HASH_KEY = "widget_data_hash"
 
-    fun loadDoc(context: Context): UserDocument? {
-        return try {
-            val prefs = context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
-            val json = prefs.getString("user_data_json", null) ?: return null
-            parseUserDocumentJson(json)
-        } catch (_: Exception) {
-            null
-        }
-    }
+    private fun repository(context: Context): UserRepository = UserRepositoryImpl(context.applicationContext)
+
+    fun loadDoc(context: Context): UserDocument? = repository(context).getDocument()
 
     /** Hash of every field the widgets render. Returns null if no data. */
     fun computeHash(doc: UserDocument): String {

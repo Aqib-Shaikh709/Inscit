@@ -39,7 +39,8 @@ object DailyFacts {
         "The observable universe is about 93 billion light-years in diameter.",
         "The visuals of the Gargantua in the movie 'Interstellar' were calculated by physicists and not drawn.",
         "Chess has more board combinations than there are atoms in the observable universe.",
-        "Chess was initially a game for 4 players rather than 2."
+        "Chess was initially a game for 4 players rather than 2.",
+        "The saturn would float in water if there was a bath tub big enough."
     )
 
     val hindiFacts: List<String> = listOf(
