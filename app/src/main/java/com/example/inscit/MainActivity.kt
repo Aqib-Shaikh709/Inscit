@@ -3056,7 +3056,8 @@ fun ModernHome(
                     iconEmoji = "⭐",
                     iconColor = WarmAmber,
                     accent = WarmAmber,
-                    onClick = onXpClick
+                    onClick = onXpClick,
+                    modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     label = if (lang == Lang.EN) "STREAK" else "स्ट्रेक",
@@ -3064,7 +3065,8 @@ fun ModernHome(
                     iconEmoji = "🔥",
                     iconColor = WarmGold,
                     accent = WarmGold,
-                    onClick = onXpClick
+                    onClick = onXpClick,
+                    modifier = Modifier.weight(1f)
                 )
             }
 
@@ -3104,13 +3106,13 @@ private fun StatCard(
     iconEmoji: String,
     iconColor: Color,
     accent: Color,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .weight(1f)
             .height(80.dp),
         shape = RoundedCornerShape(20.dp),
         color = WarmSurface,
