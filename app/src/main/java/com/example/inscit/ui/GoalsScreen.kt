@@ -31,7 +31,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inscit.CardBg
-import com.example.inscit.DeepSpace
 import com.example.inscit.GhostWhite
 import com.example.inscit.goals.GoalManager
 import com.example.inscit.goals.GoalScheduler
@@ -41,9 +40,20 @@ import com.example.inscit.models.UserDocument
 import com.example.inscit.models.UserGoal
 import com.example.inscit.notifications.NotificationHelper
 import com.example.inscit.triggerVibration
+import com.example.inscit.ui.theme.DeepWarmSpace
+import com.example.inscit.ui.theme.WarmAmber
+import com.example.inscit.ui.theme.WarmCream
+import com.example.inscit.ui.theme.WarmGhostWhite
+import com.example.inscit.ui.theme.WarmGold
+import com.example.inscit.ui.theme.WarmMuted
+import com.example.inscit.ui.theme.WarmOrange
+import com.example.inscit.ui.theme.WarmSurface
+import com.example.inscit.ui.theme.WarmSurface2
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
+
+import androidx.compose.ui.graphics.graphicsLayer
 
 private val BioGreen = Color(0xFF39FF14)
 
@@ -206,7 +216,7 @@ fun GoalsScreen(
                     },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepSpace)
+                    colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = DeepWarmSpace)
                 ) {
                     Text(if (lang == Lang.EN) "CREATE GOAL" else "लक्ष्य बनाएं", fontWeight = FontWeight.ExtraBold)
                 }
@@ -436,21 +446,34 @@ private fun GoalCard(
     onDelete: () -> Unit
 ) {
     val progress = if (goal.targetValue > 0) min(1f, goal.currentValue.toFloat() / goal.targetValue) else 0f
+    val isCompleted = progress >= 1f
+
+    val confetti by animateFloatAsState(
+        targetValue = if (isCompleted) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(600),
+        label = "confetti"
+    )
+
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (isCompleted) Modifier.graphicsLayer(scaleX = 1f + confetti * 0.02f, scaleY = 1f + confetti * 0.02f) else Modifier),
         shape = RoundedCornerShape(16.dp),
-        color = CardBg,
-        border = BorderStroke(1.dp, accent.copy(alpha = 0.2f))
+        color = if (isCompleted) WarmGold.copy(alpha = 0.08f) else WarmSurface,
+        border = BorderStroke(1.dp, if (isCompleted) WarmGold else accent.copy(alpha = 0.2f))
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(if (goal.type == GoalType.XP) "⚡" else "🎯", fontSize = 18.sp)
+                Text(
+                    if (goal.type == GoalType.XP) "⚡" else "🎯",
+                    fontSize = 18.sp
+                )
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
                         goal.title.uppercase(),
                         fontWeight = FontWeight.Black,
-                        color = GhostWhite,
+                        color = if (isCompleted) WarmGold else WarmGhostWhite,
                         fontSize = 13.sp
                     )
                     Text(
@@ -459,7 +482,7 @@ private fun GoalCard(
                         } else {
                             if (lang == Lang.EN) "QUIZ GOAL • MIN ${goal.scoreThreshold}%" else "क्विज़ लक्ष्य • न्यूनतम ${goal.scoreThreshold}%"
                         },
-                        color = accent,
+                        color = if (isCompleted) WarmGold else accent,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -467,7 +490,7 @@ private fun GoalCard(
                 Text(
                     "${goal.currentValue} / ${goal.targetValue}",
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (progress >= 1f) BioGreen else accent,
+                    color = if (isCompleted) WarmGold else if (progress >= 1f) BioGreen else accent,
                     fontSize = 13.sp
                 )
                 Spacer(Modifier.width(8.dp))
@@ -479,7 +502,7 @@ private fun GoalCard(
                     Text(
                         "✕",
                         modifier = Modifier.padding(6.dp),
-                        color = GhostWhite.copy(alpha = 0.5f),
+                        color = WarmMuted.copy(alpha = 0.5f),
                         fontSize = 14.sp
                     )
                 }
@@ -491,7 +514,7 @@ private fun GoalCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
-                    .background(accent.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                    .background(WarmMuted.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
             ) {
                 Box(
                     modifier = Modifier
@@ -499,7 +522,7 @@ private fun GoalCard(
                         .height(8.dp)
                         .background(
                             Brush.horizontalGradient(
-                                listOf(accent.copy(alpha = 0.5f), accent)
+                                listOf(accent.copy(alpha = 0.5f), if (isCompleted) WarmGold else accent)
                             ),
                             RoundedCornerShape(4.dp)
                         )
@@ -517,9 +540,20 @@ private fun GoalCard(
                     }
                 },
                 fontSize = 10.sp,
-                color = GhostWhite.copy(alpha = 0.5f),
+                color = WarmMuted.copy(alpha = 0.6f),
                 fontWeight = FontWeight.Bold
             )
+
+            if (isCompleted) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    if (lang == Lang.EN) "🏆 GOAL COMPLETED!" else "🏆 लक्ष्य पूर्ण!",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    color = WarmGold,
+                    letterSpacing = 1.sp
+                )
+            }
         }
     }
 }
@@ -529,8 +563,8 @@ private fun CompletedGoalCard(goal: UserGoal, accent: Color, lang: Lang) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = accent.copy(alpha = 0.08f),
-        border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
+        color = WarmGold.copy(alpha = 0.1f),
+        border = BorderStroke(1.dp, WarmGold.copy(alpha = 0.4f))
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("🏆", fontSize = 20.sp)
@@ -539,17 +573,17 @@ private fun CompletedGoalCard(goal: UserGoal, accent: Color, lang: Lang) {
                 Text(
                     goal.title.uppercase(),
                     fontWeight = FontWeight.Black,
-                    color = accent,
+                    color = WarmGold,
                     fontSize = 13.sp
                 )
                 Text(
                     if (lang == Lang.EN) "COMPLETED • ${goal.targetValue} REACHED" else "पूर्ण • ${goal.targetValue} प्राप्त",
                     fontSize = 10.sp,
-                    color = GhostWhite.copy(alpha = 0.5f),
+                    color = WarmMuted,
                     fontWeight = FontWeight.Bold
                 )
             }
-            Text("✓", color = accent, fontSize = 18.sp, fontWeight = FontWeight.Black)
+            Text("✓", color = WarmGold, fontSize = 18.sp, fontWeight = FontWeight.Black)
         }
     }
 }

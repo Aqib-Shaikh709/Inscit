@@ -30,6 +30,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
@@ -188,6 +189,11 @@ import com.example.inscit.ui.YouTubeIcon
 import com.example.inscit.ui.WebIcon
 import com.example.inscit.ui.ReviewScreen
 import com.example.inscit.ui.theme.spacing
+import com.example.inscit.ui.theme.WarmAmber
+import com.example.inscit.ui.theme.WarmGhostWhite
+import com.example.inscit.ui.theme.WarmGold
+import com.example.inscit.ui.theme.WarmSurface
+import com.example.inscit.ui.theme.WarmSurface2
 import com.example.inscit.xp.Rank
 import com.example.inscit.xp.StreakManager
 import com.example.inscit.xp.StreakTracker
@@ -961,6 +967,8 @@ fun AppEngine(tts: TTSManager) {
                                 txtCol = textColor,
                                 accent = primaryAccent,
                                 totalXp = userDocument.stats.xp,
+                                currentStreak = userDocument.stats.currentStreak,
+                                lastQuizScore = userDocument.quizProgress.lastScore,
                                 userName = userDocument.profile.name,
                                 photoUrl = userDocument.profile.photoUrl?.let { Uri.parse(it) },
                                 onLangChange = { newLang ->
@@ -2967,6 +2975,8 @@ fun ModernHome(
     txtCol: Color,
     accent: Color,
     totalXp: Int,
+    currentStreak: Int,
+    lastQuizScore: Float,
     userName: String,
     photoUrl: Uri?,
     onLangChange: (Lang) -> Unit,
@@ -2977,6 +2987,18 @@ fun ModernHome(
     onXpClick: () -> Unit,
     onMenuClick: () -> Unit
 ) {
+    // Animated stat counters
+    val xpShown by animateIntAsState(
+        targetValue = totalXp,
+        animationSpec = tween(1000),
+        label = "xpCounter"
+    )
+    val streakShown by animateIntAsState(
+        targetValue = currentStreak,
+        animationSpec = tween(1000),
+        label = "streakCounter"
+    )
+
     // rewritten without BoxWithConstraints: tablet breakpoint via LocalConfiguration
     val screenW = LocalConfiguration.current.screenWidthDp.dp
     val hPad = if (screenW > 600.dp) 48.dp else 24.dp
@@ -2992,13 +3014,13 @@ fun ModernHome(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 PressableIconButton(onClick = onMenuClick) {
-                    MenuIcon(color = txtCol)
+                    MenuIcon(color = WarmGhostWhite)
                 }
                 Surface(
                     onClick = onProfile,
                     modifier = Modifier.size(50.dp),
                     shape = CircleShape,
-                    color = CardBg,
+                    color = WarmSurface,
                     border = BorderStroke(1.dp, accent.copy(alpha = 0.5f))
                 ) {
                     ProfileImage(
@@ -3017,68 +3039,50 @@ fun ModernHome(
             ) {
                 Text(
                     if (lang == Lang.EN) "Hello, $userName" else "नमस्ते, $userName",
-                    color = GhostWhite,
-                    fontSize = 24.sp,
+                    color = WarmGhostWhite,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp
+                    letterSpacing = 0.5.sp
                 )
             }
 
             Spacer(Modifier.height(12.dp))
 
-            // Stats Overview - Slimmer version
-            Surface(
-                onClick = onXpClick,
-                modifier = Modifier.fillMaxWidth().height(80.dp),
-                shape = RoundedCornerShape(20.dp),
-                color = CardBg,
-                border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            if (lang == Lang.EN) "CURRENT XP" else "कुल XP",
-                            fontSize = 9.sp,
-                            color = accent,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        )
-                        Text(
-                            totalXp.toString(),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Black,
-                            color = GhostWhite
-                        )
-                    }
-                    Box(
-                        modifier = Modifier.size(44.dp).clip(CircleShape)
-                            .background(accent.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        StarIcon(accent, Modifier.size(24.dp))
-                    }
-                }
+            // Stats row - XP and Streak side by side
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatCard(
+                    label = if (lang == Lang.EN) "CURRENT XP" else "कुल XP",
+                    value = xpShown.toString(),
+                    iconEmoji = "⭐",
+                    iconColor = WarmAmber,
+                    accent = WarmAmber,
+                    onClick = onXpClick
+                )
+                StatCard(
+                    label = if (lang == Lang.EN) "STREAK" else "स्ट्रेक",
+                    value = streakShown.toString(),
+                    iconEmoji = "🔥",
+                    iconColor = WarmGold,
+                    accent = WarmGold,
+                    onClick = onXpClick
+                )
             }
 
             Spacer(Modifier.height(32.dp))
 
             // Quick Actions
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                ActionCard(if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें", accent, Modifier.weight(1f), onQuiz)
-                ActionCard(if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स", GhostWhite.copy(alpha = 0.05f), Modifier.weight(1f), onTheme)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ActionCard(if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें", WarmAmber, Modifier.weight(1f), onQuiz)
+                ActionCard(if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स", WarmSurface2.copy(alpha = 0.5f), Modifier.weight(1f), onTheme)
             }
 
             Spacer(Modifier.height(40.dp))
 
             Text(
                 if (lang == Lang.EN) "SCIENCE BRANCHES" else "विज्ञान की शाखाएं",
-                color = accent,
+                color = WarmAmber,
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Black,
                 letterSpacing = 2.sp,
                 modifier = Modifier.align(Alignment.Start)
             )
@@ -3088,6 +3092,61 @@ fun ModernHome(
             Branch.entries.forEach { branch ->
                 BranchCard(branch, lang, accent, onNav)
                 Spacer(Modifier.height(12.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatCard(
+    label: String,
+    value: String,
+    iconEmoji: String,
+    iconColor: Color,
+    accent: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f)
+            .height(80.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = WarmSurface,
+        border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    label,
+                    fontSize = 9.sp,
+                    color = accent,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    value,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Black,
+                    color = WarmGhostWhite
+                )
+            }
+            Box(
+                modifier = Modifier.size(40.dp).clip(CircleShape)
+                    .background(accent.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = iconEmoji,
+                    color = iconColor,
+                    fontSize = 20.sp
+                )
             }
         }
     }
