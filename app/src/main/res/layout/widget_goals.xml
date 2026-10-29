@@ -3,7 +3,7 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#020408"
+    android:background="#0A0B0E"
     android:padding="6dp">
 
     <LinearLayout
@@ -30,10 +30,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="0/0"
-            android:textColor="#F8F9FA"
+            android:textColor="#FFF3E0"
             android:textSize="55sp"
             android:textStyle="bold"
             android:contentDescription="Goals progress" />
     </LinearLayout>
 </FrameLayout>
-

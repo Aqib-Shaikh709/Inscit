@@ -3,7 +3,7 @@
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#020408"
+    android:background="#0A0B0E"
     android:padding="6dp">
 
     <LinearLayout
@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
             android:text="XP 0  Lvl 1"
-            android:textColor="#F8F9FA"
+            android:textColor="#FFF3E0"
             android:textSize="20sp"
             android:contentDescription="XP and level" />
 
@@ -40,9 +40,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="Last 0%"
-            android:textColor="#F8F9FA"
+            android:textColor="#FFF3E0"
             android:textSize="20sp"
             android:contentDescription="Last quiz score" />
     </LinearLayout>
 </FrameLayout>
-

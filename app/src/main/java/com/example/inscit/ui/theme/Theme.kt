@@ -36,30 +36,30 @@ val MaterialTheme.spacing: Spacing
     get() = LocalSpacing.current
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF00F2FF), // Neon Cyan
-    secondary = Color(0xFF7000FF), // Tech Violet
-    tertiary = Color(0xFF39FF14), // Bio Lime
-    background = Color(0xFF020408), // Deep Space
+    primary = Color(0xFFFFA726), // Warm Amber
+    secondary = Color(0xFFEF6C00), // Warm Orange
+    tertiary = Color(0xFFFFE082), // Warm Cream
+    background = Color(0xFF0A0B0E), // Deep Warm Space
     surface = Color(0xFF1A1C1E), // Card Bg
-    onPrimary = Color(0xFF020408),
+    onPrimary = Color(0xFF0A0B0E),
     onSecondary = Color.White,
-    onTertiary = Color(0xFF020408),
-    onBackground = Color(0xFFF8F9FA), // Ghost White
-    onSurface = Color(0xFFF8F9FA),
-    error = Color(0xFFFF003C) // Power Red
+    onTertiary = Color(0xFF0A0B0E),
+    onBackground = Color(0xFFF5F5F5), // Warm Ghost White
+    onSurface = Color(0xFFF5F5F5),
+    error = Color(0xFFFF8A65) // Warm Coral
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF007880),
-    secondary = Color(0xFF5200BA),
-    tertiary = Color(0xFF24A30D),
-    background = Color(0xFFFDFDFD), // Noble Light Bg
-    surface = Color(0xFFF5F5F5),
+    primary = Color(0xFFF57C00), // Warm Orange
+    secondary = Color(0xFFE65100), // Deep Warm Orange
+    tertiary = Color(0xFFFFF3E0), // Warm Cream Light
+    background = Color(0xFFFFF8F1), // Warm Off White
+    surface = Color(0xFFFFF3E0),
     onPrimary = Color.White,
     onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1A1A1A),
-    onSurface = Color(0xFF1A1A1A)
+    onTertiary = Color(0xFF3E2723),
+    onBackground = Color(0xFF3E2723),
+    onSurface = Color(0xFF3E2723)
 )
 
 @Composable

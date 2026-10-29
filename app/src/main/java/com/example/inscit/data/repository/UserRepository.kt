@@ -2,6 +2,7 @@ package com.example.inscit.data.repository
 
 import android.content.Context
 import com.example.inscit.models.UserDocument
+import com.example.inscit.widget.WidgetRefreshManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -41,6 +42,8 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
         try {
             val json = com.example.inscit.serializeUserDocumentJson(doc)
             prefs().edit().putString(KEY_JSON, json).apply()
+            // Interconnect all widgets: refresh immediately when data changes
+            WidgetRefreshManager.refreshAllWidgets(context)
         } catch (_: Exception) {}
     }
 
