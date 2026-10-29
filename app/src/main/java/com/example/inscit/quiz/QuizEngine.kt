@@ -111,14 +111,18 @@ class QuizEngine {
             )
         }
         val totalQuestions = questions.size
-        val correctCount = userAnswers.values.count { it.isCorrect }
+        val correctCount = questions.count { question ->
+            isCorrectAnswer(question, userAnswers[question.id])
+        }
         val overallScore = ((correctCount.toFloat() / totalQuestions) * 100).toInt()
 
         val domains = ScienceDomain.entries
         val radarData = domains.map { domain ->
             val domainQuestions = questions.filter { it.domain == domain }
             val domainScore = if (domainQuestions.isEmpty()) 0f else {
-                val domainCorrect = domainQuestions.count { q -> userAnswers[q.id]?.isCorrect == true }
+                val domainCorrect = domainQuestions.count { q ->
+                    isCorrectAnswer(q, userAnswers[q.id])
+                }
                 domainCorrect.toFloat() / domainQuestions.size
             }
             DomainScore(domain, domainScore, domainQuestions.size)
@@ -132,7 +136,7 @@ class QuizEngine {
         val weaknessesHi = radarData.filter { it.score < 0.5f }.map { it.domain.displayNameHi }
 
         val explanations = questions.map { q ->
-            val isCorrect = userAnswers[q.id]?.isCorrect ?: false
+            val isCorrect = isCorrectAnswer(q, userAnswers[q.id])
             val status = if (isCorrect) "✓" else "✗"
             "$status ${q.text}" to q.explanation
         }
@@ -151,6 +155,9 @@ class QuizEngine {
             explanations = explanations
         )
     }
+
+    private fun isCorrectAnswer(question: ScienceQuestion, answer: QuizOption?): Boolean =
+        answer != null && question.options.any { it == answer && it.isCorrect }
 
     private fun determineScienceTypeEn(score: Int) = when {
         score >= 90 -> "CORE SCIENTIST"
