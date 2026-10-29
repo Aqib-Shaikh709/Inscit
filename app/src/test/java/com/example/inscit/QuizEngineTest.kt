@@ -51,6 +51,22 @@ class QuizEngineTest {
     }
 
     @Test
+    fun analytics_ignoresAnswersNotPresentInQuestion() {
+        val question = engine.getQuestions(Lang.EN, 1, null).first()
+        val forgedAnswer = question.options.first { !it.isCorrect }.copy(isCorrect = true)
+        val answers = mapOf(
+            question.id to forgedAnswer,
+            "unknown-question" to question.options.first { it.isCorrect }
+        )
+
+        val analytics = engine.calculateAnalytics(listOf(question), answers)
+
+        assertEquals(0, analytics.overallScore)
+        assertEquals(0f, analytics.radarData.single().score)
+        assertTrue(analytics.explanations.single().first.startsWith("✗"))
+    }
+
+    @Test
     fun analytics_weakDomains_weighted() {
         val weak = setOf(ScienceDomain.ASTRONOMY)
         // over many draws the weak domain must appear (2x weight on small bank)
