@@ -3092,7 +3092,8 @@ fun ModernHome(
             Spacer(Modifier.height(16.dp))
 
             Branch.entries.forEach { branch ->
-                BranchCard(branch, lang, accent, onNav)
+                BranchCard(branch, lang,
+                    accent, onNav)
                 Spacer(Modifier.height(12.dp))
             }
         }

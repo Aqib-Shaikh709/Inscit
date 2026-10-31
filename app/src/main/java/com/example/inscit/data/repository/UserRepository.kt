@@ -1,93 +1,49 @@
 package com.example.inscit.data.repository
 
-import android.content.Context
-import com.example.inscit.models.UserDocument
-import com.example.inscit.widget.WidgetRefreshManager
+import com.example.inscit.domain.model.DomainQuizAttempt
+import com.example.inscit.domain.model.DomainUserProfile
+import com.example.inscit.domain.model.DomainUserStats
+import com.example.inscit.domain.model.DomainUserGoal
+import com.example.inscit.domain.model.DomainVersusMatch
+import com.example.inscit.domain.model.GoalType
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 
-/**
- * Single source of truth for all user data access.
- * Replaces direct SharedPreferences reads scattered across widgets, workers, and UI.
- */
 interface UserRepository {
-    fun getDocument(): UserDocument?
-    fun saveDocument(doc: UserDocument)
-    fun observeDocument(): Flow<UserDocument>
-    fun updateStats(block: (com.example.inscit.models.UserStats) -> com.example.inscit.models.UserStats)
-    fun updateGoals(block: (List<com.example.inscit.models.UserGoal>) -> List<com.example.inscit.models.UserGoal>)
-    fun updateQuizProgress(block: (com.example.inscit.models.QuizProgress) -> com.example.inscit.models.QuizProgress)
-    fun updateChallengeStatus(block: (com.example.inscit.models.DailyChallengeStatus) -> com.example.inscit.models.DailyChallengeStatus)
-    fun updateDailyXp(date: String, xp: Int)
-    fun clear()
-}
+    // Profile
+    suspend fun getProfile(): DomainUserProfile?
+    suspend fun saveProfile(profile: DomainUserProfile)
+    suspend fun updateLoginTime()
 
-class UserRepositoryImpl(private val context: Context) : UserRepository {
-    private val PREFS_NAME = "inscit_prefs"
-    private val KEY_JSON = "user_data_json"
-    private val KEY_LEGACY = "user_data"
+    // Stats
+    suspend fun getStats(): DomainUserStats
+    suspend fun updateStats(stats: DomainUserStats)
+    suspend fun incrementXp(xp: Int)
+    suspend fun updateStreak(score: Float)
 
-    private fun prefs() = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    // Goals
+    suspend fun getGoals(): List<DomainUserGoal>
+    suspend fun saveGoal(goal: DomainUserGoal)
+    suspend fun completeGoal(goalId: String)
+    suspend fun deleteGoal(goalId: String)
 
-    override fun getDocument(): UserDocument? {
-        return try {
-            val json = prefs().getString(KEY_JSON, null)
-                ?: prefs().getString(KEY_LEGACY, null)
-                ?: return null
-            com.example.inscit.parseUserDocumentJson(json)
-        } catch (_: Exception) { null }
-    }
+    // Quiz
+    suspend fun saveQuizAttempt(attempt: DomainQuizAttempt)
+    suspend fun getRecentQuizAttempts(): List<DomainQuizAttempt>
 
-    override fun saveDocument(doc: UserDocument) {
-        try {
-            val json = com.example.inscit.serializeUserDocumentJson(doc)
-            prefs().edit().putString(KEY_JSON, json).apply()
-            // Interconnect all widgets: refresh immediately when data changes
-            WidgetRefreshManager.refreshAllWidgets(context)
-        } catch (_: Exception) {}
-    }
+    // Versus
+    suspend fun saveVersusMatch(match: DomainVersusMatch)
+    suspend fun getRecentVersusMatches(): List<DomainVersusMatch>
 
-    override fun observeDocument(): Flow<UserDocument> = flow {
-        while (true) {
-            val doc = getDocument()
-            if (doc != null) emit(doc)
-            kotlinx.coroutines.delay(2000)
-        }
-    }
+    // Daily XP
+    suspend fun getDailyXp(date: String): Int
+    suspend fun addDailyXp(date: String, xp: Int)
+    suspend fun getTotalDailyXp(): Int
 
-    override fun updateStats(block: (com.example.inscit.models.UserStats) -> com.example.inscit.models.UserStats) {
-        getDocument()?.let { doc ->
-            saveDocument(doc.copy(stats = block(doc.stats)))
-        }
-    }
+    // Rank
+    fun getRank(xp: Int): DomainRank
 
-    override fun updateGoals(block: (List<com.example.inscit.models.UserGoal>) -> List<com.example.inscit.models.UserGoal>) {
-        getDocument()?.let { doc ->
-            saveDocument(doc.copy(goals = block(doc.goals)))
-        }
-    }
-
-    override fun updateQuizProgress(block: (com.example.inscit.models.QuizProgress) -> com.example.inscit.models.QuizProgress) {
-        getDocument()?.let { doc ->
-            saveDocument(doc.copy(quizProgress = block(doc.quizProgress)))
-        }
-    }
-
-    override fun updateChallengeStatus(block: (com.example.inscit.models.DailyChallengeStatus) -> com.example.inscit.models.DailyChallengeStatus) {
-        getDocument()?.let { doc ->
-            saveDocument(doc.copy(dailyChallengeStatus = block(doc.dailyChallengeStatus)))
-        }
-    }
-
-    override fun updateDailyXp(date: String, xp: Int) {
-        getDocument()?.let { doc ->
-            val map = doc.dailyXp.toMutableMap()
-            map[date] = (map[date] ?: 0) + xp
-            saveDocument(doc.copy(dailyXp = map))
-        }
-    }
-
-    override fun clear() {
-        prefs().edit().remove(KEY_JSON).remove(KEY_LEGACY).apply()
-    }
+    // Observables
+    fun observeStats(): Flow<DomainUserStats>
+    fun observeGoals(): Flow<List<DomainUserGoal>>
+    fun observeVersusMatches(): Flow<List<DomainVersusMatch>>
 }
