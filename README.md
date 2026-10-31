@@ -1,5 +1,3 @@
-Here is the updated English version with the landing page URL included instead of direct file download links:
-
 Inscit ⚡
 Privacy-first. Serverless. Built for peak active recall.
 
