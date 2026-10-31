@@ -3054,8 +3054,8 @@ fun ModernHome(
                     label = if (lang == Lang.EN) "CURRENT XP" else "कुल XP",
                     value = xpShown.toString(),
                     iconEmoji = "⭐",
-                    iconColor = WarmAmber,
-                    accent = WarmAmber,
+                    iconColor = accent,
+                    accent = accent,
                     onClick = onXpClick,
                     modifier = Modifier.weight(1f)
                 )
@@ -3063,8 +3063,8 @@ fun ModernHome(
                     label = if (lang == Lang.EN) "STREAK" else "स्ट्रेक",
                     value = streakShown.toString(),
                     iconEmoji = "🔥",
-                    iconColor = WarmGold,
-                    accent = WarmGold,
+                    iconColor = accent,
+                    accent = accent,
                     onClick = onXpClick,
                     modifier = Modifier.weight(1f)
                 )
@@ -3074,7 +3074,7 @@ fun ModernHome(
 
             // Quick Actions
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ActionCard(if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें", WarmAmber, Modifier.weight(1f), onQuiz)
+                ActionCard(if (lang == Lang.EN) "START QUIZ" else "क्विज़ शुरू करें", accent, Modifier.weight(1f), onQuiz)
                 ActionCard(if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स", WarmSurface2.copy(alpha = 0.5f), Modifier.weight(1f), onTheme)
             }
 
@@ -3082,7 +3082,7 @@ fun ModernHome(
 
             Text(
                 if (lang == Lang.EN) "SCIENCE BRANCHES" else "विज्ञान की शाखाएं",
-                color = WarmAmber,
+                color = accent,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 2.sp,
