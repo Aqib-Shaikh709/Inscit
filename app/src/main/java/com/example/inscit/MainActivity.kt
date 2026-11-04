@@ -88,6 +88,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -114,6 +115,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -3110,7 +3112,7 @@ private fun StatCard(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .weight(1f)
+
             .height(80.dp),
         shape = RoundedCornerShape(20.dp),
         color = WarmSurface,
@@ -3376,6 +3378,14 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                         accent = Color(theme.primaryAccent),
                         onDelete = { onDeleteCustom(theme.name) }
                     ) { onToggleCustom(theme.name) }
+                    Spacer(Modifier.height(8.dp))
+                    HexCodeCard(
+                        label = theme.name,
+                        accent = Color(theme.primaryAccent),
+                        onCopy = {},
+                        onShare = {},
+                        onSave = {}
+                    )
                     Spacer(Modifier.height(12.dp))
                 }
             }
@@ -3544,7 +3554,8 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                 Text(
                     label,
                     color = if (isSelected) accent else GhostWhite,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
                 )
                 Spacer(Modifier.weight(1f))
                 if (isSelected) {
@@ -3559,6 +3570,129 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
                             fontSize = 24.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun HexCodeCard(
+        label: String,
+        accent: Color,
+        onCopy: () -> Unit = {},
+        onShare: () -> Unit = {},
+        onSave: () -> Unit = {},
+        showMenu: Boolean = false,
+        onDismissRequest: () -> Unit = {}
+    ) {
+        val context = LocalContext.current
+        val argb = accent.toArgb()
+        val intColor = argb.toInt() and 0xFFFFFF
+        val hexColor = "#${intColor.toString(16).padStart(6, '0').uppercase()}"
+        var menuOpen by remember { mutableStateOf(showMenu) }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { menuOpen = true }
+        ) {
+            // Hex code sub-card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .background(Color.White.copy(alpha = 0.06f), RoundedCornerShape(16.dp))
+                    .border(
+                        BorderStroke(1.dp, accent.copy(alpha = 0.5f)), RoundedCornerShape(16.dp)
+                    )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Color swatch
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(accent)
+                            .border(2.dp, Color.White.copy(alpha = 0.3f))
+                    )
+                    // Hex code text
+                    Column {
+                        Text(
+                            "HEX CODE",
+                            color = GhostWhite.copy(alpha = 0.5f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            hexColor,
+                            color = GhostWhite,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    // 3-dots menu button on right side
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clickable { menuOpen = true }
+                    ) {
+                        MenuIcon(color = GhostWhite)
+                    }
+                }
+            }
+
+            // Dropdown menu overlay (Copy / Share / Save)
+            if (menuOpen) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(12.dp))
+                        .align(Alignment.TopEnd)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        TextButton(
+                            onClick = {
+                                menuOpen = false
+                                onCopy()
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                clipboard.setPrimaryClip(ClipData.newPlainText("hex_color", hexColor))
+                                Toast.makeText(context, "Hex code copied to clipboard", Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Text("Copy", color = GhostWhite)
+                        }
+                        TextButton(
+                            onClick = {
+                                menuOpen = false
+                                onShare()
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, "Inscit Theme: $label\nHex: $hexColor")
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Share theme via..."))
+                            }
+                        ) {
+                            Text("Share", color = GhostWhite)
+                        }
+                        TextButton(
+                            onClick = {
+                                menuOpen = false
+                                onSave()
+                                Toast.makeText(context, "Theme saved to your designs", Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Text("Save", color = accent)
+                        }
                     }
                 }
             }
