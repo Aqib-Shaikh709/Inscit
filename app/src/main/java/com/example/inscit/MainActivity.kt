@@ -14,7 +14,7 @@ import android.provider.MediaStore
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import com.example.inscit.widget.WidgetRefreshManager
+import com.example.inscit.widget.WidgetUpdateCoordinator
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
@@ -589,7 +589,7 @@ class MainActivity : ComponentActivity() {
         checkNotificationPermission()
         NotificationScheduler.scheduleInactivityNotification(this)
         GoalScheduler.scheduleDailyGoalReminder(this)
-        WidgetRefreshManager.refreshAllWidgets(this)
+        WidgetUpdateCoordinator.refreshAll(this)
 
         setContent { AppEngine(ttsManager) }
     }
@@ -831,7 +831,7 @@ fun AppEngine(tts: TTSManager) {
             }
             if (changed) {
                 saveUserDocument(context, userDocument)
-                WidgetRefreshManager.refreshAllWidgets(context)
+                WidgetUpdateCoordinator.refreshAll(context)
             }
         }
     }

@@ -111,8 +111,5 @@
                 android:resource="@xml/widget_xp_info" />
         </receiver>
 
-        <receiver
-            android:name=".widget.WidgetRefreshReceiver"
-            android:exported="false" />
     </application>
 </manifest>
