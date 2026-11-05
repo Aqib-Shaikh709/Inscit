@@ -282,6 +282,7 @@ fun ColorPickerOverlay(
                         },
                         label = { Text("#FF5733") },
                         singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.White),
                         modifier = Modifier.fillMaxWidth()
                     )
                     if (hexError) {
