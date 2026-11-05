@@ -10,7 +10,7 @@ Under the hood, all user data is validated locally using SHA-256 integrity check
 🌐 Live Landing Page & Downloads
 Experience the app, check out live updates, and access the latest testing builds directly through our web interface:
 
-👉 inscit.netlify.app
+👉 https://inscit.netlify.app
 
 📦 Latest Releases
 v1.0.0-beta (Latest Surprise Release) 🚀
