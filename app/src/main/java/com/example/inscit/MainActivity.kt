@@ -3074,7 +3074,7 @@ fun ModernHome(
 
             // Quick Actions
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ActionCard(if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें", WarmAmber, Modifier.weight(1f), onQuiz)
+                ActionCard(if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें", accent, Modifier.weight(1f), onQuiz)
                 ActionCard(if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स", WarmSurface2.copy(alpha = 0.5f), Modifier.weight(1f), onTheme)
             }
 
@@ -3082,7 +3082,7 @@ fun ModernHome(
 
             Text(
                 if (lang == Lang.EN) "SCIENCE BRANCHES" else "विज्ञान की शाखाएं",
-                color = WarmAmber,
+                color = accent,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 2.sp,
