@@ -149,6 +149,13 @@ fun ColorPickerOverlay(
     var accentH by remember { mutableStateOf(0f) }
     var accentS by remember { mutableStateOf(0f) }
     var accentV by remember { mutableStateOf(0f) }
+    var hexInput by remember { mutableStateOf(colorToHex(initialAccent)) }
+    var hexError by remember { mutableStateOf(false) }
+
+    // Derived colors computed from HSV state — must be before LaunchedEffect blocks that reference them
+    val currentAccent = Color(android.graphics.Color.HSVToColor(floatArrayOf(accentH, accentS, accentV)))
+    val currentBg = Color(android.graphics.Color.HSVToColor(floatArrayOf(accentH, accentS.coerceAtMost(0.3f), 0.15f)))
+    val currentTxt = Color.White
 
     LaunchedEffect(initialAccent) {
         val hsv = FloatArray(3)
@@ -158,10 +165,25 @@ fun ColorPickerOverlay(
         accentV = hsv[2]
     }
 
-    // Simplified: Background is derived from accent (darker version) or kept static
-    val currentAccent = Color(android.graphics.Color.HSVToColor(floatArrayOf(accentH, accentS, accentV)))
-    val currentBg = Color(android.graphics.Color.HSVToColor(floatArrayOf(accentH, accentS.coerceAtMost(0.3f), 0.15f)))
-    val currentTxt = Color.White
+    // Keep hex field in sync when user picks color visually
+    LaunchedEffect(accentH, accentS, accentV) {
+        val newHex = colorToHex(currentAccent)
+        if (newHex != hexInput) {
+            hexInput = newHex
+        }
+    }
+
+    // Update color when user types a valid hex code
+    LaunchedEffect(hexInput) {
+        val parsed = hexToColor(hexInput)
+        if (parsed != null && parsed != currentAccent) {
+            val hsv = FloatArray(3)
+            android.graphics.Color.colorToHSV(parsed.toArgb().toInt(), hsv)
+            accentH = hsv[0]
+            accentS = hsv[1]
+            accentV = hsv[2]
+        }
+    }
 
     var showOverwriteDialog by remember { mutableStateOf(false) }
 
@@ -239,6 +261,37 @@ fun ColorPickerOverlay(
                     hue = accentH,
                     onHueChange = { accentH = it }
                 )
+
+                Spacer(Modifier.height(16.dp))
+
+                // Hex code input field beneath the color selection palette
+                Column(Modifier.fillMaxWidth()) {
+                    Text(
+                        if (lang == Lang.EN) "HEX CODE" else "हेक्स कोड",
+                        color = if (hexError) Color.Red else currentAccent,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = hexInput,
+                        onValueChange = { newHex ->
+                            hexInput = newHex
+                            hexError = false
+                        },
+                        label = { Text("#FF5733") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (hexError) {
+                        Text(
+                            if (lang == Lang.EN) "Invalid hex code" else "अमान्य हेक्स कोड",
+                            color = Color.Red,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
 
                 Spacer(Modifier.height(40.dp))
 
@@ -409,5 +462,32 @@ fun ThemeTextField(value: String, onValueChange: (String) -> Unit, label: String
                 .padding(16.dp),
             cursorBrush = Brush.verticalGradient(listOf(accent, accent))
         )
+    }
+}
+
+/**
+ * Converts a [Color] to a hex string like "#FF5733" (RGB only, alpha stripped).
+ */
+private fun colorToHex(color: Color): String {
+    val argb = color.toArgb().toInt() and 0xFFFFFF
+    return "#${argb.toString(16).padStart(6, '0').uppercase()}"
+}
+
+/**
+ * Parses a hex string like "#FF5733" or "FF5733" into a [Color].
+ * Returns null if the string is not a valid 6-digit hex color.
+ */
+private fun hexToColor(hex: String): Color? {
+    return try {
+        val clean = hex.removePrefix("#").trim()
+        if (clean.length != 6) return null
+        // Validate all characters are hex digits
+        clean.toInt(16)
+        val androidColor = android.graphics.Color.parseColor("#$clean")
+        Color(androidColor)
+    } catch (_: NumberFormatException) {
+        null
+    } catch (_: IllegalArgumentException) {
+        null
     }
 }
