@@ -49,6 +49,17 @@ class SprintViewModel(
         // reshuffle-on-exhaust handles the "infinite" feel.
         bank = engine.getQuestions(lang, 1000, null, emptySet(), context)
         if (bank.isEmpty()) bank = engine.getQuestions(lang, 1000, null)
+        if (bank.isEmpty()) {
+            _uiState.value = SprintUiState.Finished(
+                SprintAnalytics(
+                    attempted = 0, correct = 0, wrong = 0, overallScore = 0,
+                    radarData = emptyList(), strengthsEn = emptyList(),
+                    strengthsHi = emptyList(), weaknessesEn = emptyList(),
+                    weaknessesHi = emptyList(), explanations = emptyList()
+                )
+            )
+            return
+        }
         viewModelScope.launch {
             _uiState.value = SprintUiState.Running(
                 currentQuestion = bank.first(),
