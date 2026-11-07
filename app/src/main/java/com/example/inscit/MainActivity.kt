@@ -807,13 +807,17 @@ fun AppEngine(tts: TTSManager) {
 
     // Combined: track usage time while foreground + debounced persistence.
     // Single coroutine avoids read-modify-write races between two writers.
+    // Saves at most once every 30 seconds; widgets refresh only on meaningful
+    // data changes (XP, streak, goals), not on usage-time ticks.
     var isForeground by remember { mutableStateOf(true) }
     var usageSeconds by remember { mutableIntStateOf(0) }
     var lastSavedDocument by remember { mutableStateOf<UserDocument?>(null) }
+    var lastSaveTime by remember { mutableStateOf(0L) }
     LaunchedEffect(Unit) {
         while (isActive) {
             kotlinx.coroutines.delay(1000)
-            var changed = false
+            var usageChanged = false
+            var dataChanged = false
             if (isForeground && currentScreen != Screen.SPLASH) {
                 usageSeconds++
                 if (usageSeconds % 60 == 0) {
@@ -822,15 +826,21 @@ fun AppEngine(tts: TTSManager) {
                             totalUsageTime = userDocument.stats.totalUsageTime + 60000
                         )
                     )
-                    changed = true
+                    usageChanged = true
                 }
             }
             if (userDocument != lastSavedDocument) {
-                changed = true
+                dataChanged = true
                 lastSavedDocument = userDocument
             }
-            if (changed) {
+            val now = System.currentTimeMillis()
+            // Persist at most once every 30 seconds
+            if ((usageChanged || dataChanged) && now - lastSaveTime >= 30_000) {
                 saveUserDocument(context, userDocument)
+                lastSaveTime = now
+            }
+            // Refresh widgets only on meaningful data changes, not usage time
+            if (dataChanged) {
                 WidgetUpdateCoordinator.refreshAll(context)
             }
         }
