@@ -353,20 +353,24 @@ fun saveProfileImageLocally(context: Context, uri: Uri): String? {
             android.graphics.BitmapFactory.decodeStream(it, null, opts)
         } ?: return null
         val scale = minOf(512f / decoded.width, 512f / decoded.height, 1f)
-        val sized = if (scale < 1f) {
+        val scaled = if (scale < 1f) {
             android.graphics.Bitmap.createScaledBitmap(
                 decoded, (decoded.width * scale).toInt(), (decoded.height * scale).toInt(), true
-            ).also { if (it != decoded) decoded.recycle() }
+            )
         } else decoded
+        val sized = scaled ?: decoded
+        if (scaled != null && scaled != decoded) decoded.recycle()
         FileOutputStream(File(context.filesDir, "profile_pic.jpg")).use {
             sized.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, it)
         }
         val thumbScale = minOf(128f / sized.width, 128f / sized.height, 1f)
-        val thumb = if (thumbScale < 1f) {
+        val thumbScaled = if (thumbScale < 1f) {
             android.graphics.Bitmap.createScaledBitmap(
                 sized, (sized.width * thumbScale).toInt(), (sized.height * thumbScale).toInt(), true
             )
         } else sized
+        val thumb = thumbScaled ?: sized
+        if (thumbScaled != null && thumbScaled != sized) sized.recycle()
         try {
             FileOutputStream(File(context.filesDir, "profile_pic_thumb.jpg")).use {
                 thumb.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, it)
