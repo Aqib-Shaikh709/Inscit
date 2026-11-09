@@ -6,6 +6,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -34,45 +35,32 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import com.example.inscit.ui.theme.MetalChrome
 import com.example.inscit.ui.theme.MetalEdge
+import com.example.inscit.ui.theme.MetalLight
+import com.example.inscit.ui.theme.MetalMid
+import com.example.inscit.ui.theme.MetalShine
+import com.example.inscit.ui.theme.MetalShineMid
+import com.example.inscit.ui.theme.MetalShineSoft
 import com.example.inscit.ui.theme.WarmAmber
+import com.example.inscit.ui.theme.WarmGhostWhite
 
-// Micro-interaction language, matched to MotionKit: an obvious-but-minimal dip on
-// press with a soft spring back (gentle overshoot = bounce feel, no slideshow).
-// Drop-in replacements forward their own press InteractionSource, so ripples keep
-// working and clicks are untouched.
-private enum class PressDepth(val scale: Float) { BUTTON(0.93f), ICON(0.85f), CARD(0.95f) }
+// ════════════════════════════════════════════════════════════════════════════════
+//  METALLIC GRADIENT BRUSHES
+// ════════════════════════════════════════════════════════════════════════════════
 
-@Composable
-private fun pressScale(source: MutableInteractionSource, depth: PressDepth): Modifier {
-    val pressed by source.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) depth.scale else 1f,
-        animationSpec = spring(dampingRatio = 0.55f, stiffness = 500f),
-        label = "pressScale"
-    )
-    return Modifier.graphicsLayer(scaleX = scale, scaleY = scale)
-}
-
-/**
- * Metallic gradient brush used for button backgrounds.
- * Simulates brushed metal: dark edges, bright center highlight.
- */
 private val metallicGradient = Brush.linearGradient(
     colors = listOf(
-        Color(0xFF1C1C1E), // dark left edge
-        Color(0xFF2A2A2E), // mid left
-        Color(0xFF3A3A42), // center highlight
-        Color(0xFF2A2A2E), // mid right
-        Color(0xFF1C1C1E)  // dark right edge
+        Color(0xFF1C1C1E),
+        Color(0xFF2A2A2E),
+        Color(0xFF3A3A42),
+        Color(0xFF2A2A2E),
+        Color(0xFF1C1C1E)
     ),
     start = Offset(0f, 0f),
     end = Offset(1f, 0f)
 )
 
-/**
- * Metallic border gradient for outlined buttons.
- */
 private val metallicBorderGradient = Brush.linearGradient(
     colors = listOf(
         Color(0xFF4A4A50),
@@ -85,25 +73,37 @@ private val metallicBorderGradient = Brush.linearGradient(
     end = Offset(1f, 0f)
 )
 
-/**
- * Shine overlay brush: diagonal white-transparent gradient that gives the metal
- * a "shine" — simulated light glancing off the surface.
- */
 private val shineGradient = Brush.linearGradient(
     colors = listOf(
-        Color(0x00FFFFFF), // transparent
-        Color(0x22FFFFFF), // subtle shine
-        Color(0x00FFFFFF)  // transparent
+        Color(0x00FFFFFF),
+        Color(0x22FFFFFF),
+        Color(0x00FFFFFF)
     ),
     start = Offset(-0.3f, -0.3f),
     end = Offset(0.7f, 0.7f)
 )
 
-/**
- * Metallic button: brushed-metal gradient background + diagonal shine overlay.
- * The metal gradient and shine sit behind a transparent Material Button so the
- * content lambda keeps its RowScope receiver.
- */
+// ════════════════════════════════════════════════════════════════════════════════
+//  PRESS SCALE ANIMATION
+// ════════════════════════════════════════════════════════════════════════════════
+
+private enum class PressDepth(val scale: Float) { BUTTON(0.94f), ICON(0.88f), CARD(0.96f) }
+
+@Composable
+private fun pressScale(source: MutableInteractionSource, depth: PressDepth): Modifier {
+    val pressed by source.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) depth.scale else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
+        label = "pressScale"
+    )
+    return Modifier.graphicsLayer(scaleX = scale, scaleY = scale)
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+//  METALLIC BUTTONS
+// ════════════════════════════════════════════════════════════════════════════════
+
 @Composable
 fun MetallicButton(
     onClick: () -> Unit,
@@ -118,24 +118,16 @@ fun MetallicButton(
         modifier = modifier.then(pressScale(source, PressDepth.BUTTON)),
         contentAlignment = Alignment.Center
     ) {
-        // Metallic gradient background
+        Box(
+            modifier = Modifier.fillMaxWidth().height(48.dp)
+                .background(metallicGradient).clip(shape)
+        )
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .background(metallicGradient)
-                .clip(shape)
+                .fillMaxWidth().height(48.dp)
+                .background(shineGradient).clip(shape)
+                .alpha(if (pressed) 0.1f else 0.35f)
         )
-        // Shine overlay — subtle diagonal highlight over metal
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .background(shineGradient)
-                .clip(shape)
-                .alpha(if (pressed) 0.15f else 0.3f)
-        )
-        // Transparent button for interaction + content
         Button(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -152,9 +144,6 @@ fun MetallicButton(
     }
 }
 
-/**
- * Metallic outlined button: metallic gradient border + shine, transparent fill.
- */
 @Composable
 fun MetallicOutlinedButton(
     onClick: () -> Unit,
@@ -169,32 +158,23 @@ fun MetallicOutlinedButton(
         modifier = modifier.then(pressScale(source, PressDepth.BUTTON)),
         contentAlignment = Alignment.Center
     ) {
-        // Metallic border gradient fill (subtle)
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .background(metallicBorderGradient)
-                .clip(shape)
+                .fillMaxWidth().height(48.dp)
+                .background(metallicBorderGradient).clip(shape)
                 .alpha(if (pressed) 0.15f else 0f)
         )
-        // Border stroke
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
+                .fillMaxWidth().height(48.dp)
                 .border(BorderStroke(1.5.dp, MetalEdge), shape)
         )
-        // Shine overlay
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .background(shineGradient)
-                .clip(shape)
-                .alpha(if (pressed) 0.1f else 0.25f)
+                .fillMaxWidth().height(48.dp)
+                .background(shineGradient).clip(shape)
+                .alpha(if (pressed) 0.05f else 0.2f)
         )
-        // Transparent outlined button for interaction + content
         OutlinedButton(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -211,9 +191,6 @@ fun MetallicOutlinedButton(
     }
 }
 
-/**
- * Metallic text button: text-only with metallic accent color.
- */
 @Composable
 fun MetallicTextButton(
     onClick: () -> Unit,
@@ -235,6 +212,10 @@ fun MetallicTextButton(
     )
 }
 
+// ════════════════════════════════════════════════════════════════════════════════
+//  PRESSABLE BUTTONS — metallic by default
+// ════════════════════════════════════════════════════════════════════════════════
+
 @Composable
 fun PressableButton(
     onClick: () -> Unit,
@@ -251,22 +232,16 @@ fun PressableButton(
         modifier = modifier.then(pressScale(source, PressDepth.BUTTON)),
         contentAlignment = Alignment.Center
     ) {
-        // Metallic gradient background
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(metallicGradient)
-                .clip(shape)
+            modifier = Modifier.fillMaxWidth()
+                .background(metallicGradient).clip(shape)
         )
-        // Shine overlay
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(shineGradient)
-                .clip(shape)
+                .background(shineGradient).clip(shape)
                 .alpha(if (pressed) 0.15f else 0.3f)
         )
-        // Transparent button for interaction + content
         Button(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth(),
@@ -299,29 +274,23 @@ fun PressableOutlinedButton(
         modifier = modifier.then(pressScale(source, PressDepth.BUTTON)),
         contentAlignment = Alignment.Center
     ) {
-        // Metallic border gradient fill
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(metallicBorderGradient)
-                .clip(shape)
+                .background(metallicBorderGradient).clip(shape)
                 .alpha(if (pressed) 0.15f else 0f)
         )
-        // Border stroke
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .border(border ?: BorderStroke(1.5.dp, MetalEdge), shape)
         )
-        // Shine overlay
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(shineGradient)
-                .clip(shape)
+                .background(shineGradient).clip(shape)
                 .alpha(if (pressed) 0.1f else 0.25f)
         )
-        // Transparent outlined button for interaction + content
         OutlinedButton(
             onClick = onClick,
             modifier = Modifier.fillMaxWidth(),
@@ -350,6 +319,10 @@ fun PressableTextButton(
         onClick = onClick,
         modifier = modifier.then(pressScale(source, PressDepth.BUTTON)),
         enabled = enabled,
+        colors = ButtonDefaults.textButtonColors(
+            containerColor = Color.Transparent,
+            contentColor = WarmAmber
+        ),
         interactionSource = source,
         content = content
     )
@@ -387,9 +360,7 @@ fun PressableCard(
     val source = remember { MutableInteractionSource() }
     Surface(
         onClick = onClick,
-        modifier = modifier
-            .then(pressScale(source, PressDepth.CARD))
-            .clip(shape),
+        modifier = modifier.then(pressScale(source, PressDepth.CARD)).clip(shape),
         enabled = enabled,
         shape = shape,
         color = color,
@@ -399,15 +370,13 @@ fun PressableCard(
     )
 }
 
-// For raw Modifier.clickable sites (profile photo, text links, custom pills):
-// observes the same press source the clickable reports to, so scale and ripple stay in sync.
 @Composable
 fun rememberPressScale(depth: Float = 0.95f): Pair<Modifier, MutableInteractionSource> {
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) depth else 1f,
-        animationSpec = spring(dampingRatio = 0.55f, stiffness = 500f),
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
         label = "pressScaleExt"
     )
     return Modifier.graphicsLayer(scaleX = scale, scaleY = scale) to source
