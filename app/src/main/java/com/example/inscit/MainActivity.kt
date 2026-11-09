@@ -201,16 +201,15 @@ import com.example.inscit.ui.theme.DeepWarmSpace
 import com.example.inscit.ui.theme.AmberGlowBrush
 import com.example.inscit.ui.theme.MetalChrome
 import com.example.inscit.ui.theme.MetalGradientBrush
-import com.example.inscit.ui.theme.QuizButtonGradient
-import com.example.inscit.ui.theme.SettingsButtonGradient
+import com.example.inscit.ui.theme.WarmAmber
 import com.example.inscit.ui.theme.WarmAmberGlow
+import com.example.inscit.ui.theme.WarmCream
 import com.example.inscit.ui.theme.WarmGoldGlow
 import com.example.inscit.ui.theme.MetalGradientVertical
 import com.example.inscit.ui.theme.MetalBevelLight
 import com.example.inscit.ui.theme.MetalBevelDark
 import com.example.inscit.ui.theme.MetalEdge
 import com.example.inscit.ui.theme.MetalRimLight
-import com.example.inscit.ui.theme.WarmAmber
 import com.example.inscit.ui.theme.WarmGhostWhite
 import com.example.inscit.ui.theme.WarmGold
 import com.example.inscit.ui.theme.WarmMuted
@@ -3135,12 +3134,23 @@ fun ModernHome(
             Spacer(Modifier.height(32.dp))
 
             // Quick Actions - shiny gradient buttons (widget-style metal)
+            // Gradient flows from warm brand amber into the app's selected theme accent.
+            val quizBrush = Brush.linearGradient(
+                colors = listOf(WarmAmber, accent, WarmAmber),
+                start = Offset(0f, 0f),
+                end = Offset(1f, 1f)
+            )
+            val settingsBrush = Brush.linearGradient(
+                colors = listOf(WarmCream.copy(alpha = 0.85f), accent, WarmCream.copy(alpha = 0.85f)),
+                start = Offset(0f, 0f),
+                end = Offset(1f, 1f)
+            )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ShinyButton(
                     onClick = onQuiz,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp),
-                    gradientBrush = QuizButtonGradient
+                    shape = RoundedCornerShape(28.dp),
+                    gradientBrush = quizBrush
                 ) {
                     Text(
                         if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें",
@@ -3153,8 +3163,8 @@ fun ModernHome(
                 ShinyButton(
                     onClick = onTheme,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp),
-                    gradientBrush = SettingsButtonGradient
+                    shape = RoundedCornerShape(28.dp),
+                    gradientBrush = settingsBrush
                 ) {
                     Text(
                         if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स",
@@ -3268,48 +3278,48 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
     MetallicCard(
         onClick = { onNav(branch) },
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(30.dp),
+        shape = RoundedCornerShape(24.dp),
         color = WarmSurface2,
-        border = BorderStroke(2.dp, MetalChrome),
+        border = BorderStroke(1.5.dp, MetalChrome),
         shine = true,
         pressDepth = PressDepth.CARD
     ) {
         Row(
-            modifier = Modifier.padding(26.dp),
+            modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon medallion — clean, prominent, foundational
+            // Icon medallion — compact and clean
             Box(
                 modifier = Modifier
-                    .size(72.dp)
+                    .size(58.dp)
                     .clip(CircleShape)
-                    .border(BorderStroke(2.dp, MetalEdge), CircleShape)
+                    .border(BorderStroke(1.5.dp, MetalEdge), CircleShape)
                     .background(accent.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
                 when (branch) {
-                    Branch.PHYSICS -> AtomIcon(accent, Modifier.size(36.dp))
-                    Branch.CHEMISTRY -> FlaskIcon(accent, Modifier.size(36.dp))
-                    Branch.BIOLOGY -> DNAIcon(accent, Modifier.size(36.dp))
+                    Branch.PHYSICS -> AtomIcon(accent, Modifier.size(28.dp))
+                    Branch.CHEMISTRY -> FlaskIcon(accent, Modifier.size(28.dp))
+                    Branch.BIOLOGY -> DNAIcon(accent, Modifier.size(28.dp))
                 }
             }
-            Spacer(Modifier.width(26.dp))
+            Spacer(Modifier.width(20.dp))
             Column {
                 Text(
                     if (lang == Lang.EN) branch.name else when (branch) {
                         Branch.PHYSICS -> "भौतिकी"
                         Branch.CHEMISTRY -> "रसायन विज्ञान"
                         Branch.BIOLOGY -> "जीव विज्ञान"
-                    }, fontWeight = FontWeight.Black, color = WarmGhostWhite, fontSize = 22.sp,
+                    }, fontWeight = FontWeight.Black, color = WarmGhostWhite, fontSize = 18.sp,
                     letterSpacing = 0.2.sp
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(6.dp))
                 Text(
                     if (lang == Lang.EN) "FOUNDATION MODULE" else "आधार मॉड्यूल",
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     color = accent.copy(alpha = 0.9f),
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 1.8.sp
+                    letterSpacing = 1.6.sp
                 )
             }
             Spacer(Modifier.weight(1f))

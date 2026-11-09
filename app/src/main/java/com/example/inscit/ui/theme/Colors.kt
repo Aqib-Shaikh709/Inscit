@@ -124,28 +124,6 @@ val AmberGlowBrush = Brush.linearGradient(
     end = Offset(1f, 1f)
 )
 
-// Quiz button gradient — warm amber to orange, complementary to metallic base
-val QuizButtonGradient = Brush.linearGradient(
-    colors = listOf(
-        WarmAmber,
-        Color(0xFFF57C00),
-        WarmOrange
-    ),
-    start = Offset(0f, 0f),
-    end = Offset(1f, 1f)
-)
-
-// Settings button gradient — warm cream to amber, complementary to metallic base
-val SettingsButtonGradient = Brush.linearGradient(
-    colors = listOf(
-        WarmCream,
-        Color(0xFFFFA726),
-        Color(0xFFFB8C00)
-    ),
-    start = Offset(0f, 0f),
-    end = Offset(1f, 1f)
-)
-
 // Convenience: semi-transparent metal surface tints
 val MetalSurfaceTint = Color(0x20FFFFFF)   // faint gloss over metal
 val MetalShadowTint  = Color(0x33000000)   // deep shadow under raised metal
