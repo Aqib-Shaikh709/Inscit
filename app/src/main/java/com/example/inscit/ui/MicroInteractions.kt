@@ -1,8 +1,13 @@
 package com.example.inscit.ui
 
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -29,25 +35,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.inscit.ui.theme.MetalChrome
-import com.example.inscit.ui.theme.MetalEdge
-import com.example.inscit.ui.theme.MetalLight
-import com.example.inscit.ui.theme.MetalMid
-import com.example.inscit.ui.theme.MetalShine
-import com.example.inscit.ui.theme.MetalShineMid
-import com.example.inscit.ui.theme.MetalShineSoft
+import com.example.inscit.ui.theme.*
 import com.example.inscit.ui.theme.WarmAmber
 import com.example.inscit.ui.theme.WarmGhostWhite
 
-// ════════════════════════════════════════════════════════════════════════════════
-//  METALLIC GRADIENT BRUSHES
-// ════════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════════
+//  METALLIC GRADIENT BRUSHES (from Colors.kt)
+// ═════════════════════════════════════════════════════════════════════════════════
 
 private val metallicGradient = Brush.linearGradient(
     colors = listOf(
@@ -83,11 +86,11 @@ private val shineGradient = Brush.linearGradient(
     end = Offset(0.7f, 0.7f)
 )
 
-// ════════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════════
 //  PRESS SCALE ANIMATION
-// ════════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════════
 
-private enum class PressDepth(val scale: Float) { BUTTON(0.94f), ICON(0.88f), CARD(0.96f) }
+enum class PressDepth(val scale: Float) { BUTTON(0.94f), ICON(0.88f), CARD(0.96f) }
 
 @Composable
 private fun pressScale(source: MutableInteractionSource, depth: PressDepth): Modifier {
@@ -100,9 +103,148 @@ private fun pressScale(source: MutableInteractionSource, depth: PressDepth): Mod
     return Modifier.graphicsLayer(scaleX = scale, scaleY = scale)
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════════
+//  METALLIC BEVEL — raised-metal edge (top-left light, bottom-right dark)
+// ═════════════════════════════════════════════════════════════════════════════════
+
+private fun DrawScope.bevelBorder(
+    width: Dp = 1.dp,
+    light: Color = MetalBevelLight,
+    dark: Color = MetalBevelDark,
+    shape: Shape = androidx.compose.ui.graphics.RectangleShape
+) {
+    val w = width.toPx()
+    // top-left light rim
+    drawLine(light, Offset(0f, 0f), Offset(size.width, 0f), strokeWidth = w)
+    drawLine(light, Offset(0f, 0f), Offset(0f, size.height), strokeWidth = w)
+    // bottom-right dark rim
+    drawLine(dark, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = w)
+    drawLine(dark, Offset(size.width, 0f), Offset(size.width, size.height), strokeWidth = w)
+}
+
+// ═════════════════════════════════════════════════════════════════════════════════
+//  SHINE SWEEP — animated glancing light across a surface
+// ═════════════════════════════════════════════════════════════════════════════════
+
+@Composable
+fun ShineSweep(
+    modifier: Modifier = Modifier,
+    intensity: Float = 0.35f,
+    durationMs: Long = 3000,
+    clip: Shape = androidx.compose.ui.graphics.RectangleShape
+) {
+    val transition = rememberInfiniteTransition(label = "shineSweep")
+    val anim by transition.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            tween(durationMillis = durationMs.toInt(), easing = LinearEasing),
+            RepeatMode.Restart
+        ),
+        label = "shine"
+    )
+    Box(
+        modifier = modifier
+            .clip(clip)
+            .drawBehind {
+                val brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0x00FFFFFF),
+                        Color(0xFFFFFFFF).copy(alpha = intensity),
+                        Color(0x00FFFFFF)
+                    ),
+                    start = Offset(anim - 1f, -0.5f),
+                    end = Offset(anim, 0.5f)
+                )
+                drawRect(brush = brush)
+            }
+    )
+}
+
+// ═════════════════════════════════════════════════════════════════════════════════
+//  METALLIC CARD — bento card with bevel, gradient fill, optional shine
+// ═════════════════════════════════════════════════════════════════════════════════
+
+@Composable
+fun MetallicCard(
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+    color: Color = WarmSurface,
+    border: androidx.compose.foundation.BorderStroke? = BorderStroke(1.dp, MetalEdge),
+    shine: Boolean = true,
+    pressDepth: PressDepth = PressDepth.CARD,
+    content: @Composable () -> Unit
+) {
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) pressDepth.scale else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
+        label = "metallicCardPress"
+    )
+
+    val cardModifier = modifier
+        .then(if (enabled && onClick != null) {
+            Modifier.clickable(
+                interactionSource = source,
+                indication = null,
+                onClick = { onClick() }
+            )
+        } else Modifier)
+        .then(Modifier.graphicsLayer(scaleX = scale, scaleY = scale))
+        .clip(shape)
+
+    Box(modifier = cardModifier, contentAlignment = Alignment.Center) {
+        // Base metal fill (brushed gradient over the surface color)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color)
+                .drawBehind {
+                    drawRect(brush = metallicGradient)
+                }
+                .clip(shape)
+        )
+
+        // Bevel edges (raised metal)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind {
+                    bevelBorder(width = 1.dp, light = MetalBevelLight, dark = MetalBevelDark, shape = shape)
+                }
+                .clip(shape)
+        )
+
+        // Optional chrome border
+        if (border != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .border(border, shape)
+                    .clip(shape)
+            )
+        }
+
+        // Sweeping shine overlay
+        if (shine) {
+            ShineSweep(
+                modifier = Modifier.fillMaxSize().clip(shape),
+                intensity = if (pressed) 0.15f else 0.3f,
+                durationMs = 3200,
+                clip = shape
+            )
+        }
+
+        content()
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════════
 //  METALLIC BUTTONS
-// ════════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════════
 
 @Composable
 fun MetallicButton(
@@ -212,9 +354,9 @@ fun MetallicTextButton(
     )
 }
 
-// ════════════════════════════════════════════════════════════════════════════════
-//  PRESSABLE BUTTONS — metallic by default
-// ════════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════════
+//  PRESSABLE BUTTONS — metallic by default (existing APIs preserved)
+// ═════════════════════════════════════════════════════════════════════════════════
 
 @Composable
 fun PressableButton(
