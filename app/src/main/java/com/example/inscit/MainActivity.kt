@@ -201,6 +201,8 @@ import com.example.inscit.ui.theme.DeepWarmSpace
 import com.example.inscit.ui.theme.AmberGlowBrush
 import com.example.inscit.ui.theme.MetalChrome
 import com.example.inscit.ui.theme.MetalGradientBrush
+import com.example.inscit.ui.theme.QuizButtonGradient
+import com.example.inscit.ui.theme.SettingsButtonGradient
 import com.example.inscit.ui.theme.WarmAmberGlow
 import com.example.inscit.ui.theme.WarmGoldGlow
 import com.example.inscit.ui.theme.MetalGradientVertical
@@ -3137,7 +3139,8 @@ fun ModernHome(
                 ShinyButton(
                     onClick = onQuiz,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp)
+                    shape = RoundedCornerShape(24.dp),
+                    gradientBrush = QuizButtonGradient
                 ) {
                     Text(
                         if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें",
@@ -3150,7 +3153,8 @@ fun ModernHome(
                 ShinyButton(
                     onClick = onTheme,
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp)
+                    shape = RoundedCornerShape(24.dp),
+                    gradientBrush = SettingsButtonGradient
                 ) {
                     Text(
                         if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स",
@@ -3217,10 +3221,10 @@ private fun SleekStatCard(
                 Spacer(Modifier.height(10.dp))
                 Text(
                     value,
-                    fontSize = 38.sp,
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Black,
                     color = WarmGhostWhite,
-                    lineHeight = 44.sp
+                    lineHeight = 36.sp
                 )
             }
             Box(

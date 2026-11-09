@@ -246,6 +246,7 @@ fun MetallicCard(
 //  SHINY BUTTON — widget-style brushed metal gradient with chrome bevel
 //  Uses the same MetalGradientBrush as the home-screen widgets for a cohesive
 //  shiny metallic look across buttons and cards. Bold, full-height, prominent.
+//  Pass an optional gradientBrush for theme-complementary colors (quiz, settings).
 // ═════════════════════════════════════════════════════════════════════════════════
 
 @Composable
@@ -254,10 +255,12 @@ fun ShinyButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+    gradientBrush: Brush? = null,
     content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
 ) {
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
+    val brush = gradientBrush ?: MetalGradientBrush
     Box(
         modifier = modifier.then(pressScale(source, PressDepth.BUTTON)),
         contentAlignment = Alignment.Center
@@ -265,7 +268,7 @@ fun ShinyButton(
         // Widget-style brushed metal gradient background
         Box(
             modifier = Modifier.fillMaxWidth().height(64.dp)
-                .background(MetalGradientBrush).clip(shape)
+                .background(brush).clip(shape)
         )
         // Bevel edges (raised metal)
         Box(
@@ -274,13 +277,6 @@ fun ShinyButton(
                 .drawBehind {
                     bevelBorder(width = 1.dp, light = MetalBevelLight, dark = MetalBevelDark, shape = shape)
                 }
-                .clip(shape)
-        )
-        // Chrome rim border
-        Box(
-            modifier = Modifier
-                .fillMaxWidth().height(64.dp)
-                .border(BorderStroke(2.dp, MetalEdge), shape)
                 .clip(shape)
         )
         // Sweeping shine overlay
@@ -299,7 +295,6 @@ fun ShinyButton(
                 containerColor = Color.Transparent,
                 contentColor = Color.White
             ),
-            border = BorderStroke(1.dp, MetalEdge),
             interactionSource = source,
             content = content
         )
