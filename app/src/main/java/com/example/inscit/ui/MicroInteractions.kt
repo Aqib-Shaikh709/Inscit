@@ -246,16 +246,41 @@ fun PressableButton(
     content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
 ) {
     val source = remember { MutableInteractionSource() }
-    Button(
-        onClick = onClick,
+    val pressed by source.collectIsPressedAsState()
+    Box(
         modifier = modifier.then(pressScale(source, PressDepth.BUTTON)),
-        enabled = enabled,
-        shape = shape,
-        colors = colors,
-        border = border,
-        interactionSource = source,
-        content = content
-    )
+        contentAlignment = Alignment.Center
+    ) {
+        // Metallic gradient background
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(metallicGradient)
+                .clip(shape)
+        )
+        // Shine overlay
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(shineGradient)
+                .clip(shape)
+                .alpha(if (pressed) 0.15f else 0.3f)
+        )
+        // Transparent button for interaction + content
+        Button(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
+            shape = shape,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor = Color.White
+            ),
+            border = BorderStroke(1.dp, MetalEdge),
+            interactionSource = source,
+            content = content
+        )
+    }
 }
 
 @Composable
@@ -269,16 +294,48 @@ fun PressableOutlinedButton(
     content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
 ) {
     val source = remember { MutableInteractionSource() }
-    OutlinedButton(
-        onClick = onClick,
+    val pressed by source.collectIsPressedAsState()
+    Box(
         modifier = modifier.then(pressScale(source, PressDepth.BUTTON)),
-        enabled = enabled,
-        shape = shape,
-        colors = colors,
-        border = border,
-        interactionSource = source,
-        content = content
-    )
+        contentAlignment = Alignment.Center
+    ) {
+        // Metallic border gradient fill
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(metallicBorderGradient)
+                .clip(shape)
+                .alpha(if (pressed) 0.15f else 0f)
+        )
+        // Border stroke
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(border ?: BorderStroke(1.5.dp, MetalEdge), shape)
+        )
+        // Shine overlay
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(shineGradient)
+                .clip(shape)
+                .alpha(if (pressed) 0.1f else 0.25f)
+        )
+        // Transparent outlined button for interaction + content
+        OutlinedButton(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
+            shape = shape,
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Color.Transparent,
+                contentColor = Color.White
+            ),
+            border = BorderStroke(1.5.dp, MetalEdge),
+            interactionSource = source,
+            content = content
+        )
+    }
 }
 
 @Composable
