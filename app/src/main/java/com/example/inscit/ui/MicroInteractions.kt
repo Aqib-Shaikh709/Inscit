@@ -153,8 +153,8 @@ fun ShineSweep(
                         Color(0xFFFFFFFF).copy(alpha = intensity),
                         Color(0x00FFFFFF)
                     ),
-                    start = Offset(anim - 1f, -0.5f),
-                    end = Offset(anim, 0.5f)
+                    start = Offset(x = anim - 1f, y = -0.5f),
+                    end = Offset(x = anim, y = 0.5f)
                 )
                 drawRect(brush = brush)
             }
@@ -239,6 +239,70 @@ fun MetallicCard(
         }
 
         content()
+    }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════════
+//  SHINY BUTTON — widget-style brushed metal gradient with chrome bevel
+//  Uses the same MetalGradientBrush as the home-screen widgets for a cohesive
+//  shiny metallic look across buttons and cards. Bold, full-height, prominent.
+// ═════════════════════════════════════════════════════════════════════════════════
+
+@Composable
+fun ShinyButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    shape: Shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
+) {
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
+    Box(
+        modifier = modifier.then(pressScale(source, PressDepth.BUTTON)),
+        contentAlignment = Alignment.Center
+    ) {
+        // Widget-style brushed metal gradient background
+        Box(
+            modifier = Modifier.fillMaxWidth().height(64.dp)
+                .background(MetalGradientBrush).clip(shape)
+        )
+        // Bevel edges (raised metal)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth().height(64.dp)
+                .drawBehind {
+                    bevelBorder(width = 1.dp, light = MetalBevelLight, dark = MetalBevelDark, shape = shape)
+                }
+                .clip(shape)
+        )
+        // Chrome rim border
+        Box(
+            modifier = Modifier
+                .fillMaxWidth().height(64.dp)
+                .border(BorderStroke(2.dp, MetalEdge), shape)
+                .clip(shape)
+        )
+        // Sweeping shine overlay
+        ShineSweep(
+            modifier = Modifier.fillMaxWidth().height(64.dp).clip(shape),
+            intensity = if (pressed) 0.1f else 0.25f,
+            durationMs = 2800,
+            clip = shape
+        )
+        Button(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth().height(64.dp),
+            enabled = enabled,
+            shape = shape,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor = Color.White
+            ),
+            border = BorderStroke(1.dp, MetalEdge),
+            interactionSource = source,
+            content = content
+        )
     }
 }
 

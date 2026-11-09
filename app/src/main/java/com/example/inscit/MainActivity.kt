@@ -173,7 +173,9 @@ import com.example.inscit.ui.PressableIconButton
 import com.example.inscit.ui.PressableOutlinedButton
 import com.example.inscit.ui.PressableTextButton
 import com.example.inscit.ui.MetallicCard
+import com.example.inscit.ui.PressDepth
 import com.example.inscit.ui.ShineSweep
+import com.example.inscit.ui.ShinyButton
 import com.example.inscit.ui.ProfileImage
 import com.example.inscit.ui.rememberPressScale
 import com.example.inscit.ui.SaveIcon
@@ -197,6 +199,8 @@ import com.example.inscit.ui.theme.spacing
 import com.example.inscit.ui.theme.ChromeBorderBrush
 import com.example.inscit.ui.theme.DeepWarmSpace
 import com.example.inscit.ui.theme.AmberGlowBrush
+import com.example.inscit.ui.theme.MetalChrome
+import com.example.inscit.ui.theme.MetalGradientBrush
 import com.example.inscit.ui.theme.WarmAmberGlow
 import com.example.inscit.ui.theme.WarmGoldGlow
 import com.example.inscit.ui.theme.MetalGradientVertical
@@ -3104,9 +3108,9 @@ fun ModernHome(
 
             Spacer(Modifier.height(12.dp))
 
-            // Stats row - XP and Streak side by side (bento)
+            // Stats row - XP and Streak side by side (bento, sleek)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetallicStatCard(
+                SleekStatCard(
                     label = if (lang == Lang.EN) "CURRENT XP" else "कुल XP",
                     value = xpShown.toString(),
                     iconEmoji = "⭐",
@@ -3115,7 +3119,7 @@ fun ModernHome(
                     glow = WarmAmberGlow,
                     onClick = onXpClick
                 )
-                MetallicStatCard(
+                SleekStatCard(
                     label = if (lang == Lang.EN) "STREAK" else "स्ट्रेक",
                     value = streakShown.toString(),
                     iconEmoji = "🔥",
@@ -3128,20 +3132,34 @@ fun ModernHome(
 
             Spacer(Modifier.height(32.dp))
 
-            // Quick Actions
+            // Quick Actions - shiny gradient buttons (widget-style metal)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetallicActionCard(
-                    label = if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें",
-                    accent = accent,
+                ShinyButton(
+                    onClick = onQuiz,
                     modifier = Modifier.weight(1f),
-                    onClick = onQuiz
-                )
-                MetallicActionCard(
-                    label = if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स",
-                    accent = WarmSurface2,
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Text(
+                        if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें",
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.6.sp,
+                        color = Color.White,
+                        fontSize = 15.sp
+                    )
+                }
+                ShinyButton(
+                    onClick = onTheme,
                     modifier = Modifier.weight(1f),
-                    onClick = onTheme
-                )
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Text(
+                        if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स",
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.6.sp,
+                        color = Color.White,
+                        fontSize = 15.sp
+                    )
+                }
             }
 
             Spacer(Modifier.height(40.dp))
@@ -3158,7 +3176,7 @@ fun ModernHome(
             Spacer(Modifier.height(16.dp))
 
             Branch.entries.forEach { branch ->
-                MetallicBranchCard(branch, lang, accent, onNav)
+                FoundationalBranchCard(branch, lang, accent, onNav)
                 Spacer(Modifier.height(12.dp))
             }
         }
@@ -3166,7 +3184,7 @@ fun ModernHome(
 }
 
 @Composable
-private fun MetallicStatCard(
+private fun SleekStatCard(
     label: String,
     value: String,
     iconEmoji: String,
@@ -3177,41 +3195,43 @@ private fun MetallicStatCard(
 ) {
     MetallicCard(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(96.dp),
-        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.fillMaxWidth().height(110.dp),
+        shape = RoundedCornerShape(32.dp),
         color = WarmSurface,
         border = BorderStroke(1.5.dp, MetalEdge),
         shine = true
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 22.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(horizontalAlignment = Alignment.Start) {
                 Text(
                     label,
-                    fontSize = 10.sp,
-                    color = accent,
+                    fontSize = 11.sp,
+                    color = accent.copy(alpha = 0.9f),
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 1.2.sp
+                    letterSpacing = 1.6.sp
                 )
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(
                     value,
-                    fontSize = 30.sp,
+                    fontSize = 38.sp,
                     fontWeight = FontWeight.Black,
-                    color = WarmGhostWhite
+                    color = WarmGhostWhite,
+                    lineHeight = 44.sp
                 )
             }
             Box(
                 modifier = Modifier
-                    .size(50.dp)
+                    .size(60.dp)
                     .clip(CircleShape)
-                    .background(glow.copy(alpha = 0.22f)),
+                    .border(BorderStroke(2.dp, MetalEdge), CircleShape)
+                    .background(glow.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = iconEmoji, color = Color.White, fontSize = 24.sp)
+                Text(text = iconEmoji, color = Color.White, fontSize = 30.sp)
             }
         }
     }
@@ -3240,51 +3260,62 @@ fun MetallicActionCard(label: String, accent: Color, modifier: Modifier, onClick
 }
 
 @Composable
-fun MetallicBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Branch) -> Unit) {
+fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Branch) -> Unit) {
     MetallicCard(
         onClick = { onNav(branch) },
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = WarmSurface,
-        border = BorderStroke(1.5.dp, MetalEdge),
-        shine = true
+        shape = RoundedCornerShape(30.dp),
+        color = WarmSurface2,
+        border = BorderStroke(2.dp, MetalChrome),
+        shine = true,
+        pressDepth = PressDepth.CARD
     ) {
         Row(
-            modifier = Modifier.padding(22.dp),
+            modifier = Modifier.padding(26.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Icon medallion — clean, prominent, foundational
             Box(
                 modifier = Modifier
-                    .size(54.dp)
+                    .size(72.dp)
                     .clip(CircleShape)
-                    .background(accent.copy(alpha = 0.16f)),
+                    .border(BorderStroke(2.dp, MetalEdge), CircleShape)
+                    .background(accent.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
                 when (branch) {
-                    Branch.PHYSICS -> AtomIcon(accent, Modifier.size(28.dp))
-                    Branch.CHEMISTRY -> FlaskIcon(accent, Modifier.size(28.dp))
-                    Branch.BIOLOGY -> DNAIcon(accent, Modifier.size(28.dp))
+                    Branch.PHYSICS -> AtomIcon(accent, Modifier.size(36.dp))
+                    Branch.CHEMISTRY -> FlaskIcon(accent, Modifier.size(36.dp))
+                    Branch.BIOLOGY -> DNAIcon(accent, Modifier.size(36.dp))
                 }
             }
-            Spacer(Modifier.width(22.dp))
+            Spacer(Modifier.width(26.dp))
             Column {
                 Text(
                     if (lang == Lang.EN) branch.name else when (branch) {
                         Branch.PHYSICS -> "भौतिकी"
                         Branch.CHEMISTRY -> "रसायन विज्ञान"
                         Branch.BIOLOGY -> "जीव विज्ञान"
-                    }, fontWeight = FontWeight.Black, color = WarmGhostWhite, fontSize = 18.sp
+                    }, fontWeight = FontWeight.Black, color = WarmGhostWhite, fontSize = 22.sp,
+                    letterSpacing = 0.2.sp
                 )
+                Spacer(Modifier.height(8.dp))
                 Text(
-                    if (lang == Lang.EN) "MODULE READY" else "मॉड्यूल तैयार",
-                    fontSize = 10.sp,
-                    color = accent.copy(alpha = 0.8f),
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                    if (lang == Lang.EN) "FOUNDATION MODULE" else "आधार मॉड्यूल",
+                    fontSize = 12.sp,
+                    color = accent.copy(alpha = 0.9f),
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.8.sp
                 )
             }
             Spacer(Modifier.weight(1f))
-            Text("→", color = MetalRimLight.copy(alpha = 0.7f), fontSize = 22.sp, fontWeight = FontWeight.Black)
+            Box(
+                modifier = Modifier.size(44.dp).clip(CircleShape)
+                    .background(MetalGradientBrush),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("→", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
+            }
         }
     }
 }
