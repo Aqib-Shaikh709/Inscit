@@ -1,6 +1,7 @@
 package com.example.inscit.data.repository
 
 import android.content.Context
+import com.example.inscit.data.PrefsWriteLock
 import com.example.inscit.models.UserDocument
 import com.example.inscit.widget.WidgetUpdateCoordinator
 import kotlinx.coroutines.flow.Flow
@@ -39,12 +40,14 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
     }
 
     override fun saveDocument(doc: UserDocument) {
-        try {
-            val json = com.example.inscit.serializeUserDocumentJson(doc)
-            prefs().edit().putString(KEY_JSON, json).apply()
-            // Interconnect all widgets: refresh immediately when data changes
-            WidgetUpdateCoordinator.refreshAll(context)
-        } catch (_: Exception) {}
+        PrefsWriteLock.withWriteLock {
+            try {
+                val json = com.example.inscit.serializeUserDocumentJson(doc)
+                prefs().edit().putString(KEY_JSON, json).apply()
+            } catch (_: Exception) {}
+        }
+        // Interconnect all widgets: refresh immediately when data changes
+        WidgetUpdateCoordinator.refreshAll(context)
     }
 
     override fun observeDocument(): Flow<UserDocument> = flow {
@@ -56,38 +59,50 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
     }
 
     override fun updateStats(block: (com.example.inscit.models.UserStats) -> com.example.inscit.models.UserStats) {
-        getDocument()?.let { doc ->
-            saveDocument(doc.copy(stats = block(doc.stats)))
+        PrefsWriteLock.withWriteLock {
+            getDocument()?.let { doc ->
+                saveDocument(doc.copy(stats = block(doc.stats)))
+            }
         }
     }
 
     override fun updateGoals(block: (List<com.example.inscit.models.UserGoal>) -> List<com.example.inscit.models.UserGoal>) {
-        getDocument()?.let { doc ->
-            saveDocument(doc.copy(goals = block(doc.goals)))
+        PrefsWriteLock.withWriteLock {
+            getDocument()?.let { doc ->
+                saveDocument(doc.copy(goals = block(doc.goals)))
+            }
         }
     }
 
     override fun updateQuizProgress(block: (com.example.inscit.models.QuizProgress) -> com.example.inscit.models.QuizProgress) {
-        getDocument()?.let { doc ->
-            saveDocument(doc.copy(quizProgress = block(doc.quizProgress)))
+        PrefsWriteLock.withWriteLock {
+            getDocument()?.let { doc ->
+                saveDocument(doc.copy(quizProgress = block(doc.quizProgress)))
+            }
         }
     }
 
     override fun updateChallengeStatus(block: (com.example.inscit.models.DailyChallengeStatus) -> com.example.inscit.models.DailyChallengeStatus) {
-        getDocument()?.let { doc ->
-            saveDocument(doc.copy(dailyChallengeStatus = block(doc.dailyChallengeStatus)))
+        PrefsWriteLock.withWriteLock {
+            getDocument()?.let { doc ->
+                saveDocument(doc.copy(dailyChallengeStatus = block(doc.dailyChallengeStatus)))
+            }
         }
     }
 
     override fun updateDailyXp(date: String, xp: Int) {
-        getDocument()?.let { doc ->
-            val map = doc.dailyXp.toMutableMap()
-            map[date] = (map[date] ?: 0) + xp
-            saveDocument(doc.copy(dailyXp = map))
+        PrefsWriteLock.withWriteLock {
+            getDocument()?.let { doc ->
+                val map = doc.dailyXp.toMutableMap()
+                map[date] = (map[date] ?: 0) + xp
+                saveDocument(doc.copy(dailyXp = map))
+            }
         }
     }
 
     override fun clear() {
-        prefs().edit().remove(KEY_JSON).remove(KEY_LEGACY).apply()
+        PrefsWriteLock.withWriteLock {
+            prefs().edit().remove(KEY_JSON).remove(KEY_LEGACY).apply()
+        }
     }
 }

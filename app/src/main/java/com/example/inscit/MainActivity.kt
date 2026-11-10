@@ -14,6 +14,7 @@ import android.provider.MediaStore
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import com.example.inscit.data.PrefsWriteLock
 import com.example.inscit.widget.WidgetUpdateCoordinator
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -301,7 +302,7 @@ fun parseUserDocumentJson(data: String): UserDocument? {
     } catch (_: Exception) { null }
 }
 
-fun saveUserDocument(context: Context, userDoc: UserDocument) {
+fun saveUserDocument(context: Context, userDoc: UserDocument) = PrefsWriteLock.withWriteLock {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     // JSON primary (safe, versioned via kotlinx-serialization), pipe kept for backward compat
     val jsonData = try { serializeUserDocumentJson(userDoc) } catch (_: Exception) { null }
@@ -313,7 +314,7 @@ fun saveUserDocument(context: Context, userDoc: UserDocument) {
 
     try {
         // Backup prefers JSON, falls back to legacy pipe
-        val backup = jsonData ?: legacyData ?: return
+        val backup = jsonData ?: legacyData ?: return@withWriteLock
         context.openFileOutput(BACKUP_FILE_NAME, Context.MODE_PRIVATE).use { it.write(backup.toByteArray()) }
     } catch (_: Exception) {}
 
@@ -4260,7 +4261,9 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
     ) {
         val stats = userDoc.stats
         val spacing = MaterialTheme.spacing
-        val streakEmoji = if (stats.currentStreak > 0) "🔥" else "❄️"
+        val streakEmoji = if (stats.currentStreak > 0) {"🔥"}
+            else
+                { "❄️"}
 
         Column(
             modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
