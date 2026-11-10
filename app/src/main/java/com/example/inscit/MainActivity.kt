@@ -4505,4 +4505,4 @@ fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> U
             Text("✓", fontSize = 16.sp, color = BioLime, fontWeight = FontWeight.Bold)
         }
     }
-//new todo: add comments for ease reading and for making it flexiblty open source
+// todo: add comments for ease reading and for making it flexibly open source
