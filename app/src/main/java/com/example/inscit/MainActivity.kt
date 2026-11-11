@@ -159,7 +159,6 @@ import com.example.inscit.ui.ColorPickerOverlay
 import com.example.inscit.ui.CustomThemeManager
 import com.example.inscit.ui.DNAIcon
 import com.example.inscit.ui.DrawingIcon
-import com.example.inscit.ui.EmailIcon
 import com.example.inscit.ui.GoalsScreen
 import com.example.inscit.ui.ExportIcon
 import com.example.inscit.ui.FlaskIcon
@@ -336,7 +335,7 @@ fun exportBackupToPublic(context: Context, data: String) {
             }
         }
     } catch (_: Exception) {}
-}
+} 
 
 // Downsamples to max 512px + JPEG quality 70, plus a 128px thumbnail.
 // Previously copied the raw file (multi-MB from camera), risking OOM on load/P2P.
@@ -523,8 +522,6 @@ class TTSManager(context: Context) : TextToSpeech.OnInitListener {
         tts?.shutdown()
     }
 }
-
-private const val CONTACT_EMAIL = com.example.inscit.utils.AppConstants.CONTACT_EMAIL
 
 fun getExportFolder(context: Context): File {
     val folder = File(context.getExternalFilesDir(null), "InscitExports")
@@ -2099,19 +2096,6 @@ fun ContactUsScreen(accent: Color, txtCol: Color, lang: Lang, onBack: () -> Unit
         Text(if (lang == Lang.EN) "GET IN TOUCH" else "संपर्क में रहें", fontWeight = FontWeight.Bold, color = accent)
         Spacer(Modifier.height(16.dp))
         
-        ContactItem(
-            icon = { EmailIcon(it) },
-            label = if (lang == Lang.EN) "EMAIL US" else "हमें ईमेल करें",
-            value = CONTACT_EMAIL,
-            accent = accent,
-            onClick = {
-                val intent = Intent(Intent.ACTION_SENDTO).apply {
-                    data = Uri.parse("mailto:$CONTACT_EMAIL")
-                }
-                context.startActivity(intent)
-            }
-        )
-
         ContactItem(
             icon = { WebIcon(it) },
             label = if (lang == Lang.EN) "WEBSITE URL" else "वेबसाइट यूआरएल",
