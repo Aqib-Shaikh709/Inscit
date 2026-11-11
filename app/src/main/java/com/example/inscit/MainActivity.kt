@@ -14,6 +14,7 @@ import android.provider.MediaStore
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
 import com.example.inscit.data.PrefsWriteLock
 import com.example.inscit.widget.WidgetUpdateCoordinator
 import android.speech.tts.TextToSpeech
@@ -315,7 +316,9 @@ fun saveUserDocument(context: Context, userDoc: UserDocument) = PrefsWriteLock.w
         // Backup prefers JSON, falls back to legacy pipe
         val backup = jsonData ?: legacyData ?: return@withWriteLock
         context.openFileOutput(BACKUP_FILE_NAME, Context.MODE_PRIVATE).use { it.write(backup.toByteArray()) }
-    } catch (_: Exception) {}
+    } catch (e: Exception) {
+        Log.e("Inscit", "Backup write failed", e)
+    }
 
     // NOTE: Auto-export to Downloads removed to avoid storage pollution (was creating a new file every 1s).
     // Use exportBackupToPublic() only for explicit manual export.

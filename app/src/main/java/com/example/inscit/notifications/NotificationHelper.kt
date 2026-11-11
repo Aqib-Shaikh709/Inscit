@@ -52,8 +52,9 @@ object NotificationHelper {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
+        val notifId = (System.currentTimeMillis() and 0x7FFFFFFF).toInt()
         val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
+            context, notifId, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -65,7 +66,6 @@ object NotificationHelper {
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
 
-        val notifId = (System.currentTimeMillis() and 0xFFFFFF).toInt()
         notificationManager.notify(notifId, builder.build())
     }
 }

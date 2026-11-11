@@ -159,8 +159,10 @@ class SprintViewModel(
     fun cancel() {
         timerJob?.cancel()
         timerJob = null
+        // User abort: discard in-progress state without computing/awarding a finish result.
+        // reset() is called by the screen's onExit handler to fully clear the VM.
         if (_uiState.value is SprintUiState.Running) {
-            finish()
+            _uiState.value = SprintUiState.Idle
         }
     }
 
