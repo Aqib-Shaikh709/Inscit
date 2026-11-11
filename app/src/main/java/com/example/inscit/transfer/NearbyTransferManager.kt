@@ -196,7 +196,7 @@ class NearbyTransferManager(private val context: Context) {
 
     fun requestConnection(endpointId: String) {
         client.requestConnection(
-            android.os.Build.MODEL ?: "Inscit-Receiver",
+            "Inscit-Device",
             endpointId,
             connectionLifecycleCallback
         ).addOnSuccessListener { Log.d(TAG, "requestConnection success $endpointId") }
