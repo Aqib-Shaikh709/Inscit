@@ -85,18 +85,22 @@ object StreakTracker {
         if (diffDays >= 2) {
             val currentStreak = prefs.getInt(KEY_CURRENT_STREAK, 0)
             prefs.edit().putInt(KEY_CURRENT_STREAK, 0).apply()
-            // Sync UserStats (single source of truth) - also reset inscit_prefs streak
+            // Sync UserStats (single source of truth) - also reset inscit_prefs streak.
+            // Read JSON primary (user_data_json), fall back to legacy pipe (user_data),
+            // and write back to JSON so the reset is not silently lost on next save.
             try {
                 val inscitPrefs = context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
-                val data = inscitPrefs.getString("user_data", null)
+                val data = inscitPrefs.getString("user_data_json", null)
+                    ?: inscitPrefs.getString("user_data", null)
                 if (data != null) {
-                    val doc = com.example.inscit.UserDocumentSaver.restore(data)
+                    val doc = com.example.inscit.parseUserDocumentJson(data)
+                        ?: com.example.inscit.UserDocumentSaver.restore(data)
                     if (doc != null && doc.stats.currentStreak != 0) {
                         val yesterday = com.example.inscit.utils.DateUtils.yesterday()
                         if (doc.stats.lastActivityDate != today && doc.stats.lastActivityDate != yesterday) {
                             val updated = doc.copy(stats = doc.stats.copy(currentStreak = 0))
-                            val newData = com.example.inscit.serializeUserDocument(updated)
-                            inscitPrefs.edit().putString("user_data", newData).apply()
+                            val newData = com.example.inscit.serializeUserDocumentJson(updated)
+                            inscitPrefs.edit().putString("user_data_json", newData).apply()
                             try { context.openFileOutput("inscit_backup.dat", android.content.Context.MODE_PRIVATE).use { it.write(newData.toByteArray()) } } catch (_: Exception) {}
                         }
                     }
