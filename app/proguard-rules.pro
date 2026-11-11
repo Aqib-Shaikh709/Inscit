@@ -19,3 +19,13 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# kotlinx.serialization uses reflection to resolve @Serializable
+# serializers. Keep the runtime and generated serializer metadata so
+# Json.encodeToString/decodeFromString keep working under minification.
+-keep class kotlinx.serialization.** { *; }
+-keepnames class kotlinx.serialization.internal.** { *; }
+
+# App data models are @Serializable; keep them and their generated
+# serializers so JSON encode/decode is not broken by renaming.
+-keep class com.example.inscit.models.** { *; }
