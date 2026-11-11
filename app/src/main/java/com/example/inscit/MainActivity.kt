@@ -110,6 +110,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -172,6 +173,10 @@ import com.example.inscit.ui.PressableButton
 import com.example.inscit.ui.PressableIconButton
 import com.example.inscit.ui.PressableOutlinedButton
 import com.example.inscit.ui.PressableTextButton
+import com.example.inscit.ui.MetallicCard
+import com.example.inscit.ui.PressDepth
+import com.example.inscit.ui.ShineSweep
+import com.example.inscit.ui.ShinyButton
 import com.example.inscit.ui.ProfileImage
 import com.example.inscit.ui.rememberPressScale
 import com.example.inscit.ui.SaveIcon
@@ -192,9 +197,23 @@ import com.example.inscit.ui.YouTubeIcon
 import com.example.inscit.ui.WebIcon
 import com.example.inscit.ui.ReviewScreen
 import com.example.inscit.ui.theme.spacing
+import com.example.inscit.ui.theme.ChromeBorderBrush
+import com.example.inscit.ui.theme.DeepWarmSpace
+import com.example.inscit.ui.theme.AmberGlowBrush
+import com.example.inscit.ui.theme.MetalChrome
+import com.example.inscit.ui.theme.MetalGradientBrush
 import com.example.inscit.ui.theme.WarmAmber
+import com.example.inscit.ui.theme.WarmAmberGlow
+import com.example.inscit.ui.theme.WarmCream
+import com.example.inscit.ui.theme.WarmGoldGlow
+import com.example.inscit.ui.theme.MetalGradientVertical
+import com.example.inscit.ui.theme.MetalBevelLight
+import com.example.inscit.ui.theme.MetalBevelDark
+import com.example.inscit.ui.theme.MetalEdge
+import com.example.inscit.ui.theme.MetalRimLight
 import com.example.inscit.ui.theme.WarmGhostWhite
 import com.example.inscit.ui.theme.WarmGold
+import com.example.inscit.ui.theme.WarmMuted
 import com.example.inscit.ui.theme.WarmSurface
 import com.example.inscit.ui.theme.WarmSurface2
 import com.example.inscit.xp.Rank
@@ -926,17 +945,17 @@ fun AppEngine(tts: TTSManager) {
         themeMode == ThemeMode.CUSTOM && activeCustomTheme != null -> activeCustomTheme.getBgColor()
         themeMode == ThemeMode.NOBLE && !isDark -> NobleLightBg
         themeMode == ThemeMode.NOBLE && isDark -> NobleDarkBg
-        else -> DeepSpace
+        else -> DeepWarmSpace
     }
     val primaryAccent = when {
         themeMode == ThemeMode.CUSTOM && activeCustomTheme != null -> activeCustomTheme.getAccentColor()
         themeMode == ThemeMode.NOBLE -> if (isDark) NobleDarkAccent else NobleLightAccent
-        else -> NeonCyan
+        else -> WarmAmber
     }
     val textColor = when {
         themeMode == ThemeMode.CUSTOM && activeCustomTheme != null -> activeCustomTheme.getTxtColor()
         themeMode == ThemeMode.NOBLE && !isDark -> Color(0xFF1A1A1A)
-        else -> GhostWhite
+        else -> WarmGhostWhite
     }
 
     if (showColorPicker) {
@@ -1597,8 +1616,8 @@ fun DrawerContent(
 ) {
     val spacing = MaterialTheme.spacing
     ModalDrawerSheet(
-        drawerContainerColor = DeepSpace,
-        drawerContentColor = GhostWhite,
+        drawerContainerColor = DeepWarmSpace,
+        drawerContentColor = WarmGhostWhite,
         modifier = Modifier.width(300.dp),
         windowInsets = androidx.compose.foundation.layout.WindowInsets(0.dp)
     ) {
@@ -1606,8 +1625,17 @@ fun DrawerContent(
             // Header
             Text("INSCIT OMEGA", style = MaterialTheme.typography.headlineMedium, color = accent, letterSpacing = 2.sp)
             Spacer(Modifier.height(spacing.extraSmall))
-            Text(userName, color = GhostWhite, style = MaterialTheme.typography.titleMedium)
+            Text(userName, color = WarmGhostWhite, style = MaterialTheme.typography.titleMedium)
             Text("XP: $totalXp", color = accent, style = MaterialTheme.typography.labelSmall)
+
+            // Metallic divider under header
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(ChromeBorderBrush)
+                    .padding(vertical = 14.dp)
+            )
 
             Spacer(Modifier.height(spacing.huge))
 
@@ -2049,16 +2077,15 @@ fun DrawerItem(
 ) {
     val isSelected = currentScreen == screen
     NavigationDrawerItem(
-        label = { Text(label, fontWeight = if (isSelected) FontWeight.Black else FontWeight.Normal) },
+        label = { Text(label, fontWeight = if (isSelected) FontWeight.Black else FontWeight.Normal, color = if (isSelected) accent else WarmMuted) },
         selected = isSelected,
         onClick = { onNavigate(screen) },
         colors = NavigationDrawerItemDefaults.colors(
             unselectedContainerColor = Color.Transparent,
-            selectedContainerColor = accent.copy(alpha = 0.1f),
-            unselectedTextColor = GhostWhite.copy(alpha = 0.7f),
+            selectedContainerColor = accent.copy(alpha = 0.12f),
+            unselectedTextColor = WarmMuted,
             selectedTextColor = accent
         ),
-
     )
 }
 
@@ -3017,6 +3044,14 @@ fun ModernHome(
     val screenW = LocalConfiguration.current.screenWidthDp.dp
     val hPad = if (screenW > 600.dp) 48.dp else 24.dp
     Box(Modifier.fillMaxSize()) {
+        // Deep metallic background: brushed dark metal with a faint ambient glow
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind {
+                    drawRect(brush = MetalGradientVertical)
+                }
+        )
         Column(
             modifier = Modifier.fillMaxSize().padding(horizontal = hPad, vertical = 24.dp)
                 .verticalScroll(rememberScrollState()),
@@ -3030,12 +3065,13 @@ fun ModernHome(
                 PressableIconButton(onClick = onMenuClick) {
                     MenuIcon(color = WarmGhostWhite)
                 }
-                Surface(
+                MetallicCard(
                     onClick = onProfile,
                     modifier = Modifier.size(50.dp),
                     shape = CircleShape,
                     color = WarmSurface,
-                    border = BorderStroke(1.dp, accent.copy(alpha = 0.5f))
+                    border = BorderStroke(1.5.dp, MetalEdge),
+                    shine = true
                 ) {
                     ProfileImage(
                         photoUrl = photoUrl,
@@ -3054,40 +3090,88 @@ fun ModernHome(
                 Text(
                     if (lang == Lang.EN) "Hello, $userName" else "नमस्ते, $userName",
                     color = WarmGhostWhite,
-                    fontSize = 26.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 0.5.sp
+                )
+                // Glowing accent underline beneath the greeting
+                Box(
+                    modifier = Modifier
+                        .width(72.dp)
+                        .height(5.dp)
+                        .background(AmberGlowBrush)
+                        .clip(RoundedCornerShape(4.dp))
+                        .padding(top = 10.dp)
                 )
             }
 
             Spacer(Modifier.height(12.dp))
 
-            // Stats row - XP and Streak side by side
+            // Stats row - XP and Streak side by side (bento, sleek)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard(
+                SleekStatCard(
                     label = if (lang == Lang.EN) "CURRENT XP" else "कुल XP",
                     value = xpShown.toString(),
                     iconEmoji = "⭐",
                     iconColor = WarmAmber,
                     accent = WarmAmber,
+                    glow = WarmAmberGlow,
                     onClick = onXpClick
                 )
-                StatCard(
+                SleekStatCard(
                     label = if (lang == Lang.EN) "STREAK" else "स्ट्रेक",
                     value = streakShown.toString(),
                     iconEmoji = "🔥",
                     iconColor = WarmGold,
                     accent = WarmGold,
+                    glow = WarmGoldGlow,
                     onClick = onXpClick
                 )
             }
 
             Spacer(Modifier.height(32.dp))
 
-            // Quick Actions
+            // Quick Actions - shiny gradient buttons (widget-style metal)
+            // Gradient flows from warm brand amber into the app's selected theme accent.
+            val quizBrush = Brush.linearGradient(
+                colors = listOf(WarmAmber, accent, WarmAmber),
+                start = Offset(0f, 0f),
+                end = Offset(1f, 1f)
+            )
+            val settingsBrush = Brush.linearGradient(
+                colors = listOf(WarmCream.copy(alpha = 0.85f), accent, WarmCream.copy(alpha = 0.85f)),
+                start = Offset(0f, 0f),
+                end = Offset(1f, 1f)
+            )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ActionCard(if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें", accent, Modifier.weight(1f), onQuiz)
-                ActionCard(if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स", WarmSurface2.copy(alpha = 0.5f), Modifier.weight(1f), onTheme)
+                ShinyButton(
+                    onClick = onQuiz,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(28.dp),
+                    gradientBrush = quizBrush
+                ) {
+                    Text(
+                        if (lang == Lang.EN) "INITIATE QUIZ" else "क्विज़ शुरू करें",
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.6.sp,
+                        color = Color.White,
+                        fontSize = 15.sp
+                    )
+                }
+                ShinyButton(
+                    onClick = onTheme,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(28.dp),
+                    gradientBrush = settingsBrush
+                ) {
+                    Text(
+                        if (lang == Lang.EN) "SETTINGS" else "सेटिंग्स",
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.6.sp,
+                        color = Color.White,
+                        fontSize = 15.sp
+                    )
+                }
             }
 
             Spacer(Modifier.height(40.dp))
@@ -3104,7 +3188,7 @@ fun ModernHome(
             Spacer(Modifier.height(16.dp))
 
             Branch.entries.forEach { branch ->
-                BranchCard(branch, lang, accent, onNav)
+                FoundationalBranchCard(branch, lang, accent, onNav)
                 Spacer(Modifier.height(12.dp))
             }
         }
@@ -3112,129 +3196,141 @@ fun ModernHome(
 }
 
 @Composable
-private fun StatCard(
+private fun SleekStatCard(
     label: String,
     value: String,
     iconEmoji: String,
     iconColor: Color,
     accent: Color,
+    glow: Color,
     onClick: () -> Unit
 ) {
-    Surface(
+    MetallicCard(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-
-            .height(80.dp),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth().height(110.dp),
+        shape = RoundedCornerShape(32.dp),
         color = WarmSurface,
-        border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
+        border = BorderStroke(1.5.dp, MetalEdge),
+        shine = true
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = 22.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(horizontalAlignment = Alignment.Start) {
                 Text(
                     label,
-                    fontSize = 9.sp,
-                    color = accent,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                    fontSize = 11.sp,
+                    color = accent.copy(alpha = 0.9f),
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.6.sp
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(
                     value,
-                    fontSize = 26.sp,
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Black,
-                    color = WarmGhostWhite
+                    color = WarmGhostWhite,
+                    lineHeight = 36.sp
                 )
             }
             Box(
-                modifier = Modifier.size(40.dp).clip(CircleShape)
-                    .background(accent.copy(alpha = 0.1f)),
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .border(BorderStroke(2.dp, MetalEdge), CircleShape)
+                    .background(glow.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = iconEmoji,
-                    color = iconColor,
-                    fontSize = 20.sp
-                )
+                Text(text = iconEmoji, color = Color.White, fontSize = 30.sp)
             }
         }
     }
 }
 
 @Composable
-fun ActionCard(label: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
-        Surface(
-            onClick = onClick,
-            modifier = modifier.height(80.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = if (color == GhostWhite.copy(alpha = 0.05f)) CardBg else color,
-            border = if (color == GhostWhite.copy(alpha = 0.05f)) BorderStroke(
-                1.dp,
-                GhostWhite.copy(alpha = 0.05f)
-            ) else null
+fun MetallicActionCard(label: String, accent: Color, modifier: Modifier, onClick: () -> Unit) {
+    MetallicCard(
+        onClick = onClick,
+        modifier = modifier.height(96.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = if (accent == WarmSurface2) WarmSurface2 else WarmSurface,
+        border = BorderStroke(1.5.dp, MetalEdge),
+        shine = true
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                label,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.2.sp,
+                color = WarmGhostWhite,
+                fontSize = if (label.length > 12) 11.sp else 13.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Branch) -> Unit) {
+    MetallicCard(
+        onClick = { onNav(branch) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = WarmSurface2,
+        border = BorderStroke(1.5.dp, MetalChrome),
+        shine = true,
+        pressDepth = PressDepth.CARD
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(contentAlignment = Alignment.Center) {
+            // Icon medallion — compact and clean
+            Box(
+                modifier = Modifier
+                    .size(58.dp)
+                    .clip(CircleShape)
+                    .border(BorderStroke(1.5.dp, MetalEdge), CircleShape)
+                    .background(accent.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                when (branch) {
+                    Branch.PHYSICS -> AtomIcon(accent, Modifier.size(28.dp))
+                    Branch.CHEMISTRY -> FlaskIcon(accent, Modifier.size(28.dp))
+                    Branch.BIOLOGY -> DNAIcon(accent, Modifier.size(28.dp))
+                }
+            }
+            Spacer(Modifier.width(20.dp))
+            Column {
                 Text(
-                    label,
+                    if (lang == Lang.EN) branch.name else when (branch) {
+                        Branch.PHYSICS -> "भौतिकी"
+                        Branch.CHEMISTRY -> "रसायन विज्ञान"
+                        Branch.BIOLOGY -> "जीव विज्ञान"
+                    }, fontWeight = FontWeight.Black, color = WarmGhostWhite, fontSize = 18.sp,
+                    letterSpacing = 0.2.sp
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    if (lang == Lang.EN) "FOUNDATION MODULE" else "आधार मॉड्यूल",
+                    fontSize = 11.sp,
+                    color = accent.copy(alpha = 0.9f),
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 1.sp,
-                    color = if (color.luminance() > 0.5f && color != GhostWhite.copy(alpha = 0.05f)) DeepSpace else GhostWhite,
-                    fontSize = if (label.length > 12) 11.sp else 13.sp
+                    letterSpacing = 1.6.sp
                 )
             }
-        }
-    }
-
-    @Composable
-    fun BranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Branch) -> Unit) {
-        Surface(
-            onClick = { onNav(branch) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = CardBg,
-            border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.05f))
-        ) {
-            Row(
-                modifier = Modifier.padding(20.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Spacer(Modifier.weight(1f))
+            Box(
+                modifier = Modifier.size(44.dp).clip(CircleShape)
+                    .background(MetalGradientBrush),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier.size(44.dp).clip(CircleShape)
-                        .background(accent.copy(alpha = 0.08f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    when (branch) {
-                        Branch.PHYSICS -> AtomIcon(accent, Modifier.size(24.dp))
-                        Branch.CHEMISTRY -> FlaskIcon(accent, Modifier.size(24.dp))
-                        Branch.BIOLOGY -> DNAIcon(accent, Modifier.size(24.dp))
-                    }
-                }
-                Spacer(Modifier.width(20.dp))
-                Column {
-                    Text(
-                        if (lang == Lang.EN) branch.name else when (branch) {
-                            Branch.PHYSICS -> "भौतिकी"
-                            Branch.CHEMISTRY -> "रसायन विज्ञान"
-                            Branch.BIOLOGY -> "जीव विज्ञान"
-                        }, fontWeight = FontWeight.Bold, color = GhostWhite, fontSize = 16.sp
-                    )
-                    Text(
-                        if (lang == Lang.EN) "MODULE READY" else "मॉड्यूल तैयार",
-                        fontSize = 9.sp,
-                        color = accent.copy(alpha = 0.6f),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(Modifier.weight(1f))
-                Text("→", color = GhostWhite.copy(alpha = 0.2f), fontSize = 20.sp)
+                Text("→", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black)
             }
         }
     }
+}
 
     @Composable
     fun ThemeSelectionScreen(
