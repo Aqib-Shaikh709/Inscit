@@ -5,7 +5,9 @@ import com.example.inscit.data.PrefsWriteLock
 import com.example.inscit.models.UserDocument
 import com.example.inscit.widget.WidgetUpdateCoordinator
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 
 /**
  * Single source of truth for all user data access.
@@ -28,6 +30,12 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
     private val KEY_JSON = "user_data_json"
     private val KEY_LEGACY = "user_data"
 
+    // Change-notification stream: observers get the current value on collection
+    // and only re-emit when saveDocument()/clear() actually mutates data. Replaces
+    // the old 2-second polling loop that read SharedPreferences on every tick
+    // regardless of whether anything changed (battery drain + needless recomposition).
+    private val _document = MutableStateFlow<UserDocument?>(getDocument())
+
     private fun prefs() = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     override fun getDocument(): UserDocument? {
@@ -46,17 +54,12 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
                 prefs().edit().putString(KEY_JSON, json).apply()
             } catch (_: Exception) {}
         }
+        _document.value = doc
         // Interconnect all widgets: refresh immediately when data changes
         WidgetUpdateCoordinator.refreshAll(context)
     }
 
-    override fun observeDocument(): Flow<UserDocument> = flow {
-        while (true) {
-            val doc = getDocument()
-            if (doc != null) emit(doc)
-            kotlinx.coroutines.delay(2000)
-        }
-    }
+    override fun observeDocument(): Flow<UserDocument> = _document.asStateFlow().filterNotNull()
 
     override fun updateStats(block: (com.example.inscit.models.UserStats) -> com.example.inscit.models.UserStats) {
         PrefsWriteLock.withWriteLock {
@@ -104,5 +107,6 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
         PrefsWriteLock.withWriteLock {
             prefs().edit().remove(KEY_JSON).remove(KEY_LEGACY).apply()
         }
+        _document.value = null
     }
 }
