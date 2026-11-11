@@ -7,13 +7,19 @@ import androidx.work.WorkManager
 import com.example.inscit.notifications.NotificationHelper
 import java.util.concurrent.TimeUnit
 
+/**
+ * Streak tracking with a single source of truth: [com.example.inscit.models.UserStats]
+ * in `inscit_prefs` (JSON). The old `streak_tracker_prefs` is retired — it diverged
+ * from `UserStats.currentStreak` and caused conflicting streak values across screens
+ * and widgets.
+ */
 object StreakTracker {
-    private const val PREFS_NAME = "streak_tracker_prefs"
-    private const val KEY_CURRENT_STREAK = "current_streak"
-    private const val KEY_HIGHEST_STREAK = "highest_streak"
-    private const val KEY_LAST_QUALIFYING_DATE = "last_qualifying_date"
-    private const val KEY_LAST_NOTIFIED_DATE = "last_notified_date"
-    private const val KEY_FREEZE_WEEK = "freeze_week_id"
+
+    private const val PREFS_NAME = "inscit_prefs"
+    private const val KEY_JSON = "user_data_json"
+    private const val KEY_LEGACY = "user_data"
+    private const val KEY_FREEZE_WEEK = "streak_freeze_week"
+    private const val KEY_LAST_NOTIFIED_DATE = "streak_last_notified_date"
     private const val WORK_NAME = "streak_daily_check"
 
     private fun getToday(): String = com.example.inscit.utils.DateUtils.today()
@@ -26,48 +32,56 @@ object StreakTracker {
         } catch (_: Exception) { today }
     }
 
+    /** Read the current UserDocument from inscit_prefs (JSON primary, legacy fallback). */
+    private fun readDoc(context: Context): com.example.inscit.models.UserDocument? {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val data = prefs.getString(KEY_JSON, null)
+            ?: prefs.getString(KEY_LEGACY, null)
+            ?: return null
+        return com.example.inscit.parseUserDocumentJson(data)
+            ?: com.example.inscit.UserDocumentSaver.restore(data)
+    }
+
+    /** Persist a UserDocument to inscit_prefs (JSON). */
+    private fun writeDoc(context: Context, doc: com.example.inscit.models.UserDocument) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val json = com.example.inscit.serializeUserDocumentJson(doc)
+        prefs.edit().putString(KEY_JSON, json).apply()
+    }
+
     fun recordQuiz(context: Context, score: Float) {
         // Align with StreakManager: <60 ignored, 60-79 maintain, 80+ extend
         if (score < 60f) return
 
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val today = getToday()
-        val lastDate = prefs.getString(KEY_LAST_QUALIFYING_DATE, "") ?: ""
+        val doc = readDoc(context) ?: return
 
-        if (lastDate == today) return
+        // Already recorded today
+        if (doc.stats.lastActivityDate == today) return
 
-        if (score < 80f) {
-            // Maintain without increment: mark activity so reset logic doesn't break streak
-            prefs.edit().putString(KEY_LAST_QUALIFYING_DATE, today).apply()
-            scheduleDailyCheck(context)
-            return
-        }
+        // Update streak via StreakManager (canonical logic)
+        val newStats = StreakManager.updateStreak(doc.stats, score)
+        val updatedDoc = doc.copy(stats = newStats)
 
-        val currentStreak = prefs.getInt(KEY_CURRENT_STREAK, 0)
-        val newStreak = currentStreak + 1
-        val highestStreak = prefs.getInt(KEY_HIGHEST_STREAK, 0)
-        val newHighest = maxOf(newStreak, highestStreak)
-
-        prefs.edit()
-            .putInt(KEY_CURRENT_STREAK, newStreak)
-            .putInt(KEY_HIGHEST_STREAK, newHighest)
-            .putString(KEY_LAST_QUALIFYING_DATE, today)
-            .apply()
-
+        writeDoc(context, updatedDoc)
         scheduleDailyCheck(context)
     }
 
     fun checkAndResetIfMissed(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val lastDate = prefs.getString(KEY_LAST_QUALIFYING_DATE, "") ?: ""
         val today = getToday()
-        val lastNotified = prefs.getString(KEY_LAST_NOTIFIED_DATE, "") ?: ""
+        val doc = readDoc(context) ?: return
 
-        if (lastDate.isEmpty() || lastDate == today) return
+        val lastActivityDate = doc.stats.lastActivityDate
+        if (lastActivityDate.isEmpty() || lastActivityDate == today) return
 
-        val last = com.example.inscit.utils.DateUtils.parse(lastDate) ?: return
+        val last = com.example.inscit.utils.DateUtils.parse(lastActivityDate) ?: return
         val now = com.example.inscit.utils.DateUtils.parse(today) ?: return
         val diffDays = TimeUnit.MILLISECONDS.toDays(now.time - last.time)
+
+        if (diffDays < 2) return
+
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val lastNotified = prefs.getString(KEY_LAST_NOTIFIED_DATE, "") ?: ""
 
         // Freeze 1/week: consume freeze for exactly one missed day instead of resetting
         if (diffDays == 2L) {
@@ -75,7 +89,6 @@ object StreakTracker {
             if (prefs.getString(KEY_FREEZE_WEEK, "") != wid) {
                 prefs.edit()
                     .putString(KEY_FREEZE_WEEK, wid)
-                    .putString(KEY_LAST_QUALIFYING_DATE, today)
                     .putString(KEY_LAST_NOTIFIED_DATE, today)
                     .apply()
                 return
@@ -83,29 +96,9 @@ object StreakTracker {
         }
 
         if (diffDays >= 2) {
-            val currentStreak = prefs.getInt(KEY_CURRENT_STREAK, 0)
-            prefs.edit().putInt(KEY_CURRENT_STREAK, 0).apply()
-            // Sync UserStats (single source of truth) - also reset inscit_prefs streak.
-            // Read JSON primary (user_data_json), fall back to legacy pipe (user_data),
-            // and write back to JSON so the reset is not silently lost on next save.
-            try {
-                val inscitPrefs = context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
-                val data = inscitPrefs.getString("user_data_json", null)
-                    ?: inscitPrefs.getString("user_data", null)
-                if (data != null) {
-                    val doc = com.example.inscit.parseUserDocumentJson(data)
-                        ?: com.example.inscit.UserDocumentSaver.restore(data)
-                    if (doc != null && doc.stats.currentStreak != 0) {
-                        val yesterday = com.example.inscit.utils.DateUtils.yesterday()
-                        if (doc.stats.lastActivityDate != today && doc.stats.lastActivityDate != yesterday) {
-                            val updated = doc.copy(stats = doc.stats.copy(currentStreak = 0))
-                            val newData = com.example.inscit.serializeUserDocumentJson(updated)
-                            inscitPrefs.edit().putString("user_data_json", newData).apply()
-                            try { context.openFileOutput("inscit_backup.dat", android.content.Context.MODE_PRIVATE).use { it.write(newData.toByteArray()) } } catch (_: Exception) {}
-                        }
-                    }
-                }
-            } catch (_: Exception) {}
+            val currentStreak = doc.stats.currentStreak
+            val updated = doc.copy(stats = doc.stats.copy(currentStreak = 0))
+            writeDoc(context, updated)
 
             if (lastNotified != today) {
                 NotificationHelper.showNotification(
@@ -122,39 +115,14 @@ object StreakTracker {
     }
 
     fun getCurrentStreak(context: Context): Int {
-        val tracker = try {
-            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .getInt(KEY_CURRENT_STREAK, 0)
-        } catch (_: Exception) { 0 }
-        // Single-source fallback: if tracker empty but UserStats has streak, use it (removes duplicate drift)
-        if (tracker != 0) return tracker
         return try {
-            val data = context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
-                .getString("user_data_json", null)
-                ?: context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
-                    .getString("user_data", null)
-                ?: return 0
-            com.example.inscit.parseUserDocumentJson(data)?.stats?.currentStreak
-                ?: com.example.inscit.UserDocumentSaver.restore(data)?.stats?.currentStreak
-                ?: 0
+            readDoc(context)?.stats?.currentStreak ?: 0
         } catch (_: Exception) { 0 }
     }
 
     fun getHighestStreak(context: Context): Int {
-        val tracker = try {
-            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .getInt(KEY_HIGHEST_STREAK, 0)
-        } catch (_: Exception) { 0 }
-        if (tracker != 0) return tracker
         return try {
-            val data = context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
-                .getString("user_data_json", null)
-                ?: context.getSharedPreferences("inscit_prefs", Context.MODE_PRIVATE)
-                    .getString("user_data", null)
-                ?: return 0
-            com.example.inscit.parseUserDocumentJson(data)?.stats?.longestStreak
-                ?: com.example.inscit.UserDocumentSaver.restore(data)?.stats?.longestStreak
-                ?: 0
+            readDoc(context)?.stats?.longestStreak ?: 0
         } catch (_: Exception) { 0 }
     }
 
