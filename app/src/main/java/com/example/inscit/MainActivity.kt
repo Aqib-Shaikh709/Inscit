@@ -388,22 +388,26 @@ fun saveProfileImageLocally(context: Context, uri: Uri): String? {
 
 fun loadUserDocument(context: Context): UserDocument {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val hasData = prefs.contains(KEY_USER_DATA_JSON) || prefs.contains(KEY_USER_DATA)
+    val backupExists = try { context.fileList().contains(BACKUP_FILE_NAME) } catch (_: Exception) { false }
     // 1. Try JSON primary
     prefs.getString(KEY_USER_DATA_JSON, null)?.let { jsonData ->
         parseUserDocumentJson(jsonData)?.let { return it }
     }
     // 2. Try backup file (maybe JSON or legacy pipe)
-    try {
-        context.openFileInput(BACKUP_FILE_NAME).use { it.readBytes().decodeToString() }.let { backup ->
-            parseUserDocumentJson(backup)?.let { return it }
-            // backup could be legacy pipe - try legacy restore below via prefs fallback
-            UserDocumentSaver.restore(backup)?.let { doc ->
-                // migrate backup to JSON on successful legacy read
-                try { saveUserDocument(context, doc) } catch (_: Exception) {}
-                return doc
+    if (backupExists) {
+        try {
+            context.openFileInput(BACKUP_FILE_NAME).use { it.readBytes().decodeToString() }.let { backup ->
+                parseUserDocumentJson(backup)?.let { return it }
+                // backup could be legacy pipe - try legacy restore below via prefs fallback
+                UserDocumentSaver.restore(backup)?.let { doc ->
+                    // migrate backup to JSON on successful legacy read
+                    try { saveUserDocument(context, doc) } catch (_: Exception) {}
+                    return doc
+                }
             }
-        }
-    } catch (_: Exception) {}
+        } catch (_: Exception) {}
+    }
     // 3. Legacy pipe importer (kept for backward compat)
     prefs.getString(KEY_USER_DATA, null)?.let { legacy ->
         try {
@@ -412,6 +416,12 @@ fun loadUserDocument(context: Context): UserDocument {
                 return doc
             }
         } catch (_: Exception) {}
+    }
+    // Data source existed but every parse attempt failed => on-disk corruption.
+    // Return a placeholder default but do NOT let the 30s persistence loop
+    // auto-save it over the still-present (potentially recoverable) corrupt data.
+    if (hasData || backupExists) {
+        android.util.Log.w("Inscit", "User data corruption detected; keeping fallback profile in memory only, not overwriting on-disk data.")
     }
     return UserDocument(profile = UserProfile(name = "Core Explorer"))
 }
@@ -816,7 +826,7 @@ fun AppEngine(tts: TTSManager) {
     // data changes (XP, streak, goals), not on usage-time ticks.
     var isForeground by remember { mutableStateOf(true) }
     var usageSeconds by remember { mutableIntStateOf(0) }
-    var lastSavedDocument by remember { mutableStateOf<UserDocument?>(null) }
+    var lastSavedDocument by remember { mutableStateOf(loadUserDocument(context)) }
     var lastSaveTime by remember { mutableStateOf(0L) }
     LaunchedEffect(Unit) {
         while (isActive) {
