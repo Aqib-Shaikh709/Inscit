@@ -30,8 +30,6 @@ class NearbyTransferManager(private val context: Context) {
     private var pendingDoc: UserDocument? = null
     private val incomingFilePayloads = mutableMapOf<Long, Payload>()
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
-    private val pendingPhotoHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private var pendingPhotoRunnable: Runnable? = null
 
     fun setPairCode(code: String) {
         currentPairCode = code
@@ -60,20 +58,15 @@ class NearbyTransferManager(private val context: Context) {
                         }
                         val doc = json.decodeFromString<UserDocument>(jsonStr)
                         pendingDoc = doc
+                        // Deliver immediately if there is no photo; otherwise wait for the
+                        // accompanying FILE payload (onPayloadTransferUpdate) before invoking
+                        // the callback, so the photo is never dropped by an arbitrary timeout.
                         if (doc.profile.photoUrl.isNullOrEmpty()) {
                             onPayloadReceivedCallback?.invoke(doc, null)
                             pendingDoc = null
-                        } else {
-                            val runnable = Runnable {
-                                if (pendingDoc == doc) {
-                                    onPayloadReceivedCallback?.invoke(doc, null)
-                                    pendingDoc = null
-                                    pendingPhotoRunnable = null
-                                }
-                            }
-                            pendingPhotoRunnable = runnable
-                            pendingPhotoHandler.postDelayed(runnable, 3000)
                         }
+                        // If photoUrl is present, hold pendingDoc until the FILE transfer
+                        // completes (success or failure) below.
                     } catch (e: Exception) {
                         Log.e(TAG, "BYTES decrypt/decode failed", e)
                         try {
@@ -114,6 +107,12 @@ class NearbyTransferManager(private val context: Context) {
                 }
             } else if (update.status == PayloadTransferUpdate.Status.FAILURE) {
                 incomingFilePayloads.remove(update.payloadId)
+                // File transfer failed: still deliver the document (without photo) so
+                // the received profile is not lost entirely.
+                pendingDoc?.let { doc ->
+                    onPayloadReceivedCallback?.invoke(doc, null)
+                    pendingDoc = null
+                }
             }
         }
     }
@@ -278,7 +277,6 @@ class NearbyTransferManager(private val context: Context) {
         discoveryConnected = null
         incomingFilePayloads.clear()
         pendingDoc = null
-        pendingPhotoRunnable?.let { pendingPhotoHandler.removeCallbacks(it); pendingPhotoRunnable = null }
     }
 
     fun getConnectedEndpointId(): String? = connectedEndpointId
