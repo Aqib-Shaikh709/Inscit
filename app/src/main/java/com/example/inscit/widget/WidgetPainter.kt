@@ -6,6 +6,9 @@ import android.content.Intent
 import android.widget.RemoteViews
 import com.example.inscit.MainActivity
 import com.example.inscit.R
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 /**
  * Paints widget RemoteViews from a WidgetViewModel.
@@ -23,6 +26,18 @@ object WidgetPainter {
 
     private val DAY_IDS = intArrayOf(R.id.cd0, R.id.cd1, R.id.cd2, R.id.cd3, R.id.cd4, R.id.cd5, R.id.cd6)
     private val DAY_LABELS = listOf("M", "T", "W", "T", "F", "S", "S")
+
+    // API-24-compatible replacement for java.time.LocalDate (requires API 26).
+    // Returns date strings for 6 days ago through today, in "yyyy-MM-dd" format
+    // matching completedDates stored in UserStats.
+    private fun weekDates(): List<String> {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val now = System.currentTimeMillis()
+        val dayMs = 24L * 60 * 60 * 1000
+        return (6 downTo 0).map { daysAgo ->
+            sdf.format(java.util.Date(now - daysAgo * dayMs))
+        }
+    }
 
     /** Common main widget click: opens the app. */
     fun setMainIntent(context: Context, rv: RemoteViews, viewId: Int) {
@@ -69,10 +84,9 @@ object WidgetPainter {
         rv.setTextViewText(R.id.cal_title, "DAILY CHALLENGE")
         rv.setTextViewText(R.id.cal_sub, "${vm.daysDone}/7 days")
 
-        val today = java.time.LocalDate.now()
+        val dates = weekDates()
         for (i in DAY_IDS.indices) {
-            val date = today.minusDays((6 - i).toLong())
-            val isDone = vm.completedDates.contains(date.toString())
+            val isDone = vm.completedDates.contains(dates[i])
             rv.setTextViewText(DAY_IDS[i], DAY_LABELS[i])
             rv.setInt(DAY_IDS[i], "setBackgroundResource",
                 if (isDone) R.drawable.day_done else R.drawable.day_pending)
@@ -90,10 +104,9 @@ object WidgetPainter {
         rv.setTextViewText(R.id.cal_title, "DAILY CHALLENGE")
         rv.setTextViewText(R.id.cal_sub, "${vm.daysDone}/7 days")
 
-        val today = java.time.LocalDate.now()
+        val dates = weekDates()
         for (i in DAY_IDS.indices) {
-            val date = today.minusDays((6 - i).toLong())
-            val isDone = vm.completedDates.contains(date.toString())
+            val isDone = vm.completedDates.contains(dates[i])
             rv.setTextViewText(DAY_IDS[i], DAY_LABELS[i])
             rv.setInt(DAY_IDS[i], "setBackgroundResource",
                 if (isDone) R.drawable.day_done else R.drawable.day_pending)
