@@ -231,7 +231,13 @@ class NearbyTransferManager(private val context: Context) {
                         client.sendPayload(endpointId, Payload.fromBytes(encName))
                         client.sendPayload(endpointId, Payload.fromFile(file))
                     } else {
-                        val uri = Uri.parse(photoUrl)
+                        // photoUrl may be a content:// URI or a bare filename (e.g.
+                        // "profile_pic.jpg") stored under context.filesDir.
+                        val uri = when {
+                            photoUrl.startsWith("content://", ignoreCase = true) ->
+                                Uri.parse(photoUrl)
+                            else -> Uri.fromFile(File(context.filesDir, photoUrl))
+                        }
                         if (uri.scheme == "content" || uri.scheme == "file") {
                             val tempFile = File(context.cacheDir, "temp_profile.jpg")
                             context.contentResolver.openInputStream(uri)?.use { input ->

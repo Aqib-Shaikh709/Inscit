@@ -400,11 +400,26 @@ fun saveProfileImageLocally(context: Context, uri: Uri): String? {
         } catch (_: Exception) {}
         if (thumb != sized) thumb.recycle()
         sized.recycle()
-        Uri.fromFile(File(context.filesDir, "profile_pic.jpg")).toString()
+        // Store just the filename (app-private), not a file:// URI. A file:// URI embeds
+        // the app's data dir path, which breaks across backup/restore and leaks internal
+        // paths. Resolve back to a Uri via photoUri() when needed.
+        "profile_pic.jpg"
     } catch (e: Exception) {
         e.printStackTrace()
         null
     }
+}
+
+/**
+ * Resolve a stored photoUrl to a Uri. Accepts:
+ *   - null -> null
+ *   - content://... -> parsed as-is (picker/camera URIs)
+ *   - anything else (e.g. "profile_pic.jpg") -> file under context.filesDir
+ */
+fun photoUri(context: Context, photoUrl: String?): Uri? {
+    return if (photoUrl == null) null
+    else if (photoUrl.startsWith("content://", ignoreCase = true)) Uri.parse(photoUrl)
+    else Uri.fromFile(File(context.filesDir, photoUrl))
 }
 
 fun loadUserDocument(context: Context): UserDocument {
@@ -1016,7 +1031,7 @@ fun AppEngine(tts: TTSManager) {
                                 currentStreak = userDocument.stats.currentStreak,
                                 lastQuizScore = userDocument.quizProgress.lastScore,
                                 userName = userDocument.profile.name,
-                                photoUrl = userDocument.profile.photoUrl?.let { Uri.parse(it) },
+                                photoUrl = photoUri(context, userDocument.profile.photoUrl),
                                 onLangChange = { newLang ->
                                     // Guard Hindi toggle when voice data missing: offer install instead of silent fallback
                                     if (newLang == Lang.HI && !tts.isHindiVoiceAvailable()) {
@@ -2705,8 +2720,8 @@ fun LocalProfileView(
                 .padding(4.dp),
             contentAlignment = Alignment.Center
         ) {
-            ProfileImage(
-                photoUrl = userDoc.profile.photoUrl?.let { Uri.parse(it) },
+                ProfileImage(
+                    photoUrl = photoUri(context, userDoc.profile.photoUrl),
                 modifier = Modifier.fillMaxSize().clip(CircleShape),
                 placeholderColor = accent
             )
