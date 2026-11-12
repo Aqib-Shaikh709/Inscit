@@ -113,12 +113,14 @@ fun ReviewScreen(
                 PressableButton(
                     onClick = {
                         if (reviewText.isNotBlank()) {
-                            val (mild, masked, wasModified) = ProfanityFilter.processReview(reviewText)
+                            val (mild, _, wasModified) = ProfanityFilter.processReview(reviewText)
                             
                             if (wasModified) {
                                 mildMessage = mild
                                 showProfanityAlert = true
-                                reviews.add(0, Review(UUID.randomUUID().toString(), userName, rating, masked))
+                                // Save the same mild text shown in the alert, not the masked version,
+                                // so stored content matches what the user saw and confirmed.
+                                reviews.add(0, Review(UUID.randomUUID().toString(), userName, rating, mild))
                             } else {
                                 reviews.add(0, Review(UUID.randomUUID().toString(), userName, rating, reviewText))
                             }
@@ -242,13 +244,7 @@ private fun saveReviews(prefs: SharedPreferences, reviews: List<Review>) {
 private fun loadReviews(prefs: SharedPreferences): List<Review> {
     val data = prefs.getString(KEY_REVIEWS, "") ?: ""
     if (data.isEmpty()) {
-        return listOf(
-            Review(UUID.randomUUID().toString(), "Dr. Smith", 5, "Incredible learning tool! The simulations are top-notch."),
-            Review(UUID.randomUUID().toString(), "Aman Jaiswal", 4, "Great app, helps me understand physics easily."),
-            Review(UUID.randomUUID().toString(), "Priya Sharma", 5, "बहुत ही शानदार ऐप है, विज्ञान को समझना आसान हो गया।"),
-            Review(UUID.randomUUID().toString(), "Rahul", 3, "Decent app, but needs more biology topics."),
-            Review(UUID.randomUUID().toString(), "Aqib Shaikh", 5, "great app, it just solves one of the biggest problems i face nowadays in my tenth grade.")
-        )
+        return emptyList()
     }
     return data.split("|||").mapNotNull { entry ->
         val parts = entry.split("::")
