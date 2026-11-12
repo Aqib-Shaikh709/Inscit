@@ -200,8 +200,11 @@ class VersusMatchViewModel : ViewModel() {
         countdownJob?.cancel()
         timerJob = null
         countdownJob = null
+        // User abort: discard in-progress/countdown state without computing or
+        // awarding a finish result (no XP, no streak, no goals). A match the user
+        // explicitly quit should not count as a completed attempt.
         if (_round.value is VersusRoundState.Running || _round.value is VersusRoundState.Countdown) {
-            finish()
+            _round.value = VersusRoundState.Idle
         }
     }
 
