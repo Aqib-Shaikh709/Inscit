@@ -70,7 +70,7 @@ object WidgetUpdateCoordinator {
         for (id in ids) {
             val rv = RemoteViews(context.packageName, R.layout.widget_inscit)
             WidgetPainter.paintAllInOne(context, rv, vm)
-            WidgetPainter.setMainIntent(context, rv, R.id.widget_root)
+            WidgetPainter.setMainIntent(context, rv, R.id.widget_root, WidgetPainter.REQUEST_MAIN)
             WidgetPainter.setSectionIntent(context, rv, R.id.card_streak, "streak")
             WidgetPainter.setSectionIntent(context, rv, R.id.card_calendar, "challenge")
             WidgetPainter.setSectionIntent(context, rv, R.id.card_goals, "goals")
@@ -97,7 +97,7 @@ object WidgetUpdateCoordinator {
         for (id in ids) {
             val rv = RemoteViews(context.packageName, R.layout.widget_streak)
             WidgetPainter.paintStreak(context, rv, vm)
-            WidgetPainter.setMainIntent(context, rv, R.id.widget_root)
+            WidgetPainter.setMainIntent(context, rv, R.id.widget_root, WidgetPainter.REQUEST_MAIN_STREAK)
             WidgetPainter.setSectionIntent(context, rv, R.id.streak_value, "streak")
             WidgetPainter.setSectionIntent(context, rv, R.id.streak_label, "streak")
             mgr.updateAppWidget(id, rv)
@@ -123,7 +123,7 @@ object WidgetUpdateCoordinator {
         for (id in ids) {
             val rv = RemoteViews(context.packageName, R.layout.widget_challenge)
             WidgetPainter.paintChallenge(context, rv, vm)
-            WidgetPainter.setMainIntent(context, rv, R.id.widget_root)
+            WidgetPainter.setMainIntent(context, rv, R.id.widget_root, WidgetPainter.REQUEST_MAIN_CHALLENGE)
             WidgetPainter.setSectionIntent(context, rv, R.id.cal_title, "challenge")
             WidgetPainter.setSectionIntent(context, rv, R.id.cal_sub, "challenge")
             for (dotId in dayIds) {
@@ -151,7 +151,7 @@ object WidgetUpdateCoordinator {
         for (id in ids) {
             val rv = RemoteViews(context.packageName, R.layout.widget_goals)
             WidgetPainter.paintGoals(context, rv, vm)
-            WidgetPainter.setMainIntent(context, rv, R.id.widget_root)
+            WidgetPainter.setMainIntent(context, rv, R.id.widget_root, WidgetPainter.REQUEST_MAIN_GOALS)
             WidgetPainter.setSectionIntent(context, rv, R.id.goals_value, "goals")
             WidgetPainter.setSectionIntent(context, rv, R.id.goals_title, "goals")
             mgr.updateAppWidget(id, rv)
@@ -176,7 +176,7 @@ object WidgetUpdateCoordinator {
         for (id in ids) {
             val rv = RemoteViews(context.packageName, R.layout.widget_xp)
             WidgetPainter.paintXp(context, rv, vm)
-            WidgetPainter.setMainIntent(context, rv, R.id.widget_root)
+            WidgetPainter.setMainIntent(context, rv, R.id.widget_root, WidgetPainter.REQUEST_MAIN_XP)
             WidgetPainter.setSectionIntent(context, rv, R.id.rank_value, "xp")
             WidgetPainter.setSectionIntent(context, rv, R.id.xp_value, "xp")
             WidgetPainter.setSectionIntent(context, rv, R.id.last_value, "xp")

@@ -18,8 +18,12 @@ import java.util.Locale
  */
 object WidgetPainter {
 
-    private const val REQUEST_MAIN = 1001
-    private const val REQUEST_STREAK_SECTION = 2001
+    internal const val REQUEST_MAIN = 1001
+    internal const val REQUEST_MAIN_STREAK = 1002
+    internal const val REQUEST_MAIN_CHALLENGE = 1003
+    internal const val REQUEST_MAIN_GOALS = 1004
+    internal const val REQUEST_MAIN_XP = 1005
+    internal const val REQUEST_STREAK_SECTION = 2001
     private const val REQUEST_CHALLENGE_SECTION = 2002
     private const val REQUEST_GOALS_SECTION = 2003
     private const val REQUEST_XP_SECTION = 2004
@@ -39,13 +43,14 @@ object WidgetPainter {
         }
     }
 
-    /** Common main widget click: opens the app. */
-    fun setMainIntent(context: Context, rv: RemoteViews, viewId: Int) {
+    /** Common main widget click: opens the app. Unique request code per widget type avoids
+     *  PendingIntent collisions under FLAG_UPDATE_CURRENT. */
+    fun setMainIntent(context: Context, rv: RemoteViews, viewId: Int, requestCode: Int = REQUEST_MAIN) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pending = PendingIntent.getActivity(
-            context, REQUEST_MAIN, intent,
+            context, requestCode, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         rv.setOnClickPendingIntent(viewId, pending)
