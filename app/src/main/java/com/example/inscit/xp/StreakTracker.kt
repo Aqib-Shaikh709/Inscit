@@ -128,7 +128,6 @@ object StreakTracker {
 
     private fun scheduleDailyCheck(context: Context) {
         val constraints = androidx.work.Constraints.Builder()
-            .setRequiresBatteryNotLow(true)
             .build()
         val workRequest = PeriodicWorkRequestBuilder<StreakCheckWorker>(1, TimeUnit.DAYS)
             .setInitialDelay(1, TimeUnit.DAYS)
