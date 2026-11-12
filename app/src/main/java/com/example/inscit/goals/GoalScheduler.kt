@@ -19,7 +19,6 @@ object GoalScheduler {
 
     fun scheduleDailyGoalReminder(context: Context) {
         val constraints = Constraints.Builder()
-            .setRequiresBatteryNotLow(true)
             .build()
         val workRequest = PeriodicWorkRequestBuilder<GoalReminderWorker>(1, TimeUnit.DAYS)
             .setInitialDelay(1, TimeUnit.DAYS)
