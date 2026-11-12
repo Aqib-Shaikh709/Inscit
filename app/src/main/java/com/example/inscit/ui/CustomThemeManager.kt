@@ -371,17 +371,6 @@ fun SaturationValueBox(hue: Float, saturation: Float, value: Float, onSelection:
                     onSelection(s, v)
                 })
             }
-            .pointerInput(hue) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val pos = event.changes.first().position
-                        val s = (pos.x / size.width).coerceIn(0f, 1f)
-                        val v = 1f - (pos.y / size.height).coerceIn(0f, 1f)
-                        onSelection(s, v)
-                    }
-                }
-            }
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             // Background Hue
@@ -423,16 +412,6 @@ fun HueBar(hue: Float, onHueChange: (Float) -> Unit) {
                     val h = (change.position.x / size.width).coerceIn(0f, 1f) * 360f
                     onHueChange(h)
                 })
-            }
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val pos = event.changes.first().position
-                        val h = (pos.x / size.width).coerceIn(0f, 1f) * 360f
-                        onHueChange(h)
-                    }
-                }
             }
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
