@@ -1633,8 +1633,7 @@ fun DrawerContent(
     ModalDrawerSheet(
         drawerContainerColor = DeepWarmSpace,
         drawerContentColor = WarmGhostWhite,
-        modifier = Modifier.width(300.dp),
-        windowInsets = androidx.compose.foundation.layout.WindowInsets(0.dp)
+        modifier = Modifier.width(300.dp)
     ) {
         Column(Modifier.fillMaxSize().padding(spacing.large).verticalScroll(rememberScrollState())) {
             // Header
