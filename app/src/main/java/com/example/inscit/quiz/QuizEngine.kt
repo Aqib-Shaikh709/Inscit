@@ -1,6 +1,7 @@
 package com.example.inscit.quiz
 
 import android.content.Context
+import android.util.Log
 import com.example.inscit.models.Lang
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -43,7 +44,10 @@ class QuizEngine {
                     )
                 } catch (_: Exception) { null }
             }.takeIf { it.isNotEmpty() }
-        } catch (_: Exception) { null }
+        } catch (e: Exception) {
+            Log.w("Inscit", "questions.json missing or invalid, falling back to hardcoded bank", e)
+            null
+        }
     }
 
     fun getQuestions(
