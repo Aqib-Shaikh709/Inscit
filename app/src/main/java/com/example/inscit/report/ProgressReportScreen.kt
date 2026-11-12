@@ -19,12 +19,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.inscit.DeepSpace
+import com.example.inscit.CardBg
 import com.example.inscit.GhostWhite
 import com.example.inscit.models.UserDocument
 import com.example.inscit.ui.BackIcon
 import com.example.inscit.ui.PressableButton
 import com.example.inscit.ui.PressableIconButton
 import com.example.inscit.ui.PressableOutlinedButton
+import com.example.inscit.ui.PressableTextButton
 
 @Composable
 fun ProgressReportScreen(
@@ -35,6 +37,7 @@ fun ProgressReportScreen(
 ) {
     val generatedReport by viewModel.generatedReport.collectAsState()
     val context = LocalContext.current
+    var showShareConfirm by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -133,15 +136,7 @@ fun ProgressReportScreen(
                 Spacer(Modifier.width(16.dp))
 
                 PressableButton(
-                    onClick = {
-                        val sendIntent: Intent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            putExtra(Intent.EXTRA_TEXT, reportText)
-                            type = "text/plain"
-                        }
-                        val shareIntent = Intent.createChooser(sendIntent, "Share Progress Report")
-                        context.startActivity(shareIntent)
-                    },
+                    onClick = { showShareConfirm = true },
                     modifier = Modifier.weight(1f).height(60.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -152,8 +147,44 @@ fun ProgressReportScreen(
                     Text("SHARE REPORT", fontWeight = FontWeight.ExtraBold)
                 }
             }
+
+            if (showShareConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showShareConfirm = false },
+                    title = { Text("Share Progress Report?", fontWeight = FontWeight.Bold, color = GhostWhite) },
+                    text = {
+                        Text(
+                            "This report contains your personal learning data (name, streak, XP, quiz scores). " +
+                                "It will be sent unencrypted via the app you choose. Continue?",
+                            color = GhostWhite.copy(alpha = 0.8f),
+                            fontSize = 13.sp
+                        )
+                    },
+                    confirmButton = {
+                        PressableTextButton(onClick = {
+                            showShareConfirm = false
+                            val sendIntent: Intent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, reportText)
+                                type = "text/plain"
+                            }
+                            val shareIntent = Intent.createChooser(sendIntent, "Share Progress Report")
+                            context.startActivity(shareIntent)
+                        }) {
+                            Text("SHARE ANYWAY", color = accent, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        PressableTextButton(onClick = { showShareConfirm = false }) {
+                            Text("CANCEL", color = GhostWhite.copy(alpha = 0.6f))
+                        }
+                    },
+                    containerColor = CardBg,
+                    shape = RoundedCornerShape(20.dp)
+                )
+            }
         }
-        
+
         Spacer(Modifier.height(24.dp))
     }
 }
