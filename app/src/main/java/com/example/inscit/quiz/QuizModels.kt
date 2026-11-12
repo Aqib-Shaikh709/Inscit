@@ -2,6 +2,7 @@ package com.example.inscit.quiz
 
 import androidx.compose.runtime.Immutable
 import com.example.inscit.models.Lang
+import kotlinx.serialization.Serializable
 
 enum class ScienceDomain(val displayNameEn: String, val displayNameHi: String) {
     PHYSICS("Physics", "भौतिकी"),
@@ -49,4 +50,12 @@ data class ScienceAnalytics(
     val averageEn: List<String>,
     val averageHi: List<String>,
     val explanations: List<Pair<String, String>>
+)
+
+@Serializable
+data class QuizHistoryEntry(
+    val id: Long,
+    val score: Int,
+    val xp: Int,
+    val time: Long
 )

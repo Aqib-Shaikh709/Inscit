@@ -26,6 +26,9 @@ import com.example.inscit.*
 import com.example.inscit.models.Lang
 import com.example.inscit.quiz.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import com.example.inscit.quiz.QuizHistoryEntry
 
 import com.example.inscit.ui.theme.spacing
 
@@ -319,17 +322,17 @@ fun SprintQuizScreen(
                 LaunchedEffect(s.analytics) {
                     try {
                         val prefs = context.getSharedPreferences("quiz_history", android.content.Context.MODE_PRIVATE)
+                        val json = Json { ignoreUnknownKeys = true }
                         val history = prefs.getString("attempts", "[]") ?: "[]"
-                        val entry = """{"id":"sprint-${System.currentTimeMillis()}","score":${s.analytics.overallScore},"xp":${viewModel.getFinalXp(currentStreak, s.analytics.overallScore)},"time":${System.currentTimeMillis()}}"""
-                        val updated = if (history == "[]") "[$entry]"
-                        else {
-                            val inner = history.removePrefix("[").removeSuffix("]")
-                            val parts = if (inner.isEmpty()) emptyList() else inner.split("},{").map { p ->
-                                (if (!p.startsWith("{")) "{" else "") + p + (if (!p.endsWith("}")) "}" else "")
-                            }
-                            "[" + ((parts + entry).takeLast(50).joinToString(",")) + "]"
-                        }
-                        prefs.edit().putString("attempts", updated).apply()
+                        val entries = json.decodeFromString<List<QuizHistoryEntry>>(history)
+                        val newEntry = QuizHistoryEntry(
+                            id = System.currentTimeMillis(),
+                            score = s.analytics.overallScore,
+                            xp = viewModel.getFinalXp(currentStreak, s.analytics.overallScore),
+                            time = System.currentTimeMillis()
+                        )
+                        val updated = (entries + newEntry).takeLast(50)
+                        prefs.edit().putString("attempts", json.encodeToString(updated)).apply()
                     } catch (_: Exception) {}
                 }
                 SprintResultScreen(

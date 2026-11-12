@@ -38,19 +38,11 @@ import com.example.inscit.*
 import com.example.inscit.models.Lang
 import com.example.inscit.quiz.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import com.example.inscit.quiz.QuizHistoryEntry
 
 import com.example.inscit.ui.theme.spacing
-
-@Serializable
-private data class QuizHistoryEntry(
-    val id: Long,
-    val score: Int,
-    val xp: Int,
-    val time: Long
-)
 
 @Composable
 fun ScienceQuizScreen(
