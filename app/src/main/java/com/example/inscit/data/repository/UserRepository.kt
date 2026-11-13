@@ -1,6 +1,7 @@
 package com.example.inscit.data.repository
 
 import android.content.Context
+import com.example.inscit.data.InscitLogger
 import com.example.inscit.data.PrefsWriteLock
 import com.example.inscit.models.UserDocument
 import com.example.inscit.widget.WidgetUpdateCoordinator
@@ -44,7 +45,10 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
                 ?: prefs().getString(KEY_LEGACY, null)
                 ?: return null
             com.example.inscit.parseUserDocumentJson(json)
-        } catch (_: Exception) { null }
+        } catch (e: Exception) {
+            InscitLogger.w("getDocument failed to parse user data", e)
+            null
+        }
     }
 
     override fun saveDocument(doc: UserDocument) {
@@ -52,7 +56,9 @@ class UserRepositoryImpl(private val context: Context) : UserRepository {
             try {
                 val json = com.example.inscit.serializeUserDocumentJson(doc)
                 prefs().edit().putString(KEY_JSON, json).apply()
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                InscitLogger.e("saveDocument failed to persist user data", e)
+            }
         }
         _document.value = doc
         // Interconnect all widgets: refresh immediately when data changes
