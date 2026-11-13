@@ -1319,7 +1319,7 @@ fun AppEngine(tts: TTSManager) {
                             ScienceQuizScreen(
                                 lang = language,
                                 accent = primaryAccent,
-                                currentStreak = userDocument.stats.currentStreak,
+                                currentStreakProvider = { userDocument.stats.currentStreak },
                                 onFinish = { xpEarned, score, strengths, weaknesses ->
                                     tts.stop()
                                     val newXp = userDocument.stats.xp + xpEarned
@@ -1932,7 +1932,7 @@ fun DailyQuizScreen(
                 accent = accent,
                 round = status.currentRound,
                 finishButtonLabel = buttonLabel,
-                currentStreak = userDocument.stats.currentStreak,
+                currentStreakProvider = { userDocument.stats.currentStreak },
                 onFinish = { xp, score, _, _ ->
                     if (score >= 70) {
                         val (goalDoc, completedGoals) = GoalManager.applyQuizResult(userDocument, xp, score.toFloat())

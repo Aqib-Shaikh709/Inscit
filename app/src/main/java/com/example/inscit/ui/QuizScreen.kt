@@ -52,7 +52,7 @@ fun ScienceQuizScreen(
     difficultyFilter: String? = null,
     round: Int? = null,
     finishButtonLabel: String? = null,
-    currentStreak: Int = 0,
+    currentStreakProvider: () -> Int = { 0 },
     onFinish: (xpEarned: Int, score: Int, strengths: List<String>, weaknesses: List<String>) -> Unit,
     viewModel: QuizViewModel = viewModel<QuizViewModel>()
 ) {
@@ -95,7 +95,7 @@ fun ScienceQuizScreen(
                         val newEntry = QuizHistoryEntry(
                             id = System.currentTimeMillis(),
                             score = currentState.analytics.overallScore,
-                            xp = viewModel.getFinalXp(currentStreak, currentState.analytics.overallScore),
+                            xp = viewModel.getFinalXp(currentStreakProvider(), currentState.analytics.overallScore),
                             time = System.currentTimeMillis()
                         )
                         val updated = (entries + newEntry).takeLast(50)
@@ -117,7 +117,7 @@ fun ScienceQuizScreen(
                     }),
                     onFinish = {
                         onFinish(
-                            viewModel.getFinalXp(currentStreak, currentState.analytics.overallScore),
+                            viewModel.getFinalXp(currentStreakProvider(), currentState.analytics.overallScore),
                             currentState.analytics.overallScore,
                             if (lang == Lang.HI) currentState.analytics.strengthsHi else currentState.analytics.strengthsEn,
                             if (lang == Lang.HI) currentState.analytics.weaknessesHi else currentState.analytics.weaknessesEn
