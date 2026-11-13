@@ -799,6 +799,31 @@ fun AppEngine(tts: TTSManager) {
     // Local user state persisted to SharedPreferences every second; reload on process death.
     var userDocument by remember { mutableStateOf(loadUserDocument(context)) }
 
+    // Restore a previously exported Inscit backup (.dat) picked by the user from Downloads.
+    val importBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let { backupUri ->
+            try {
+                context.contentResolver.openInputStream(backupUri)?.use { input ->
+                    val data = input.readBytes().decodeToString()
+                    parseUserDocumentJson(data)?.let { restored ->
+                        saveUserDocument(context, restored)
+                        userDocument = restored
+                        triggerVibration(context, "SUCCESS")
+                        Toast.makeText(context, "Backup restored", Toast.LENGTH_SHORT).show()
+                    } ?: run {
+                        Toast.makeText(context, "Backup restore failed: invalid file", Toast.LENGTH_SHORT).show()
+                    }
+                } ?: run {
+                    Toast.makeText(context, "Backup restore failed: could not read file", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Backup restore failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     var currentScreen by rememberSaveable { mutableStateOf(Screen.SPLASH) }
     var selectedBranch by rememberSaveable { mutableStateOf(Branch.PHYSICS) }
     var sprintDuration by remember { mutableStateOf(com.example.inscit.quiz.SprintDuration.SEC_30) }
@@ -1342,6 +1367,14 @@ fun AppEngine(tts: TTSManager) {
                                 },
                                 onTransferSend = { currentScreen = Screen.TRANSFER_SEND },
                                 onTransferReceive = { currentScreen = Screen.TRANSFER_RECEIVE },
+                                onExportBackup = {
+                                    val json = serializeUserDocumentJson(userDocument)
+                                    exportBackupToPublic(context, json)
+                                    Toast.makeText(context, "Backup saved to Downloads", Toast.LENGTH_SHORT).show()
+                                },
+                                onImportBackup = {
+                                    importBackupLauncher.launch(arrayOf("application/octet-stream", "*/*"))
+                                },
                                 onBack = { currentScreen = Screen.HOME }
                             )
                         }
@@ -2675,6 +2708,8 @@ fun LocalProfileView(
     onUpdateProfile: (UserDocument) -> Unit,
     onSaveProgress: () -> Unit,
     onViewExports: () -> Unit,
+    onExportBackup: () -> Unit = {},
+    onImportBackup: () -> Unit = {},
     onTransferSend: () -> Unit = {},
     onTransferReceive: () -> Unit = {},
     onBack: () -> Unit
@@ -2814,6 +2849,30 @@ fun LocalProfileView(
             border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.2f))
         ) {
             Text(if (lang == Lang.EN) "RECEIVE ON NEW DEVICE" else "नए डिवाइस पर प्राप्त करें", fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        PressableButton(
+            onClick = onExportBackup,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = accent.copy(alpha = 0.15f), contentColor = accent),
+            border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
+        ) {
+            Text(if (lang == Lang.EN) "BACKUP TO DOWNLOADS" else "डाउनलोड्स में बैकअप", fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        PressableButton(
+            onClick = onImportBackup,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = GhostWhite.copy(alpha = 0.05f), contentColor = GhostWhite),
+            border = BorderStroke(1.dp, GhostWhite.copy(alpha = 0.2f))
+        ) {
+            Text(if (lang == Lang.EN) "RESTORE FROM BACKUP" else "बैकअप से पुनर्स्थापित करें", fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
         }
 
         Spacer(Modifier.height(24.dp))
