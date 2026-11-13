@@ -122,31 +122,49 @@ class SprintViewModel(
     private fun finish() {
         val s = _uiState.value
         if (s !is SprintUiState.Running) return
+        // Idempotent: transition to Finished immediately so concurrent finish()
+        // calls see non-Running state and no-op.
         timerJob?.cancel()
         timerJob = null
+        _uiState.value = SprintUiState.Finished(
+            SprintAnalytics(
+                attempted = s.answered,
+                correct = s.correct,
+                wrong = s.answered - s.correct,
+                overallScore = if (s.answered == 0) 0 else ((s.correct.toFloat() / s.answered) * 100).toInt(),
+                radarData = emptyList(),
+                strengthsEn = emptyList(),
+                strengthsHi = emptyList(),
+                weaknessesEn = emptyList(),
+                weaknessesHi = emptyList(),
+                explanations = emptyList()
+            )
+        )
+        // Now enrich with analytics (best effort, won't change state again).
         val answeredQs = answeredQuestions.toList()
         val base = try {
             engine.calculateAnalytics(answeredQs, userAnswers)
         } catch (_: Exception) {
             null
         }
-        val correct = s.correct
-        val attempted = s.answered
-        val score = if (attempted == 0) 0 else ((correct.toFloat() / attempted) * 100).toInt()
-        _uiState.value = SprintUiState.Finished(
-            SprintAnalytics(
-                attempted = attempted,
-                correct = correct,
-                wrong = attempted - correct,
-                overallScore = score,
-                radarData = base?.radarData ?: emptyList(),
-                strengthsEn = base?.strengthsEn ?: emptyList(),
-                strengthsHi = base?.strengthsHi ?: emptyList(),
-                weaknessesEn = base?.weaknessesEn ?: emptyList(),
-                weaknessesHi = base?.weaknessesHi ?: emptyList(),
-                explanations = base?.explanations ?: emptyList()
+        val current = _uiState.value
+        if (current is SprintUiState.Finished) {
+            val a = current.analytics
+            _uiState.value = SprintUiState.Finished(
+                SprintAnalytics(
+                    attempted = a.attempted,
+                    correct = a.correct,
+                    wrong = a.wrong,
+                    overallScore = a.overallScore,
+                    radarData = base?.radarData ?: emptyList(),
+                    strengthsEn = base?.strengthsEn ?: emptyList(),
+                    strengthsHi = base?.strengthsHi ?: emptyList(),
+                    weaknessesEn = base?.weaknessesEn ?: emptyList(),
+                    weaknessesHi = base?.weaknessesHi ?: emptyList(),
+                    explanations = base?.explanations ?: emptyList()
+                )
             )
-        )
+        }
     }
 
     fun getFinalXp(streak: Int = 0, scorePercent: Int = 0): Int {
