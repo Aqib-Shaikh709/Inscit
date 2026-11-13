@@ -843,6 +843,7 @@ fun AppEngine(tts: TTSManager) {
     var versusMyAttempted by remember { mutableStateOf(0) }
     var versusMyCorrect by remember { mutableStateOf(0) }
     var versusMyScore by remember { mutableStateOf(0) }
+    var versusMyTimeTakenMs by remember { mutableStateOf(0L) }
     var versusXpEarned by remember { mutableStateOf(0) }
     var versusRewardedFor by remember { mutableStateOf<String?>(null) }
     // Hoisted so BackHandler can cancel the sprint timer: the VM is activity-scoped,
@@ -1251,6 +1252,7 @@ fun AppEngine(tts: TTSManager) {
                                 versusMyAttempted = 0
                                 versusMyCorrect = 0
                                 versusMyScore = 0
+                                versusMyTimeTakenMs = 0L
                                 versusXpEarned = 0
                                 versusRewardedFor = null
                                 currentScreen = Screen.VERSUS_ROLE
@@ -1484,6 +1486,7 @@ fun AppEngine(tts: TTSManager) {
                                 versusPeerScore = null
                                 versusPeerName = ""
                                 versusMyDone = false
+                                versusMyTimeTakenMs = 0L
                                 versusXpEarned = 0
                                 versusRewardedFor = null
                                 currentScreen = Screen.VERSUS_HOST
@@ -1498,6 +1501,7 @@ fun AppEngine(tts: TTSManager) {
                                 versusPeerScore = null
                                 versusPeerName = ""
                                 versusMyDone = false
+                                versusMyTimeTakenMs = 0L
                                 versusXpEarned = 0
                                 versusRewardedFor = null
                                 currentScreen = Screen.VERSUS_JOIN
@@ -1553,10 +1557,11 @@ fun AppEngine(tts: TTSManager) {
                                 txtCol = textColor,
                                 peerArrived = versusPeerScore != null,
                                 onPeerScore = { versusPeerScore = it },
-                                onFinished = { attempted, correct, score ->
+                                onFinished = { attempted, correct, score, timeTakenMs ->
                                     versusMyAttempted = attempted
                                     versusMyCorrect = correct
                                     versusMyScore = score
+                                    versusMyTimeTakenMs = timeTakenMs
                                     versusMyDone = true
                                     val m = versusMatch
                                     val ep = versusEndpointId ?: versusManager.getConnectedEndpointId()
@@ -1569,7 +1574,8 @@ fun AppEngine(tts: TTSManager) {
                                                 versusMyName.ifBlank { if (versusIsHost) "Device-A" else "Device-B" },
                                                 versusIsHost,
                                                 attempted,
-                                                correct
+                                                correct,
+                                                timeTakenMs
                                             )
                                         )
                                     }
@@ -1586,7 +1592,7 @@ fun AppEngine(tts: TTSManager) {
                                 val peer = versusPeerScore
                                 if (versusMyDone && peer != null && m != null && versusRewardedFor != m.matchId) {
                                     versusRewardedFor = m.matchId
-                                    val winner = versusWinnerFor(versusMyAttempted, versusMyCorrect, versusIsHost, peer)
+                                    val winner = versusWinnerFor(versusMyAttempted, versusMyCorrect, versusMyTimeTakenMs, versusIsHost, peer)
                                     val won = (winner == VersusResult.HOST_WINS && versusIsHost) ||
                                         (winner == VersusResult.GUEST_WINS && !versusIsHost)
                                     val xp = versusVm.getFinalXp(userDocument.stats.currentStreak, versusMyScore, won)
@@ -1631,7 +1637,7 @@ fun AppEngine(tts: TTSManager) {
                             myScore = versusMyScore,
                             peer = versusPeerScore,
                             peerVerified = versusPeerVerified(versusPeerScore, versusMatch),
-                            winner = versusWinnerFor(versusMyAttempted, versusMyCorrect, versusIsHost, versusPeerScore),
+                            winner = versusWinnerFor(versusMyAttempted, versusMyCorrect, versusMyTimeTakenMs, versusIsHost, versusPeerScore),
                             xpEarned = versusXpEarned,
                             accent = primaryAccent,
                             txtCol = textColor,

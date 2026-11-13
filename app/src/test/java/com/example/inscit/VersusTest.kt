@@ -96,11 +96,14 @@ class VersusTest {
 
     @Test
     fun winner_moreCorrectWins_accuracyTiebreak_draw() {
-        assertEquals(VersusResult.HOST_WINS, decideVersusWinner(5, 3, 5, 5))
-        assertEquals(VersusResult.GUEST_WINS, decideVersusWinner(2, 4, 5, 5))
+        assertEquals(VersusResult.HOST_WINS, decideVersusWinner(5, 3, 5, 5, 10000, 10000))
+        assertEquals(VersusResult.GUEST_WINS, decideVersusWinner(2, 4, 5, 5, 10000, 10000))
         // Same correct: fewer attempts (more accurate) wins.
-        assertEquals(VersusResult.HOST_WINS, decideVersusWinner(4, 4, 4, 6))
-        assertEquals(VersusResult.GUEST_WINS, decideVersusWinner(4, 4, 7, 5))
-        assertEquals(VersusResult.DRAW, decideVersusWinner(3, 3, 5, 5))
+        assertEquals(VersusResult.HOST_WINS, decideVersusWinner(4, 4, 4, 6, 10000, 10000))
+        assertEquals(VersusResult.GUEST_WINS, decideVersusWinner(4, 4, 7, 5, 10000, 10000))
+        // Same correct and attempts: less time wins.
+        assertEquals(VersusResult.HOST_WINS, decideVersusWinner(4, 4, 5, 5, 8000, 12000))
+        assertEquals(VersusResult.GUEST_WINS, decideVersusWinner(4, 4, 5, 5, 12000, 8000))
+        assertEquals(VersusResult.DRAW, decideVersusWinner(3, 3, 5, 5, 10000, 10000))
     }
 }

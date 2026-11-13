@@ -595,7 +595,7 @@ fun VersusRoundScreen(
     txtCol: Color,
     peerArrived: Boolean,
     onPeerScore: (VersusScorePayload) -> Unit,
-    onFinished: (attempted: Int, correct: Int, overallScore: Int) -> Unit,
+    onFinished: (attempted: Int, correct: Int, overallScore: Int, timeTakenMs: Long) -> Unit,
     onExit: () -> Unit
 ) {
     val state by matchVm.round.collectAsState()
@@ -614,7 +614,7 @@ fun VersusRoundScreen(
         if (s is VersusRoundState.Finished && !finishSent) {
             finishSent = true
             triggerVibration(context, "SUCCESS")
-            onFinished(s.attempted, s.correct, s.overallScore)
+            onFinished(s.attempted, s.correct, s.overallScore, s.timeTakenMs)
         }
     }
 
@@ -889,19 +889,19 @@ private fun VersusScoreCard(
 
 // Re-export so MainActivity stays small: winner from two score payloads.
 fun versusWinnerFor(
-    myAttempted: Int, myCorrect: Int, isHost: Boolean,
+    myAttempted: Int, myCorrect: Int, myTimeTakenMs: Long, isHost: Boolean,
     peer: VersusScorePayload?
 ): VersusResult {
     if (peer == null) return VersusResult.DRAW
-    val (hostC, hostA, guestC, guestA) = if (isHost) {
-        Quad(myCorrect, myAttempted, peer.correct, peer.attempted)
+    val (hostC, hostA, hostT, guestC, guestA, guestT) = if (isHost) {
+        Quad(myCorrect, myAttempted, myTimeTakenMs, peer.correct, peer.attempted, peer.timeTakenMs)
     } else {
-        Quad(peer.correct, peer.attempted, myCorrect, myAttempted)
+        Quad(peer.correct, peer.attempted, peer.timeTakenMs, myCorrect, myAttempted, myTimeTakenMs)
     }
-    return decideVersusWinner(hostC, guestC, hostA, guestA)
+    return decideVersusWinner(hostC, guestC, hostA, guestA, hostT, guestT)
 }
 
-private data class Quad(val a: Int, val b: Int, val c: Int, val d: Int)
+private data class Quad(val a: Int, val b: Int, val c: Long, val d: Int, val e: Int, val f: Long)
 
 fun versusPeerVerified(peer: VersusScorePayload?, match: VersusMatchPayload?): Boolean {
     if (peer == null || match == null) return false

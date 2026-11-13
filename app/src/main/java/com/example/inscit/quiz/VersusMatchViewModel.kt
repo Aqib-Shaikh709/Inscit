@@ -30,7 +30,8 @@ sealed class VersusRoundState {
     data class Finished(
         val attempted: Int,
         val correct: Int,
-        val overallScore: Int
+        val overallScore: Int,
+        val timeTakenMs: Long
     ) : VersusRoundState()
 }
 
@@ -84,7 +85,7 @@ class VersusMatchViewModel : ViewModel() {
 
     private fun beginRound() {
         if (questions.isEmpty()) {
-            _round.value = VersusRoundState.Finished(0, 0, 0)
+            _round.value = VersusRoundState.Finished(0, 0, 0, 0L)
             return
         }
         userAnswers.clear()
@@ -173,7 +174,9 @@ class VersusMatchViewModel : ViewModel() {
         timerJob?.cancel()
         timerJob = null
         val score = if (answered == 0) 0 else ((correct.toFloat() / answered) * 100).toInt()
-        _round.value = VersusRoundState.Finished(answered, correct, score)
+        val current = _round.value
+        val timeTakenMs = if (current is VersusRoundState.Running) current.totalMs - current.timeLeftMs else 0L
+        _round.value = VersusRoundState.Finished(answered, correct, score, timeTakenMs)
     }
 
     fun finish() {

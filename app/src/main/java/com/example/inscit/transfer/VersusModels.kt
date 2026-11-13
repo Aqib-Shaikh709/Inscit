@@ -68,7 +68,8 @@ data class VersusScorePayload(
     val attempted: Int,
     val correct: Int,
     val overallScore: Int,
-    // SHA-256 over matchId|attempted|correct|questionsHash (client-side integrity).
+    val timeTakenMs: Long = 0L,
+    // SHA-256 over matchId|attempted|correct|timeTakenMs|questionsHash (client-side integrity).
     val hash: String
 )
 
@@ -115,24 +116,27 @@ object VersusCrypto {
         sha256Hex(questions.joinToString("|") { it.id })
 
     // Client-side score attestation both sides recompute to detect tampering.
-    fun scoreHash(matchId: String, attempted: Int, correct: Int, questionsHash: String): String =
-        sha256Hex("$matchId|$attempted|$correct|$questionsHash")
+    fun scoreHash(matchId: String, attempted: Int, correct: Int, timeTakenMs: Long, questionsHash: String): String =
+        sha256Hex("$matchId|$attempted|$correct|$timeTakenMs|$questionsHash")
 
     fun verifyScore(score: VersusScorePayload, matchId: String, questionsHash: String): Boolean {
         if (score.matchId != matchId) return false
         if (score.attempted < 0 || score.correct < 0 || score.correct > score.attempted) return false
         val expectedScore = if (score.attempted == 0) 0 else ((score.correct.toFloat() / score.attempted) * 100).toInt()
         if (score.overallScore != expectedScore) return false
-        return score.hash == scoreHash(matchId, score.attempted, score.correct, questionsHash)
+        return score.hash == scoreHash(matchId, score.attempted, score.correct, score.timeTakenMs, questionsHash)
     }
 }
 
 enum class VersusResult { HOST_WINS, GUEST_WINS, DRAW }
 
-fun decideVersusWinner(hostCorrect: Int, guestCorrect: Int, hostAttempted: Int, guestAttempted: Int): VersusResult {
-    // Primary: more correct answers. Tiebreak: fewer attempts (accuracy), else draw.
+fun decideVersusWinner(hostCorrect: Int, guestCorrect: Int, hostAttempted: Int, guestAttempted: Int, hostTimeTakenMs: Long, guestTimeTakenMs: Long): VersusResult {
+    // Primary: more correct answers.
     if (hostCorrect != guestCorrect) return if (hostCorrect > guestCorrect) VersusResult.HOST_WINS else VersusResult.GUEST_WINS
+    // Tiebreak 1: fewer attempts (more accurate).
     if (hostAttempted != guestAttempted) return if (hostAttempted < guestAttempted) VersusResult.HOST_WINS else VersusResult.GUEST_WINS
+    // Tiebreak 2: less time taken (faster).
+    if (hostTimeTakenMs != guestTimeTakenMs) return if (hostTimeTakenMs < guestTimeTakenMs) VersusResult.HOST_WINS else VersusResult.GUEST_WINS
     return VersusResult.DRAW
 }
 
@@ -186,7 +190,8 @@ fun buildScorePayload(
     deviceName: String,
     isHost: Boolean,
     attempted: Int,
-    correct: Int
+    correct: Int,
+    timeTakenMs: Long = 0L
 ): VersusScorePayload {
     val overall = if (attempted == 0) 0 else ((correct.toFloat() / attempted) * 100).toInt()
     return VersusScorePayload(
@@ -196,6 +201,7 @@ fun buildScorePayload(
         attempted = attempted,
         correct = correct,
         overallScore = overall,
-        hash = VersusCrypto.scoreHash(match.matchId, attempted, correct, match.questionsHash)
+        timeTakenMs = timeTakenMs,
+        hash = VersusCrypto.scoreHash(match.matchId, attempted, correct, timeTakenMs, match.questionsHash)
     )
 }
