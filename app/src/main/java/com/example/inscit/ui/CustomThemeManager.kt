@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.inscit.data.PrefsWriteLock
 import com.example.inscit.models.CustomTheme
 import com.example.inscit.models.Lang
 import com.example.inscit.ui.theme.*
@@ -37,9 +38,11 @@ object CustomThemeManager {
     private const val KEY_SELECTED_CUSTOM = "selected_custom_theme_name"
 
     fun saveThemes(context: Context, themes: List<CustomTheme>) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val data = themes.joinToString("||") { "${it.name.replace("\\", "\\\\").replace("|", "\\|")}|${it.primaryAccent}|${it.background}|${it.textColor}" }
-        prefs.edit().putString(KEY_THEMES, data).apply()
+        PrefsWriteLock.withWriteLock {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val data = themes.joinToString("||") { "${it.name.replace("\\", "\\\\").replace("|", "\\|")}|${it.primaryAccent}|${it.background}|${it.textColor}" }
+            prefs.edit().putString(KEY_THEMES, data).apply()
+        }
     }
 
     fun loadThemes(context: Context): List<CustomTheme> {
@@ -119,8 +122,10 @@ object CustomThemeManager {
     }
 
     fun saveSelectedCustomThemeName(context: Context, name: String) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_SELECTED_CUSTOM, name).apply()
+        PrefsWriteLock.withWriteLock {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putString(KEY_SELECTED_CUSTOM, name).apply()
+        }
     }
 
     fun getSelectedCustomThemeName(context: Context): String? {
