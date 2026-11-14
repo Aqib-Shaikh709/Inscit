@@ -59,7 +59,7 @@ fun QuizModeScreen(
         ModeCard(
             title = if (lang == Lang.EN) "NORMAL" else "सामान्य",
             subtitle = if (lang == Lang.EN) "10 questions - take your time" else "10 प्रश्न - आराम से",
-            icon = "🎯",
+            iconAsset = "general/goal icon.svg",
             accent = accent,
             onClick = onNormal
         )
@@ -67,7 +67,7 @@ fun QuizModeScreen(
         ModeCard(
             title = if (lang == Lang.EN) "SPRINT MODE" else "स्प्रिंट मोड",
             subtitle = if (lang == Lang.EN) "Bullet chess style - beat the clock" else "बुलेट चेस जैसा - घड़ी को हराएं",
-            icon = "⚡",
+            iconAsset = null,
             accent = PowerRed,
             onClick = onSprint
         )
@@ -75,7 +75,7 @@ fun QuizModeScreen(
         ModeCard(
             title = if (lang == Lang.EN) "VERSUS MODE" else "वर्सेस मोड",
             subtitle = if (lang == Lang.EN) "Offline PvP - duel a nearby friend" else "ऑफलाइन PvP - पास के दोस्त से मुकाबला",
-            icon = "🤝",
+            iconAsset = null,
             accent = BioLime,
             onClick = onVersus
         )
@@ -86,7 +86,7 @@ fun QuizModeScreen(
 private fun ModeCard(
     title: String,
     subtitle: String,
-    icon: String,
+    iconAsset: String?,
     accent: Color,
     onClick: () -> Unit
 ) {
@@ -98,7 +98,13 @@ private fun ModeCard(
         border = BorderStroke(1.dp, accent.copy(alpha = 0.3f))
     ) {
         Row(Modifier.fillMaxSize().padding(24.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(icon, fontSize = 44.sp)
+            iconAsset?.let {
+                SvgIcon(
+                    it,
+                    modifier = Modifier.size(44.dp),
+                    contentDescription = "Mode icon"
+                )
+            }
             Spacer(Modifier.width(20.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, fontSize = 22.sp, fontWeight = FontWeight.Black, color = GhostWhite, letterSpacing = 1.sp)
