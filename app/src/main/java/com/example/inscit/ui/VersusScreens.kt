@@ -765,9 +765,9 @@ fun VersusResultScreen(
     onDone: () -> Unit
 ) {
     val title = when (winner) {
-        VersusResult.DRAW -> "🤝 DRAW!"
-        VersusResult.HOST_WINS -> if (isHost) "🏆 YOU WIN!" else "😞 YOU LOSE"
-        VersusResult.GUEST_WINS -> if (!isHost) "🏆 YOU WIN!" else "😞 YOU LOSE"
+        VersusResult.DRAW -> "DRAW!"
+        VersusResult.HOST_WINS -> if (isHost) "YOU WIN!" else "YOU LOSE"
+        VersusResult.GUEST_WINS -> if (!isHost) "YOU WIN!" else "YOU LOSE"
     }
     val titleColor = when {
         winner == VersusResult.DRAW -> accent
