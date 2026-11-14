@@ -137,7 +137,7 @@ class QuizEngine {
 
         val explanations = questions.map { q ->
             val isCorrect = userAnswers[q.id]?.isCorrect ?: false
-            val status = if (isCorrect) "✓" else "✗"
+            val status = if (isCorrect) "OK" else "X"
             "$status ${q.text}" to q.explanation
         }
 

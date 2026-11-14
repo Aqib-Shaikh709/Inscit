@@ -185,7 +185,7 @@ fun TransferSendScreen(
                 }
             }
             TransferStage.SUCCESS -> {
-                Text("✓ Transfer Complete!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("OK Transfer Complete!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(12.dp))
                 PressableButton(onClick = {
                     manager.disconnect()
@@ -407,7 +407,7 @@ fun TransferReceiveScreen(
                     }
                 }
                 TransferStage.SUCCESS -> {
-                    Text("✓ Profile Imported!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("OK Profile Imported!", color = BioLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
                     Text("Your data has been restored. Welcome!", color = GhostWhite.copy(alpha = 0.7f), fontSize = 14.sp)
                 }
