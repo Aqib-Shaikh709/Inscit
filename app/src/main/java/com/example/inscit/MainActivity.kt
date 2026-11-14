@@ -1699,7 +1699,7 @@ fun DrawerContent(
             DrawerItem(if (lang == Lang.EN) "ACHIEVEMENTS" else "उपलब्धियां", Screen.ACHIEVEMENTS, currentScreen, onNavigate, accent)
 
             DrawerItem(
-                label = if (lang == Lang.EN) "🔥 STREAK TRACKER" else "🔥 स्ट्रीक ट्रैकर",
+                label = if (lang == Lang.EN) "STREAK TRACKER" else "स्ट्रीक ट्रैकर",
                 screen = Screen.STREAK_DETAILS,
                 currentScreen = currentScreen,
                 onNavigate = onNavigate,
@@ -1707,7 +1707,7 @@ fun DrawerContent(
             )
 
             DrawerItem(
-                label = if (lang == Lang.EN) "🎯 GOAL MAKER" else "🎯 लक्ष्य निर्माता",
+                label = if (lang == Lang.EN) "GOAL MAKER" else "लक्ष्य निर्माता",
                 screen = Screen.GOALS,
                 currentScreen = currentScreen,
                 onNavigate = onNavigate,
@@ -3192,7 +3192,7 @@ fun ModernHome(
                 SleekStatCard(
                     label = if (lang == Lang.EN) "CURRENT XP" else "कुल XP",
                     value = xpShown.toString(),
-                    iconEmoji = "⭐",
+                    iconAsset = null,
                     iconColor = WarmAmber,
                     accent = WarmAmber,
                     glow = WarmAmberGlow,
@@ -3201,7 +3201,7 @@ fun ModernHome(
                 SleekStatCard(
                     label = if (lang == Lang.EN) "STREAK" else "स्ट्रेक",
                     value = streakShown.toString(),
-                    iconEmoji = "🔥",
+                    iconAsset = "general/streak icon.svg",
                     iconColor = WarmGold,
                     accent = WarmGold,
                     glow = WarmGoldGlow,
@@ -3279,7 +3279,7 @@ fun ModernHome(
 private fun SleekStatCard(
     label: String,
     value: String,
-    iconEmoji: String,
+    iconAsset: String?,
     iconColor: Color,
     accent: Color,
     glow: Color,
@@ -3323,7 +3323,13 @@ private fun SleekStatCard(
                     .background(glow.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = iconEmoji, color = Color.White, fontSize = 30.sp)
+                iconAsset?.let {
+                    SvgIcon(
+                        it,
+                        modifier = Modifier.size(30.dp),
+                        contentDescription = "Stat icon"
+                    )
+                }
             }
         }
     }
@@ -4436,9 +4442,6 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
     ) {
         val stats = userDoc.stats
         val spacing = MaterialTheme.spacing
-        val streakEmoji = if (stats.currentStreak > 0) {"🔥"}
-            else
-                { "❄️"}
 
         Column(
             modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
@@ -4469,7 +4472,7 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(streakEmoji, fontSize = 64.sp)
+                    SvgIcon("general/streak icon.svg", modifier = Modifier.size(64.dp), contentDescription = "Streak icon")
                     Spacer(Modifier.height(16.dp))
                     Text(
                         "${stats.currentStreak}",
@@ -4542,7 +4545,7 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
             // Achievement Section
             if (stats.longestStreak > 0) {
                 Text(
-                    if (lang == Lang.EN) "🏆 MILESTONES ACHIEVED" else "🏆 हासिल किए गए मील के पत्थर",
+                    if (lang == Lang.EN) "MILESTONES ACHIEVED" else "हासिल किए गए मील के पत्थर",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = accent,
@@ -4553,7 +4556,6 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
 
                 if (stats.longestStreak >= 3) {
                     MilestoneRow(
-                        emoji = "3️⃣",
                         label = if (lang == Lang.EN) "3 Day Streak" else "3 दिन की स्ट्रीक",
                         accent
                     )
@@ -4561,7 +4563,6 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
                 }
                 if (stats.longestStreak >= 7) {
                     MilestoneRow(
-                        emoji = "7️⃣",
                         label = if (lang == Lang.EN) "Week Warrior" else "सप्ताह योद्धा",
                         accent
                     )
@@ -4569,7 +4570,6 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
                 }
                 if (stats.longestStreak >= 14) {
                     MilestoneRow(
-                        emoji = "1️⃣4️⃣",
                         label = if (lang == Lang.EN) "Two Week Champion" else "दो सप्ताह चैंपियन",
                         accent
                     )
@@ -4577,7 +4577,6 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
                 }
                 if (stats.longestStreak >= 30) {
                     MilestoneRow(
-                        emoji = "3️⃣0️⃣",
                         label = if (lang == Lang.EN) "Month Master" else "महीना मास्टर",
                         accent
                     )
@@ -4665,7 +4664,7 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
     }
 
     @Composable
-    fun MilestoneRow(emoji: String, label: String, accent: Color) {
+    fun MilestoneRow(label: String, accent: Color) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -4677,7 +4676,6 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(emoji, fontSize = 20.sp)
             Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent)
             Spacer(Modifier.weight(1f))
             Text("✓", fontSize = 16.sp, color = BioLime, fontWeight = FontWeight.Bold)
