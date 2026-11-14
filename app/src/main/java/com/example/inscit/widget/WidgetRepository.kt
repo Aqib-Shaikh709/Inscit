@@ -51,7 +51,7 @@ object WidgetRepository {
             lastScore = doc.quizProgress.lastScore.toInt(),
             completedGoals = completedGoals,
             totalGoals = doc.goals.size,
-            rankIcon = rank.icon,
+            rankIcon = rank.iconAsset,
             rankLabel = rank.label,
             level = level,
             completedDates = doc.stats.completedChallengeDates,

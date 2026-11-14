@@ -37,6 +37,8 @@ play-services-nearby = { group = "com.google.android.gms", name = "play-services
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version = "2.6.0" }
+coil-svg = { group = "io.coil-kt", name = "coil-svg", version = "2.6.0" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

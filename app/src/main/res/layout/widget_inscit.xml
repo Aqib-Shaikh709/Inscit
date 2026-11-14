@@ -144,13 +144,21 @@
             android:orientation="vertical"
             android:padding="14dp">
 
-            <TextView
+            <ImageView
                 android:id="@+id/rank_value"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:contentDescription="Current rank icon" />
+
+            <TextView
+                android:id="@+id/rank_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🌱 Beginner"
+                android:layout_marginTop="6dp"
+                android:text="Beginner"
                 android:textColor="#FFF3E0"
-                android:textSize="17sp"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -171,6 +179,8 @@
                 android:textColor="#FFF3E0"
                 android:textSize="12sp" />
         </LinearLayout>
+
+
 
     </android.widget.GridLayout>
 </FrameLayout>

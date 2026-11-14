@@ -24,12 +24,19 @@
             android:textStyle="bold"
             android:contentDescription="Streak label" />
 
+        <ImageView
+            android:id="@+id/streak_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:contentDescription="Streak icon" />
+
         <TextView
             android:id="@+id/streak_value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
-            android:text="🔥 0"
+            android:text="0"
             android:textColor="#FFF3E0"
             android:textSize="58sp"
             android:textStyle="bold"

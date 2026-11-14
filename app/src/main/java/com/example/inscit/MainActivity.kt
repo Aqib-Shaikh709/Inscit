@@ -195,6 +195,7 @@ import com.example.inscit.ui.InstagramIcon
 import com.example.inscit.ui.XIcon
 import com.example.inscit.ui.YouTubeIcon
 import com.example.inscit.ui.WebIcon
+import com.example.inscit.ui.SvgIcon
 import com.example.inscit.ui.ReviewScreen
 import com.example.inscit.ui.theme.spacing
 import com.example.inscit.ui.theme.ChromeBorderBrush
@@ -4314,7 +4315,7 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
                     Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(currentRank.icon, fontSize = 48.sp)
+                    SvgIcon(currentRank.iconAsset, modifier = Modifier.size(48.dp), contentDescription = "Current rank icon")
                     Spacer(Modifier.height(8.dp))
                     Text(
                         (if (lang == Lang.EN) "CURRENT RANK: " else "वर्तमान रैंक: ") + currentRank.label.uppercase(),
@@ -4380,10 +4381,12 @@ fun FoundationalBranchCard(branch: Branch, lang: Lang, accent: Color, onNav: (Br
                             Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                rank.icon,
-                                fontSize = 24.sp,
-                                modifier = Modifier.alpha(if (isUnlocked) 1f else 0.3f)
+                            SvgIcon(
+                                rank.iconAsset,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .alpha(if (isUnlocked) 1f else 0.3f),
+                                contentDescription = "${rank.label} rank icon"
                             )
                             Spacer(Modifier.width(16.dp))
                             Column {

@@ -3,6 +3,7 @@ package com.example.inscit.widget
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.widget.RemoteViews
 import com.example.inscit.MainActivity
 import com.example.inscit.R
@@ -79,11 +80,18 @@ object WidgetPainter {
 
     /** Paints the all-in-one bento widget (4 cards in a grid). */
     fun paintAllInOne(context: Context, rv: RemoteViews, vm: WidgetViewModel) {
-        rv.setTextViewText(R.id.streak_value, if (vm.currentStreak == 0) "❄️ ${vm.currentStreak}" else "🔥 ${vm.currentStreak}")
         rv.setTextViewText(R.id.streak_label, "STREAK")
+        rv.setImageViewUri(
+            R.id.streak_value,
+            Uri.parse("file:///android_asset/icons/general/streak icon.svg".replace(" ", "%20"))
+        )
         rv.setTextViewText(R.id.goals_title, "GOALS")
         rv.setTextViewText(R.id.goals_value, "${vm.completedGoals}/${vm.totalGoals}")
-        rv.setTextViewText(R.id.rank_value, "${vm.rankIcon} ${vm.rankLabel}")
+        rv.setImageViewUri(
+            R.id.rank_value,
+            Uri.parse("file:///android_asset/icons/${vm.rankIcon.replace(" ", "%20")}")
+        )
+        rv.setTextViewText(R.id.rank_label, vm.rankLabel)
         rv.setTextViewText(R.id.xp_value, "XP ${vm.xp}  Lvl ${vm.level}")
         rv.setTextViewText(R.id.last_value, "Last ${vm.lastScore}%")
         rv.setTextViewText(R.id.cal_title, "DAILY CHALLENGE")
@@ -101,7 +109,11 @@ object WidgetPainter {
     /** Paints the streak-only widget. */
     fun paintStreak(context: Context, rv: RemoteViews, vm: WidgetViewModel) {
         rv.setTextViewText(R.id.streak_label, "STREAK")
-        rv.setTextViewText(R.id.streak_value, if (vm.currentStreak == 0) "❄️ ${vm.currentStreak}" else "🔥 ${vm.currentStreak}")
+        rv.setImageViewUri(
+            R.id.streak_icon,
+            Uri.parse("file:///android_asset/icons/general/streak icon.svg".replace(" ", "%20"))
+        )
+        rv.setTextViewText(R.id.streak_value, vm.currentStreak.toString())
     }
 
     /** Paints the challenge-only widget. */
@@ -126,7 +138,11 @@ object WidgetPainter {
 
     /** Paints the XP-only widget. */
     fun paintXp(context: Context, rv: RemoteViews, vm: WidgetViewModel) {
-        rv.setTextViewText(R.id.rank_value, "${vm.rankIcon} ${vm.rankLabel}")
+        rv.setImageViewUri(
+            R.id.rank_value,
+            Uri.parse("file:///android_asset/icons/${vm.rankIcon.replace(" ", "%20")}")
+        )
+        rv.setTextViewText(R.id.rank_label, vm.rankLabel)
         rv.setTextViewText(R.id.xp_value, "XP ${vm.xp}  Lvl ${vm.level}")
         rv.setTextViewText(R.id.last_value, "Last ${vm.lastScore}%")
     }
