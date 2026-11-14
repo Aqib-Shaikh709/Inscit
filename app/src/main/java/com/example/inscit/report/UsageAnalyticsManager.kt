@@ -12,7 +12,7 @@ object UsageAnalyticsManager {
         val usageMinutes = (stats.totalUsageTime % 3600000) / 60000
         
         val streakDisplay = if (stats.currentStreak > 0) {
-            "🔥 ${stats.currentStreak} days"
+            "${stats.currentStreak} days"
         } else {
             "Not started"
         }
