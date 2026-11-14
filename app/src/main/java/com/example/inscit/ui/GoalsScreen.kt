@@ -267,7 +267,7 @@ fun GoalsScreen(
             if (completedGoals.isNotEmpty()) {
                 Spacer(Modifier.height(32.dp))
                 Text(
-                    if (lang == Lang.EN) "COMPLETED GOALS 🏆" else "पूर्ण लक्ष्य 🏆",
+                    if (lang == Lang.EN) "COMPLETED GOALS" else "पूर्ण लक्ष्य",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Black,
                     color = accent,
@@ -464,9 +464,10 @@ private fun GoalCard(
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    if (goal.type == GoalType.XP) "⚡" else "🎯",
-                    fontSize = 18.sp
+                SvgIcon(
+                    "general/goal icon.svg",
+                    modifier = Modifier.size(18.dp),
+                    contentDescription = "Goal icon"
                 )
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
@@ -547,7 +548,7 @@ private fun GoalCard(
             if (isCompleted) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    if (lang == Lang.EN) "🏆 GOAL COMPLETED!" else "🏆 लक्ष्य पूर्ण!",
+                    if (lang == Lang.EN) "GOAL COMPLETED!" else "लक्ष्य पूर्ण!",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Black,
                     color = WarmGold,
@@ -567,7 +568,11 @@ private fun CompletedGoalCard(goal: UserGoal, accent: Color, lang: Lang) {
         border = BorderStroke(1.dp, WarmGold.copy(alpha = 0.4f))
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("🏆", fontSize = 20.sp)
+            SvgIcon(
+                "general/goal icon.svg",
+                modifier = Modifier.size(20.dp),
+                contentDescription = "Goal icon"
+            )
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Text(
